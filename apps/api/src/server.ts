@@ -1,17 +1,42 @@
-import express, { Request, Response } from "express";
 
-const app = express();
+import "dotenv/config";
+
+import { logger } from "./utils/logger";
+import { pool } from "./config/database";
+import app from "./app";
+
 const PORT = process.env.PORT || 8080;
 
-app.use(express.json());
+async function startServer() {
+  try {
+    await pool.query("SELECT NOW()");
 
-app.get("/api/health", (req: Request, res: Response) => {
-  res.json({
-    status: "ok",
-    message: "Express backend is running cleanly with TypeScript!",
-  });
-});
+    logger.info("PostgreSQL connection successful");
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server is flying on http://localhost:${PORT}`);
-});
+    const server = app.listen(PORT, () => {
+      logger.info({ port: PORT }, "Express server started");
+    });
+
+    function shutdown() {
+      logger.info("Shutting down server");
+
+      server.close(async (error) => {
+        if (error) {
+          logger.error({ err: error }, "Error during server shutdown");
+          process.exitCode = 1;
+        }
+
+        await pool.end();
+      });
+    }
+
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+  } catch (err) {
+    logger.fatal({ err }, "Failed to connect to PostgreSQL");
+    await pool.end();
+    process.exitCode = 1;
+  }
+}
+
+void startServer();
