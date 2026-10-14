@@ -5,16 +5,33 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "vitest run src",
+    "test:watch": "vitest src"
   },
   "dependencies": {
-    "express": "^4.21.0"
+    "argon2": "^0.45.1",
+    "cors": "^2.8.6",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.0.3",
+    "express": "^4.21.0",
+    "jose": "^6.2.12",
+    "nodemailer": "^10.1.0",
+    "pg": "^8.23.1",
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "pino-pretty": "^13.2.0",
+    "supertest": "^7.3.1",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^5.0.4"
   }
 }
