@@ -245,7 +245,7 @@ export const openApiDocument = {
             type: "string",
             minLength: 2,
             maxLength: 150,
-            example: "Alex Morgan",
+            example: "Abebe Alemu",
           },
           email: {
             type: "string",
