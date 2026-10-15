@@ -1,8 +1,8 @@
-
 import cors from "cors";
 import express from "express";
 import { requestLogger } from "./middlewares/requestLogger";
 import authRoutes from "./routes/authRoutes";
+import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
 
 const app = express();
 
@@ -19,12 +19,20 @@ app.use(
 
 app.use(express.json());
 
+app.get("/api/docs/openapi.json", (_req, res) => {
+  res.json(openApiDocument);
+});
+
+app.get("/api/docs", (_req, res) => {
+  res.type("html").send(swaggerUiHtml);
+});
+
 app.use("/api/v1/auth", authRoutes);
 
-app.get("/api/health", (_req, res) => {
+app.get("/", (_req, res) => {
   res.json({
     status: "ok",
-    message: "Express backend is running cleanly",
+    message: "Express backend is running",
   });
 });
 
