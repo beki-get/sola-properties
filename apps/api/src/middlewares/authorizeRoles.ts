@@ -16,7 +16,7 @@ export function authorizeRoles(
     if (!allowedRoles.includes(req.currentUser.role)) {
       res.status(403).json({
         message: "You do not have permission to access this resource",
-        code: "INSUFFICIENT_ROLE",
+        code: "ROLE_NOT_ALLOWED",
       });
       return;
     }

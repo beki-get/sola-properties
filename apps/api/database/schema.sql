@@ -114,3 +114,120 @@ CREATE TABLE email_verification (
 
 CREATE INDEX email_verification_user_id_idx
     ON email_verification(user_id);
+
+
+
+-- Account verification request history.
+CREATE TYPE verification_request_status AS ENUM (
+    'pending',
+    'approved',
+    'rejected'
+);
+-- 6.account_verification_requests
+CREATE TABLE account_verification_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    applicant_role app_role NOT NULL
+        CHECK (applicant_role IN ('agent', 'developer')),
+
+    legal_name VARCHAR(150) NOT NULL,
+    registration_number VARCHAR(100) NOT NULL,
+    business_name VARCHAR(200),
+    business_address VARCHAR(300) NOT NULL,
+    contact_phone VARCHAR(30) NOT NULL,
+    notes TEXT,
+
+    status verification_request_status NOT NULL DEFAULT 'pending',
+
+    rejection_reason TEXT,
+
+    reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT verification_rejection_reason_required
+        CHECK (
+            status <> 'rejected'
+            OR NULLIF(BTRIM(rejection_reason), '') IS NOT NULL
+        ),
+
+    CONSTRAINT verification_review_fields_consistent
+        CHECK (
+            (status = 'pending'
+                AND reviewed_at IS NULL
+                AND reviewed_by IS NULL
+                AND rejection_reason IS NULL)
+            OR
+            (status = 'approved'
+                AND reviewed_at IS NOT NULL
+                AND reviewed_by IS NOT NULL
+                AND rejection_reason IS NULL)
+            OR
+            (status = 'rejected'
+                AND reviewed_at IS NOT NULL
+                AND reviewed_by IS NOT NULL
+                AND NULLIF(BTRIM(rejection_reason), '') IS NOT NULL)
+        )
+);
+
+-- Enforce one open request per user, including concurrent submissions.
+CREATE UNIQUE INDEX account_verification_one_pending_per_user
+    ON account_verification_requests (user_id)
+    WHERE status = 'pending';
+
+CREATE INDEX account_verification_user_history_idx
+    ON account_verification_requests (user_id, submitted_at DESC);
+
+CREATE INDEX account_verification_pending_review_idx
+    ON account_verification_requests (submitted_at ASC)
+    WHERE status = 'pending';
+
+-- Buyer profile
+CREATE TABLE buyer_profiles (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    phone_number VARCHAR(20),
+    preferred_contact_method VARCHAR(20),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT buyer_profiles_contact_method_check
+        CHECK (
+            preferred_contact_method IS NULL
+            OR preferred_contact_method IN ('email', 'phone', 'whatsapp')
+        )
+);
+
+-- Agent profile
+CREATE TABLE agent_profiles (
+    user_id UUID PRIMARY KEY
+        REFERENCES users(id) ON DELETE CASCADE,
+
+    phone_number VARCHAR(30),
+    agency_name VARCHAR(200),
+    bio TEXT,
+    years_of_experience INTEGER
+        CHECK (years_of_experience IS NULL OR years_of_experience >= 0),
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+--developer profile
+CREATE TABLE developer_profiles (
+    user_id UUID PRIMARY KEY
+        REFERENCES users(id) ON DELETE CASCADE,
+
+    company_name VARCHAR(200) NOT NULL,
+    company_description TEXT,
+    contact_phone VARCHAR(30) NOT NULL,
+    business_address VARCHAR(300) NOT NULL,
+    website_url VARCHAR(2048),
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

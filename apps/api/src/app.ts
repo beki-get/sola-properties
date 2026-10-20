@@ -2,7 +2,15 @@ import cors from "cors";
 import express from "express";
 import { requestLogger } from "./middlewares/requestLogger";
 import authRoutes from "./routes/authRoutes";
+import accountVerificationRoutes from "./routes/accountVerificationRoutes";
+import buyerProfileRoutes from "./routes/buyerProfileRoutes";
+import agentProfileRoutes from "./routes/agentProfileRoutes";
+import developerProfileRoutes from "./routes/developerProfileRoutes";
+
+
+
 import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
+import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRoutes";
 
 const app = express();
 
@@ -28,6 +36,14 @@ app.get("/api/docs", (_req, res) => {
 });
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/account-verification", accountVerificationRoutes);
+app.use(
+  "/api/v1/admin/account-verification",
+  adminAccountVerificationRoutes,
+);
+app.use("/api/v1/buyer", buyerProfileRoutes);
+app.use("/api/v1/agent", agentProfileRoutes);
+app.use("/api/v1/developer", developerProfileRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
