@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: a61fbfc7-0c4b-4809-8433-4646f66d91ad
+
+cloudResources:
+  collections:
+    ../postman/collections/Sola Properties - Account Verification Workflow: b0aefc4d-df1f-4d92-bdea-811ebe7c060f
+
+# All resources in the `postman/` folder are automatically registered in Local View.
+# Point to additional files outside the `postman/` folder to register them individually. Example:
+#localResources:
+#  collections:
+#    - ../tests/E2E Test Collection/

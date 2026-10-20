@@ -1,0 +1,21 @@
+{
+  "name": "@repo/shared-types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./propertyConstants": {
+      "types": "./dist/propertyConstants.d.ts",
+      "import": "./dist/propertyConstants.js",
+      "require": "./dist/propertyConstants.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "typescript": "7.0.2"
+  }
+}

@@ -6,6 +6,7 @@ import accountVerificationRoutes from "./routes/accountVerificationRoutes";
 import buyerProfileRoutes from "./routes/buyerProfileRoutes";
 import agentProfileRoutes from "./routes/agentProfileRoutes";
 import developerProfileRoutes from "./routes/developerProfileRoutes";
+import buyerPreferencesRoutes from "./routes/buyerPreferencesRoutes";
 
 
 
@@ -44,6 +45,7 @@ app.use(
 app.use("/api/v1/buyer", buyerProfileRoutes);
 app.use("/api/v1/agent", agentProfileRoutes);
 app.use("/api/v1/developer", developerProfileRoutes);
+app.use("/api/v1/buyer", buyerPreferencesRoutes);
 
 app.get("/", (_req, res) => {
   res.json({

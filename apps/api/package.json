@@ -20,7 +20,8 @@
     "nodemailer": "^10.1.0",
     "pg": "^8.23.1",
     "pino": "^10.4.0",
-    "pino-http": "^11.0.0"
+    "pino-http": "^11.0.0",
+    "@repo/shared-types": "*"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

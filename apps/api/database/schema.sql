@@ -231,3 +231,41 @@ CREATE TABLE developer_profiles (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE preferences (
+    user_id UUID PRIMARY KEY
+        REFERENCES users(id) ON DELETE CASCADE,
+
+    budget_min NUMERIC(14, 2),
+    budget_max NUMERIC(14, 2),
+
+    property_types TEXT[] NOT NULL DEFAULT '{}',
+    locations TEXT[] NOT NULL DEFAULT '{}',
+    features TEXT[] NOT NULL DEFAULT '{}',
+
+    min_size_sqm NUMERIC(12, 2),
+    min_bedrooms INTEGER,
+
+    payment_preference TEXT,
+
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT preferences_budget_min_check
+        CHECK (budget_min IS NULL OR budget_min >= 0),
+
+    CONSTRAINT preferences_budget_max_check
+        CHECK (budget_max IS NULL OR budget_max >= 0),
+
+    CONSTRAINT preferences_budget_range_check
+        CHECK (
+            budget_min IS NULL
+            OR budget_max IS NULL
+            OR budget_min <= budget_max
+        ),
+
+    CONSTRAINT preferences_min_size_check
+        CHECK (min_size_sqm IS NULL OR min_size_sqm > 0),
+
+    CONSTRAINT preferences_min_bedrooms_check
+        CHECK (min_bedrooms IS NULL OR min_bedrooms > 0)
+);
