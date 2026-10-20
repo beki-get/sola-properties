@@ -41,7 +41,7 @@ export const openApiDocument = {
     title: "Sola Properties API",
     version: "1.0.0",
     description:
-      "Authentication, account verification, profile management, and health endpoints.",
+      "Authentication, account verification, profile management, buyer preferences, and health endpoints.",
   },
   servers: [
     {
@@ -434,6 +434,57 @@ export const openApiDocument = {
         },
       },
     },
+    "/api/v1/buyer/me/preferences": {
+      get: {
+        tags: ["Profiles"],
+        summary: "Get my buyer preferences",
+        operationId: "getMyBuyerPreferences",
+        description:
+          "Requires an authenticated buyer. preferences is null until saved.",
+        security: [{ AccessToken: [] }],
+        responses: {
+          "200": jsonResponse("Buyer preferences", "BuyerPreferencesResponse"),
+          "401": error("Authentication is required"),
+          "403": error("Buyer role is required"),
+        },
+      },
+      put: {
+        tags: ["Profiles"],
+        summary: "Replace my buyer preferences",
+        operationId: "putMyBuyerPreferences",
+        description:
+          "Requires an authenticated buyer. Omitted values reset to their defaults. budget_min must not exceed budget_max.",
+        security: [{ AccessToken: [] }],
+        requestBody: jsonBody("BuyerPreferencesInput"),
+        responses: {
+          "200": jsonResponse(
+            "Preferences replaced",
+            "BuyerPreferencesResponse",
+          ),
+          "400": error("Invalid preference values or budget range"),
+          "401": error("Authentication is required"),
+          "403": error("Buyer role is required"),
+        },
+      },
+      patch: {
+        tags: ["Profiles"],
+        summary: "Update selected buyer preferences",
+        operationId: "patchMyBuyerPreferences",
+        description:
+          "Requires an authenticated buyer. Omitted values remain unchanged. budget_min must not exceed budget_max.",
+        security: [{ AccessToken: [] }],
+        requestBody: jsonBody("BuyerPreferencesInput"),
+        responses: {
+          "200": jsonResponse(
+            "Preferences updated",
+            "BuyerPreferencesResponse",
+          ),
+          "400": error("Invalid preference values or budget range"),
+          "401": error("Authentication is required"),
+          "403": error("Buyer role is required"),
+        },
+      },
+    },
     "/api/v1/developer/me": {
       get: {
         tags: ["Profiles"],
@@ -742,6 +793,100 @@ export const openApiDocument = {
           },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      BuyerPreferencesInput: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          budget_min: { type: "number", minimum: 0, nullable: true },
+          budget_max: { type: "number", minimum: 0, nullable: true },
+          property_types: {
+            type: "array",
+            maxItems: 10,
+            uniqueItems: true,
+            items: {
+              type: "string",
+              enum: [
+                "apartment",
+                "house",
+                "villa",
+                "land",
+                "commercial",
+                "townhouse",
+                "condominium",
+                "office",
+                "retail",
+                "industrial",
+              ],
+            },
+            nullable: true,
+          },
+          locations: {
+            type: "array",
+            maxItems: 10,
+            uniqueItems: true,
+            items: { type: "string", minLength: 1, maxLength: 100 },
+            nullable: true,
+          },
+          features: {
+            type: "array",
+            maxItems: 10,
+            uniqueItems: true,
+            items: {
+              type: "string",
+              enum: [
+                "garden",
+                "parking",
+                "balcony",
+                "elevator",
+                "security",
+                "swimming_pool",
+                "gym",
+                "storage",
+                "furnished",
+                "air_conditioning",
+              ],
+            },
+            nullable: true,
+          },
+          min_size_sqm: {
+            type: "number",
+            minimum: 0,
+            exclusiveMinimum: true,
+            nullable: true,
+          },
+          min_bedrooms: { type: "integer", minimum: 1, nullable: true },
+          payment_preference: {
+            type: "string",
+            enum: ["cash", "installment", "mortgage"],
+            nullable: true,
+          },
+        },
+      },
+      BuyerPreferences: {
+        type: "object",
+        properties: {
+          user_id: { type: "string", format: "uuid" },
+          budget_min: { type: "string", nullable: true },
+          budget_max: { type: "string", nullable: true },
+          property_types: { type: "array", items: { type: "string" } },
+          locations: { type: "array", items: { type: "string" } },
+          features: { type: "array", items: { type: "string" } },
+          min_size_sqm: { type: "string", nullable: true },
+          min_bedrooms: { type: "integer", nullable: true },
+          payment_preference: { type: "string", nullable: true },
+          updated_at: { type: "string", format: "date-time" },
+        },
+      },
+      BuyerPreferencesResponse: {
+        type: "object",
+        required: ["preferences"],
+        properties: {
+          preferences: {
+            allOf: [{ $ref: "#/components/schemas/BuyerPreferences" }],
+            nullable: true,
+          },
         },
       },
       DeveloperProfile: {
