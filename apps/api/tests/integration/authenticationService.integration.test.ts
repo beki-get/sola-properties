@@ -11,12 +11,12 @@ import {
   vi,
 } from "vitest";
 
-vi.mock("./emailService", () => ({
+vi.mock("../../src/services/emailService", () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { pool } from "../config/database";
+import { pool } from "../../src/config/database";
 import {
   AuthServiceError,
   register,
@@ -28,8 +28,11 @@ import {
   refreshSession,
   logout,
   getCurrentUser,
-} from "./authService";
-import { sendVerificationEmail, sendPasswordResetEmail } from "./emailService";
+} from "../../src/services/authService";
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+} from "../../src/services/emailService";
 
 const TEST_PASSWORD = "Correct-Password-123!";
 const TEST_PREFIX = `auth-service-test-${randomUUID()}`;
@@ -229,8 +232,8 @@ describe("authService — PostgreSQL integration tests", () => {
       status: "approved",
     });
 
-    const tokenHash = await import("../utils/tokens").then(({ hashToken }) =>
-      hashToken(result.refreshToken),
+    const tokenHash = await import("../../src/utils/tokens").then(
+      ({ hashToken }) => hashToken(result.refreshToken),
     );
 
     const storedToken = await pool.query(
@@ -290,7 +293,7 @@ describe("authService — PostgreSQL integration tests", () => {
       "REFRESH_TOKEN_REUSE",
     );
 
-    const { hashToken } = await import("../utils/tokens");
+    const { hashToken } = await import("../../src/utils/tokens");
     const replacementHash = hashToken(secondSession.refreshToken);
 
     const replacement = await pool.query(
@@ -346,7 +349,7 @@ describe("authService — PostgreSQL integration tests", () => {
       "INVALID_CREDENTIALS",
     );
 
-    const { hashToken } = await import("../utils/tokens");
+    const { hashToken } = await import("../../src/utils/tokens");
 
     const oldRefreshHash = hashToken(session.refreshToken);
 

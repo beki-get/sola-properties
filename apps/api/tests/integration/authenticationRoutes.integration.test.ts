@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 
-vi.mock("../middlewares/authenticate", () => ({
+vi.mock("../../src/middlewares/authenticate", () => ({
   authenticate: (req: any, _res: any, next: () => void) => {
     req.currentUser = {
       id: "user-123",
@@ -17,7 +17,7 @@ vi.mock("../middlewares/authenticate", () => ({
   },
 }));
 
-vi.mock("../services/authService", () => {
+vi.mock("../../src/services/authService", () => {
   class AuthServiceError extends Error {
     constructor(
       message: string,
@@ -42,7 +42,7 @@ vi.mock("../services/authService", () => {
   };
 });
 
-vi.mock("../middlewares/authenticate", () => ({
+vi.mock("../../src/middlewares/authenticate", () => ({
   authenticate: (req: any, _res: any, next: () => void) => {
     req.currentUser = {
       id: "user-123",
@@ -57,7 +57,7 @@ vi.mock("../middlewares/authenticate", () => ({
   },
 }));
 
-vi.mock("../utils/logger", () => ({
+vi.mock("../../src/utils/logger", () => ({
   logger: {
     error: vi.fn(),
     warn: vi.fn(),
@@ -77,8 +77,8 @@ import {
   requestPasswordReset,
   resetPassword,
   AuthServiceError,
-} from "../services/authService";
-import authRoutes from "./authRoutes";
+} from "../../src/services/authService";
+import authRoutes from "../../src/routes/authRoutes";
 
 const mockRegister = vi.mocked(register);
 const mockLogin = vi.mocked(login);

@@ -2,25 +2,24 @@
 This test file covers invalid credentials, deleted users, 
 email verification, account statuses, current database roles,
  account approval, and role restrictions.
-*/ 
+*/
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 
-import { authenticate } from "./authenticate";
-import { requireApprovedAccount } from "./requireApprovedAccount";
-import { authorizeRoles } from "./authorizeRoles";
+import { authenticate } from "../../src/middlewares/authenticate";
+import { requireApprovedAccount } from "../../src/middlewares/requireApprovedAccount";
+import { authorizeRoles } from "../../src/middlewares/authorizeRoles";
 
-import { verifyAccessToken } from "../utils/jwt";
-import { findUserById } from "../queries/authQueries";
-import type { AuthUser, AppRole } from "../queries/authQueries";
+import { verifyAccessToken } from "../../src/utils/jwt";
+import { findUserById } from "../../src/queries/authQueries";
+import type { AuthUser, AppRole } from "../../src/queries/authQueries";
 
-
-vi.mock("../utils/jwt", () => ({
+vi.mock("../../src/utils/jwt", () => ({
   verifyAccessToken: vi.fn(),
 }));
 
-vi.mock("../queries/authQueries", () => ({
+vi.mock("../../src/queries/authQueries", () => ({
   findUserById: vi.fn(),
 }));
 
@@ -119,18 +118,14 @@ describe("Authentication and authorization middleware", () => {
     });
 
     it("rejects an invalid or expired JWT", async () => {
-      mockedVerifyAccessToken.mockRejectedValue(
-        new Error("Invalid token"),
-      );
+      mockedVerifyAccessToken.mockRejectedValue(new Error("Invalid token"));
 
       const response = await request(app)
         .get("/me")
         .set("Authorization", "Bearer invalid-token");
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toBe(
-        "Invalid or expired access token",
-      );
+      expect(response.body.message).toBe("Invalid or expired access token");
       expect(mockedFindUserById).not.toHaveBeenCalled();
     });
 
@@ -161,9 +156,7 @@ describe("Authentication and authorization middleware", () => {
     it.each(["suspended", "deactivated"] as const)(
       "rejects users with status %s",
       async (status) => {
-        mockedFindUserById.mockResolvedValue(
-          testUser({ status }),
-        );
+        mockedFindUserById.mockResolvedValue(testUser({ status }));
 
         const response = await request(app)
           .get("/me")
@@ -197,9 +190,7 @@ describe("Authentication and authorization middleware", () => {
         role: "agent",
       });
 
-      mockedFindUserById.mockResolvedValue(
-        testUser({ role: "buyer" }),
-      );
+      mockedFindUserById.mockResolvedValue(testUser({ role: "buyer" }));
 
       const response = await request(app)
         .get("/me")
@@ -222,9 +213,7 @@ describe("Authentication and authorization middleware", () => {
     it.each(["pending", "rejected"] as const)(
       "blocks a %s account from approved-only features",
       async (status) => {
-        mockedFindUserById.mockResolvedValue(
-          testUser({ status }),
-        );
+        mockedFindUserById.mockResolvedValue(testUser({ status }));
 
         const response = await request(app)
           .get("/agent-feature")
@@ -247,16 +236,14 @@ describe("Authentication and authorization middleware", () => {
     });
 
     it("blocks a buyer from an agent-only feature", async () => {
-      mockedFindUserById.mockResolvedValue(
-        testUser({ role: "buyer" }),
-      );
+      mockedFindUserById.mockResolvedValue(testUser({ role: "buyer" }));
 
       const response = await request(app)
         .get("/agent-feature")
         .set("Authorization", "Bearer valid-token");
 
       expect(response.status).toBe(403);
-      expect(response.body.code).toBe("INSUFFICIENT_ROLE");
+      expect(response.body.code).toBe("ROLE_NOT_ALLOWED");
     });
 
     it("blocks an agent from an admin-only feature", async () => {
@@ -265,7 +252,7 @@ describe("Authentication and authorization middleware", () => {
         .set("Authorization", "Bearer valid-token");
 
       expect(response.status).toBe(403);
-      expect(response.body.code).toBe("INSUFFICIENT_ROLE");
+      expect(response.body.code).toBe("ROLE_NOT_ALLOWED");
     });
   });
 });
