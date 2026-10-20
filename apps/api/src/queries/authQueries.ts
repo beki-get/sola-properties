@@ -438,21 +438,24 @@ export interface VerifiedUser {
 // Mark the user's email as verified.
 export async function verifyUserEmail(
   userId: string,
+  emailToVerify: string,
   client: PoolClient,
 ): Promise<VerifiedUser | null> {
   const result = await client.query<VerifiedUser>(
     `UPDATE users
-     SET email_verified_at = NOW(),
-         status = CASE
-           WHEN role = 'buyer' AND status = 'pending'
-             THEN 'approved'::account_status
-           ELSE status
-         END,
-         updated_at = NOW()
-     WHERE id = $1
-       AND email_verified_at IS NULL
-     RETURNING id, role, status, email_verified_at`,
-    [userId],
+SET email = $2,
+    email_verified_at = NOW(),
+    status = CASE
+      WHEN role = 'buyer' AND status = 'pending'
+        THEN 'approved'::account_status
+      ELSE status
+    END,
+    updated_at = NOW()
+WHERE id = $1
+  AND LOWER(email) = LOWER($2)
+  AND email_verified_at IS NULL
+RETURNING id, role, status, email_verified_at`,
+    [userId, emailToVerify],
   );
 
   return result.rows[0] ?? null;
@@ -470,4 +473,37 @@ export async function expireUnusedEmailVerifications(
        AND expires_at > NOW()`,
     [userId],
   );
+}
+
+// Update a user's profile information, including full name and email address.
+export async function updateUserProfile(
+  userId: string,
+  fullName: string,
+  email: string,
+  client: PoolClient,
+) {
+  const result = await client.query(
+    `UPDATE users
+     SET full_name = $2,
+         email = $3,
+         email_verified_at = CASE
+           WHEN LOWER(users.email) <> LOWER($3)
+             THEN NULL
+           ELSE email_verified_at
+         END,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING
+       id,
+       full_name,
+       email,
+       role,
+       status,
+       email_verified_at,
+       created_at,
+       updated_at`,
+    [userId, fullName, email],
+  );
+
+  return result.rows[0] ?? null;
 }

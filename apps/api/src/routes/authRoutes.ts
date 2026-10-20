@@ -9,6 +9,7 @@ import {
   logoutController,
   resetPasswordController,
   requestPasswordResetController,
+  updateProfileController,
 
 } from "../controllers/authController";
 import { authenticate } from "../middlewares/authenticate";
@@ -23,6 +24,7 @@ router.post(
   resendVerificationController
 );
 router.get("/me", authenticate, getMeController);
+router.patch("/me", authenticate, updateProfileController);
 router.post("/refresh", refreshController);
 router.post("/logout", logoutController);
 

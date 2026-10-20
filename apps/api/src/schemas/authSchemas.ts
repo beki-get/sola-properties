@@ -75,3 +75,15 @@ export const refreshSchema = z.object({}).strict();
 // The refresh token is expected in its HttpOnly cookie,
 // not in the request body.
 export const logoutSchema = z.object({}).strict();
+
+// 7. Update profile
+export const updateProfileSchema = z
+  .object({
+    fullName: z.string().trim().min(2).max(150).optional(),
+    email: emailSchema.optional(),
+  })
+  .strict()
+  .refine(
+    (data) => data.fullName !== undefined || data.email !== undefined,
+    { message: "Provide at least one field to update" },
+  );

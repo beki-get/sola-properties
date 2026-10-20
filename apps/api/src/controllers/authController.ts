@@ -11,6 +11,7 @@ import {
   logout,
   requestPasswordReset,
   resetPassword,
+  updateProfile,
 } from "../services/authService";
 
 const REFRESH_COOKIE_NAME = "sola_refresh_token";
@@ -337,6 +338,52 @@ export async function resetPasswordController(req: Request, res: Response) {
 
     return res.status(500).json({
       message: "An unexpected error occurred",
+    });
+  }
+}
+
+//update profile controller 
+
+export async function updateProfileController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    if (!req.currentUser) {
+      res.status(401).json({
+        message: "Authentication required",
+      });
+      return;
+    }
+
+    const result = await updateProfile(
+      req.currentUser.id,
+      req.body,
+    );
+
+    res.status(200).json({
+      message: result.verificationEmailSent
+        ? "Profile updated successfully"
+        : "Profile updated, but verification email delivery failed. Please request another verification email.",
+      data: result,
+    });
+  } catch (error: unknown) {
+    if (error instanceof AuthServiceError) {
+      const status =
+        error.code === "VALIDATION_ERROR" ? 400 :
+        error.code === "EMAIL_ALREADY_EXISTS" ? 409 :
+        error.code === "USER_NOT_FOUND" ? 404 :
+        400;
+
+      res.status(status).json({
+        message: error.message,
+        code: error.code,
+      });
+      return;
+    }
+
+    res.status(500).json({
+      message: "Internal server error",
     });
   }
 }

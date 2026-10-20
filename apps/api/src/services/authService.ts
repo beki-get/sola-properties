@@ -20,6 +20,7 @@ import {
   expireUnusedPasswordResets,
   updateUserPassword,
   revokeAllUserRefreshTokens,
+  updateUserProfile,
 } from "../queries/authQueries";
 import {
   registerSchema,
@@ -28,10 +29,11 @@ import {
   loginSchema,
   requestPasswordResetSchema,
   resetPasswordSchema,
+  updateProfileSchema,
 } from "../schemas/authSchemas";
 import { hashPassword, verifyPassword } from "../utils/password";
 import { generateSecureToken, hashToken } from "../utils/tokens";
-import { sendVerificationEmail,sendPasswordResetEmail } from "./emailService";
+import { sendVerificationEmail, sendPasswordResetEmail } from "./emailService";
 import { logger } from "../utils/logger";
 import { signAccessToken } from "../utils/jwt";
 
@@ -344,7 +346,8 @@ export async function refreshSession(
 
       const accessToken = await signAccessToken({
         userId: user.id,
-        role: user.role as "buyer" | "agent" | "developer" | "admin" | "finance_admin",
+        role: user.role as
+          "buyer" | "agent" | "developer" | "admin" | "finance_admin",
       });
 
       await client.query("COMMIT");
@@ -379,7 +382,6 @@ export async function refreshSession(
 
   return result;
 }
-
 
 export async function verifyEmail(
   input: unknown,
@@ -421,7 +423,11 @@ export async function verifyEmail(
       );
     }
 
-    const user = await verifyUserEmail(verification.user_id, client);
+    const user = await verifyUserEmail(
+      verification.user_id,
+      verification.email_to_verify,
+      client,
+    );
 
     if (!user) {
       throw new AuthServiceError(
@@ -517,10 +523,7 @@ export async function requestPasswordReset(input: unknown): Promise<void> {
   const parsed = requestPasswordResetSchema.safeParse(input);
 
   if (!parsed.success) {
-    throw new AuthServiceError(
-      "Invalid email address",
-      "VALIDATION_ERROR",
-    );
+    throw new AuthServiceError("Invalid email address", "VALIDATION_ERROR");
   }
 
   const { email } = parsed.data;
@@ -568,10 +571,7 @@ export async function requestPasswordReset(input: unknown): Promise<void> {
   try {
     await sendPasswordResetEmail(user.email, rawToken);
   } catch (error: unknown) {
-    logger.warn(
-      { err: error },
-      "Password-reset email delivery failed",
-    );
+    logger.warn({ err: error }, "Password-reset email delivery failed");
   }
 }
 
@@ -595,11 +595,7 @@ export async function resetPassword(input: unknown): Promise<void> {
   try {
     await client.query("BEGIN");
 
-    const reset = await findPasswordResetByHash(
-      tokenHash,
-      client,
-      true,
-    );
+    const reset = await findPasswordResetByHash(tokenHash, client, true);
 
     if (
       !reset ||
@@ -652,7 +648,6 @@ export async function resetPassword(input: unknown): Promise<void> {
   }
 }
 
-
 //get current user
 export interface CurrentUserResult {
   id: string;
@@ -687,9 +682,7 @@ export async function getCurrentUser(
 }
 
 //logout
-export async function logout(
-  rawToken: string | undefined,
-): Promise<void> {
+export async function logout(rawToken: string | undefined): Promise<void> {
   if (!rawToken) {
     return;
   }
@@ -718,4 +711,105 @@ export async function logout(
   } finally {
     client.release();
   }
+}
+
+//update user profile
+const PROFILE_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+
+export async function updateProfile(userId: string, input: unknown) {
+  const parsed = updateProfileSchema.safeParse(input);
+
+  if (!parsed.success) {
+    throw new AuthServiceError(
+      "Invalid profile information",
+      "VALIDATION_ERROR",
+    );
+  }
+
+  const user = await findUserById(userId);
+
+  if (!user) {
+    throw new AuthServiceError("User not found", "USER_NOT_FOUND");
+  }
+
+  const fullName = parsed.data.fullName ?? user.full_name;
+  const email = parsed.data.email ?? user.email;
+  const emailChanged = email !== user.email;
+  let verificationToken: string | null = null;
+
+  const client = await pool.connect();
+  let updatedUser;
+
+  try {
+    await client.query("BEGIN");
+
+    updatedUser = await updateUserProfile(userId, fullName, email, client);
+
+    if (!updatedUser) {
+      throw new AuthServiceError("User not found", "USER_NOT_FOUND");
+    }
+
+    if (emailChanged) {
+      await expireUnusedEmailVerifications(userId, client);
+
+      verificationToken = generateSecureToken();
+
+      await createEmailVerification(
+        {
+          userId,
+          emailToVerify: email,
+          tokenHash: hashToken(verificationToken),
+          expiresAt: new Date(Date.now() + PROFILE_VERIFICATION_TTL_MS),
+        },
+        client,
+      );
+    }
+
+    await client.query("COMMIT");
+  } catch (error: unknown) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // Preserve the original error.
+    }
+
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      throw new AuthServiceError(
+        "Email address is already in use",
+        "EMAIL_ALREADY_EXISTS",
+      );
+    }
+
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  let verificationEmailSent = true;
+
+  if (verificationToken) {
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (error: unknown) {
+      verificationEmailSent = false;
+
+      logger.warn({ err: error }, "Profile email verification delivery failed");
+    }
+  }
+  return {
+    id: updatedUser.id,
+    fullName: updatedUser.full_name,
+    email: updatedUser.email,
+    role: updatedUser.role,
+    status: updatedUser.status,
+    emailVerifiedAt: updatedUser.email_verified_at,
+    createdAt: updatedUser.created_at,
+    updatedAt: updatedUser.updated_at,
+    verificationEmailSent,
+  };
 }
