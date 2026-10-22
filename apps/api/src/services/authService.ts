@@ -69,7 +69,6 @@ export async function register(input: unknown): Promise<RegisterResult> {
 
   const { fullName, email, password, role } = parsed.data;
 
-  // Fast duplicate check. The database unique index remains authoritative.
   const existingUser = await findUserByEmail(email);
 
   if (existingUser) {
@@ -216,10 +215,10 @@ export async function login(
     );
   }
 
-  if (user.status !== "approved") {
+  if (user.status === "suspended" || user.status === "deactivated") {
     throw new AuthServiceError(
-      "Your account is not approved for login",
-      "ACCOUNT_NOT_APPROVED",
+      "Your account is not available",
+      "ACCOUNT_UNAVAILABLE",
     );
   }
 
@@ -251,6 +250,7 @@ export async function login(
   };
 }
 
+//refresh
 export async function refreshSession(
   rawToken: string,
   metadata: SessionMetadata = {},
@@ -383,6 +383,7 @@ export async function refreshSession(
   return result;
 }
 
+//verify email
 export async function verifyEmail(
   input: unknown,
 ): Promise<{ id: string; role: string; status: string }> {
