@@ -316,18 +316,18 @@ export async function refreshSession(
 
       if (
         !user ||
-        user.status !== "approved" ||
-        user.email_verified_at === null
+        user.email_verified_at === null ||
+        user.status === "suspended" ||
+        user.status === "deactivated"
       ) {
         await revokeRefreshTokenFamily(oldToken.token_family_id, client);
         await client.query("COMMIT");
 
         throw new AuthServiceError(
           "Account is not eligible for login",
-          "ACCOUNT_NOT_APPROVED",
+          "ACCOUNT_INACTIVE",
         );
       }
-
       const replacementRawToken = generateSecureToken();
 
       const replacement = await createRefreshToken(
