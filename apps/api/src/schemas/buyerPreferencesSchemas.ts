@@ -14,7 +14,8 @@ const propertyTypesSchema = z
 
 const locationsSchema = z
   .array(
-    z.string()
+    z
+      .string()
       .trim()
       .min(1)
       .max(100)
