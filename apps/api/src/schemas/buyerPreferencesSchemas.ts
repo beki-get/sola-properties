@@ -46,7 +46,17 @@ const preferencesFields = {
 
 export const updateBuyerPreferencesSchema = z
   .object(preferencesFields)
-  .strict();
+  .strict()
+  .refine(
+    (data) =>
+      data.budget_min == null ||
+      data.budget_max == null ||
+      data.budget_min <= data.budget_max,
+    {
+      message: "Minimum budget must not exceed maximum budget",
+      path: ["budget_max"],
+    },
+  );
 
 export type UpdateBuyerPreferencesInput = z.infer<
   typeof updateBuyerPreferencesSchema
