@@ -238,7 +238,16 @@ export const openApiDocument = {
         summary: "Submit an agent or developer verification application",
         operationId: "submitAccountVerification",
         security: [{ AccessToken: [] }],
-        requestBody: jsonBody("AccountVerificationApplication"),
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                $ref: "#/components/schemas/AccountVerificationApplication",
+              },
+            },
+          },
+        },
         responses: {
           "201": jsonResponse(
             "Verification application submitted",
@@ -1009,6 +1018,34 @@ export const openApiDocument = {
           businessAddress: { type: "string", minLength: 2, maxLength: 300 },
           contactPhone: { type: "string", minLength: 5, maxLength: 30 },
           notes: { type: "string", maxLength: 2000 },
+          documents: {
+            type: "array",
+            maxItems: 3,
+            items: {
+              type: "string",
+              format: "binary",
+            },
+          },
+        },
+      },
+      VerificationDocument: {
+        type: "object",
+        required: [
+          "id",
+          "original_filename",
+          "mime_type",
+          "file_size",
+          "uploaded_at",
+        ],
+        properties: {
+          id: { type: "string", format: "uuid" },
+          original_filename: { type: "string" },
+          mime_type: {
+            type: "string",
+            enum: ["application/pdf", "image/jpeg", "image/png"],
+          },
+          file_size: { type: "integer" },
+          uploaded_at: { type: "string", format: "date-time" },
         },
       },
       VerificationRequest: {
@@ -1029,6 +1066,12 @@ export const openApiDocument = {
           reviewed_at: { type: "string", format: "date-time", nullable: true },
           submitted_at: { type: "string", format: "date-time" },
           updated_at: { type: "string", format: "date-time" },
+          documents: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/VerificationDocument",
+            },
+          },
         },
       },
       AdminVerificationRequest: {
@@ -1044,6 +1087,12 @@ export const openApiDocument = {
                 type: "string",
                 format: "date-time",
                 nullable: true,
+                documents: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/VerificationDocument",
+                  },
+                },
               },
             },
           },

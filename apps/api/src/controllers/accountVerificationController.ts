@@ -1,25 +1,22 @@
-
-import type { RequestHandler } from "express";
+import type { RequestHandler,Express } from "express";
 import {
   AccountVerificationError,
   getMyVerificationHistory,
   submitVerificationRequest,
 } from "../services/accountVerificationService";
 
-export const submitVerification: RequestHandler = async (
-  req,
-  res,
-  next,
-) => {
+export const submitVerification: RequestHandler = async (req, res, next) => {
   try {
     if (!req.currentUser) {
       res.status(401).json({ message: "Authentication required" });
       return;
     }
+    const files = (req.files ?? []) as Express.Multer.File[];
 
     const request = await submitVerificationRequest(
       req.currentUser.id,
       req.body,
+      files,
     );
 
     res.status(201).json({

@@ -22,6 +22,7 @@ export const getMyAgentProfile: RequestHandler = async (req, res, next) => {
   }
 };
 
+
 export const updateMyAgentProfile: RequestHandler = async (req, res, next) => {
   try {
     if (!req.currentUser) {

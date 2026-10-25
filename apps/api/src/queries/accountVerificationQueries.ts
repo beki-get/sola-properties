@@ -27,6 +27,15 @@ export interface AccountVerificationRequest {
   reviewed_at: Date | null;
   submitted_at: Date;
   updated_at: Date;
+  documents?: VerificationDocument[];
+}
+
+export interface VerificationDocument {
+  id: string;
+  original_filename: string;
+  mime_type: string;
+  file_size: number;
+  uploaded_at: Date;
 }
 
 export async function findApplicantForUpdate(
@@ -110,10 +119,27 @@ export async function findVerificationHistory(
   userId: string,
 ): Promise<AccountVerificationRequest[]> {
   const result = await pool.query<AccountVerificationRequest>(
-    `SELECT *
-     FROM account_verification_requests
-     WHERE user_id = $1
-     ORDER BY submitted_at DESC`,
+    `SELECT r.*,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', d.id,
+                'original_filename', d.original_filename,
+                'mime_type', d.mime_type,
+                'file_size', d.file_size,
+                'uploaded_at', d.uploaded_at
+              )
+              ORDER BY d.uploaded_at ASC
+            )
+            FROM verification_documents d
+            WHERE d.verification_request_id = r.id
+          ),
+          '[]'::json
+        ) AS documents
+ FROM account_verification_requests r
+ WHERE r.user_id = $1
+ ORDER BY r.submitted_at DESC`,
     [userId],
   );
 
@@ -125,6 +151,7 @@ export interface AdminVerificationRequest extends AccountVerificationRequest {
   applicant_email: string;
   account_status: AccountStatus;
   email_verified_at: Date | null;
+  documents?: VerificationDocument[];
 }
 
 export async function findPendingVerificationRequests(
@@ -138,6 +165,24 @@ export async function findPendingVerificationRequests(
               u.email AS applicant_email,
               u.status AS account_status,
               u.email_verified_at
+              ,
+COALESCE(
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', d.id,
+        'original_filename', d.original_filename,
+        'mime_type', d.mime_type,
+        'file_size', d.file_size,
+        'uploaded_at', d.uploaded_at
+      )
+      ORDER BY d.uploaded_at ASC
+    )
+    FROM verification_documents d
+    WHERE d.verification_request_id = r.id
+  ),
+  '[]'::json
+) AS documents
        FROM account_verification_requests r
        JOIN users u ON u.id = r.user_id
        WHERE r.status = 'pending'
@@ -167,6 +212,24 @@ export async function findVerificationRequestById(
             u.email AS applicant_email,
             u.status AS account_status,
             u.email_verified_at
+            ,
+COALESCE(
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', d.id,
+        'original_filename', d.original_filename,
+        'mime_type', d.mime_type,
+        'file_size', d.file_size,
+        'uploaded_at', d.uploaded_at
+      )
+      ORDER BY d.uploaded_at ASC
+    )
+    FROM verification_documents d
+    WHERE d.verification_request_id = r.id
+  ),
+  '[]'::json
+) AS documents
      FROM account_verification_requests r
      JOIN users u ON u.id = r.user_id
      WHERE r.id = $1`,

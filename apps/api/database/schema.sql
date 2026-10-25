@@ -269,3 +269,132 @@ CREATE TABLE preferences (
     CONSTRAINT preferences_min_bedrooms_check
         CHECK (min_bedrooms IS NULL OR min_bedrooms > 0)
 );
+
+--projects
+CREATE TYPE project_status AS ENUM (
+    'active',
+    'inactive'
+);
+
+--projects
+CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    developer_id UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    name TEXT NOT NULL,
+    location TEXT NOT NULL,
+    description TEXT,
+
+    status project_status NOT NULL DEFAULT 'active',
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT projects_name_not_blank
+        CHECK (LENGTH(BTRIM(name)) > 0),
+
+    CONSTRAINT projects_location_not_blank
+        CHECK (LENGTH(BTRIM(location)) > 0)
+);
+
+CREATE UNIQUE INDEX projects_developer_name_unique_idx
+    ON projects (developer_id, LOWER(name));
+
+
+CREATE TYPE property_status AS ENUM (
+    'draft',
+    'pending_approval',
+    'active',
+    'inactive',
+    'sold'
+);
+
+--properties
+CREATE TABLE properties (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    owner_id UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    project_id UUID
+        REFERENCES projects(id) ON DELETE RESTRICT,
+
+    title TEXT NOT NULL,
+    description TEXT,
+
+    property_type TEXT NOT NULL,
+    location TEXT NOT NULL,
+
+    size_sqm NUMERIC(12, 2),
+    bedrooms INTEGER,
+    bathrooms INTEGER,
+
+    features TEXT[] NOT NULL DEFAULT '{}',
+
+    status property_status NOT NULL DEFAULT 'draft',
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT properties_title_not_blank
+        CHECK (LENGTH(BTRIM(title)) > 0),
+
+    CONSTRAINT properties_location_not_blank
+        CHECK (LENGTH(BTRIM(location)) > 0),
+
+    CONSTRAINT properties_size_positive
+        CHECK (size_sqm IS NULL OR size_sqm > 0),
+
+    CONSTRAINT properties_bedrooms_nonnegative
+        CHECK (bedrooms IS NULL OR bedrooms >= 0),
+
+    CONSTRAINT properties_bathrooms_nonnegative
+        CHECK (bathrooms IS NULL OR bathrooms >= 0)
+);
+
+CREATE INDEX properties_owner_id_idx
+    ON properties (owner_id);
+
+CREATE INDEX properties_project_id_idx
+    ON properties (project_id);
+
+CREATE INDEX properties_status_idx
+    ON properties (status);
+
+--audit_logs
+CREATE TABLE audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id UUID REFERENCES users(id) ON DELETE RESTRICT,
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id UUID NOT NULL,
+  old_values JSONB,
+  new_values JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX audit_logs_actor_id_idx
+  ON audit_logs (actor_id);
+
+CREATE INDEX audit_logs_entity_idx
+  ON audit_logs (entity_type, entity_id);
+
+CREATE INDEX audit_logs_created_at_idx
+  ON audit_logs (created_at DESC);
+
+  --verification-documents
+CREATE TABLE verification_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  verification_request_id UUID NOT NULL
+    REFERENCES account_verification_requests(id) ON DELETE RESTRICT,
+  original_filename TEXT NOT NULL,
+  storage_key TEXT NOT NULL UNIQUE,
+  mime_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL CHECK (file_size > 0 AND file_size <= 5242880),
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX verification_documents_request_idx
+  ON verification_documents (verification_request_id);

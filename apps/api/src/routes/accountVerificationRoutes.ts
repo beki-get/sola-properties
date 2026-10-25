@@ -5,12 +5,13 @@ import {
   getMyVerificationRequests,
   submitVerification,
 } from "../controllers/accountVerificationController";
+import { uploadVerificationDocuments } from "../middlewares/documentVerification";
 
 const router = Router();
 
 router.use(authenticate);
 
-router.post("/", submitVerification);
+router.post("/", uploadVerificationDocuments, submitVerification);
 router.get("/me", getMyVerificationRequests);
 
 export default router;

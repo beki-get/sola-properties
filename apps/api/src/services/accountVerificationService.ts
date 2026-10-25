@@ -1,4 +1,3 @@
-
 import type { PoolClient } from "pg";
 import { pool } from "../config/database";
 import {
@@ -19,10 +18,13 @@ import {
   type AccountVerificationRequest,
 } from "../queries/accountVerificationQueries";
 
+import { randomUUID } from "node:crypto";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { s3, verificationBucket } from "../config/s3Client";
+import type { Express } from "express";
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-
 
 export class AccountVerificationError extends Error {
   constructor(
@@ -38,6 +40,7 @@ export class AccountVerificationError extends Error {
 export async function submitVerificationRequest(
   userId: string,
   input: unknown,
+  files: Express.Multer.File[] = [],
 ): Promise<AccountVerificationRequest> {
   const parsed = submitAccountVerificationSchema.safeParse(input);
 
@@ -50,6 +53,7 @@ export async function submitVerificationRequest(
   }
 
   let client: PoolClient | undefined;
+  const uploadedKeys: string[] = [];
 
   try {
     client = await pool.connect();
@@ -101,10 +105,7 @@ export async function submitVerificationRequest(
       );
     }
 
-    const submissionCount = await countVerificationSubmissions(
-      userId,
-      client,
-    );
+    const submissionCount = await countVerificationSubmissions(userId, client);
 
     if (submissionCount >= MAX_VERIFICATION_SUBMISSIONS) {
       throw new AccountVerificationError(
@@ -122,6 +123,49 @@ export async function submitVerificationRequest(
       parsed.data,
       client,
     );
+
+    const extensions: Record<string, string> = {
+      "application/pdf": "pdf",
+      "image/jpeg": "jpg",
+      "image/png": "png",
+    };
+
+    for (const file of files) {
+      const extension = extensions[file.mimetype];
+
+      if (!extension) {
+        throw new AccountVerificationError(
+          "Only PDF, JPEG, and PNG documents are allowed",
+          "INVALID_DOCUMENT_TYPE",
+          400,
+        );
+      }
+
+      const storageKey = `${request.id}/${randomUUID()}.${extension}`;
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: verificationBucket,
+          Key: storageKey,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        }),
+      );
+
+      uploadedKeys.push(storageKey);
+
+      await client.query(
+        `INSERT INTO verification_documents (
+       verification_request_id,
+       original_filename,
+       storage_key,
+       mime_type,
+       file_size
+     )
+     VALUES ($1, $2, $3, $4, $5)`,
+        [request.id, file.originalname, storageKey, file.mimetype, file.size],
+      );
+    }
 
     // A rejected applicant returns to pending when resubmitting.
     await setApplicantPending(userId, client);
@@ -150,6 +194,17 @@ export async function submitVerificationRequest(
       );
     }
 
+    await Promise.allSettled(
+      uploadedKeys.map((key) =>
+        s3.send(
+          new DeleteObjectCommand({
+            Bucket: verificationBucket,
+            Key: key,
+          }),
+        ),
+      ),
+    );
+
     throw error;
   } finally {
     client?.release();
@@ -161,7 +216,6 @@ export async function getMyVerificationHistory(
 ): Promise<AccountVerificationRequest[]> {
   return findVerificationHistory(userId);
 }
-
 
 export async function listPendingVerificationRequests(
   page: number,
@@ -181,9 +235,7 @@ export async function listPendingVerificationRequests(
   };
 }
 
-export async function getVerificationRequestForAdmin(
-  requestId: string,
-) {
+export async function getVerificationRequestForAdmin(requestId: string) {
   if (!UUID_PATTERN.test(requestId)) {
     throw new AccountVerificationError(
       "Invalid verification request ID",
@@ -242,10 +294,7 @@ export async function decideVerificationRequest(
   try {
     await client.query("BEGIN");
 
-    const request = await findVerificationRequestForUpdate(
-      requestId,
-      client,
-    );
+    const request = await findVerificationRequestForUpdate(requestId, client);
 
     if (!request) {
       throw new AccountVerificationError(
@@ -265,10 +314,7 @@ export async function decideVerificationRequest(
 
     // Lock the applicant and ensure the decision won't reactivate
     // an account that has been suspended or deactivated.
-    const applicant = await findApplicantForUpdate(
-      request.user_id,
-      client,
-    );
+    const applicant = await findApplicantForUpdate(request.user_id, client);
 
     if (!applicant) {
       throw new AccountVerificationError(
