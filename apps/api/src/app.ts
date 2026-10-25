@@ -7,8 +7,8 @@ import buyerProfileRoutes from "./routes/buyerProfileRoutes";
 import agentProfileRoutes from "./routes/agentProfileRoutes";
 import developerProfileRoutes from "./routes/developerProfileRoutes";
 import buyerPreferencesRoutes from "./routes/buyerPreferencesRoutes";
-
-
+import developerProjectRoutes from "./routes/developerProjectRoutes";
+import adminProjectRoutes from "./routes/adminProjectRoutes";
 
 import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
 import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRoutes";
@@ -38,12 +38,12 @@ app.get("/api/docs", (_req, res) => {
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/account-verification", accountVerificationRoutes);
-app.use(
-  "/api/v1/admin/account-verification",
-  adminAccountVerificationRoutes,
-);
+app.use("/api/v1/admin/account-verification", adminAccountVerificationRoutes);
+
 app.use("/api/v1/buyer", buyerProfileRoutes);
 app.use("/api/v1/agent", agentProfileRoutes);
+app.use("/api/v1/developer/projects", developerProjectRoutes);
+app.use("/api/v1/admin/projects", adminProjectRoutes);
 app.use("/api/v1/developer", developerProfileRoutes);
 app.use("/api/v1/buyer", buyerPreferencesRoutes);
 
