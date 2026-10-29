@@ -308,31 +308,29 @@ CREATE TYPE property_status AS ENUM (
     'pending_approval',
     'active',
     'inactive',
-    'sold'
+    'sold',
+    'rejected'
+    
 );
 
 --properties
 CREATE TABLE properties (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
     owner_id UUID NOT NULL
         REFERENCES users(id) ON DELETE RESTRICT,
-
     project_id UUID
         REFERENCES projects(id) ON DELETE RESTRICT,
-
     title TEXT NOT NULL,
     description TEXT,
-
     property_type TEXT NOT NULL,
     location TEXT NOT NULL,
-
     size_sqm NUMERIC(12, 2),
     bedrooms INTEGER,
     bathrooms INTEGER,
-
     features TEXT[] NOT NULL DEFAULT '{}',
-
+     price NUMERIC(14, 2),
+    payment_plan TEXT,
+    rejection_reason TEXT,
     status property_status NOT NULL DEFAULT 'draft',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -362,6 +360,7 @@ CREATE INDEX properties_project_id_idx
 
 CREATE INDEX properties_status_idx
     ON properties (status);
+
 
 --audit_logs
 CREATE TABLE audit_logs (
@@ -398,3 +397,59 @@ CREATE TABLE verification_documents (
 
 CREATE INDEX verification_documents_request_idx
   ON verification_documents (verification_request_id);
+
+
+  --property_images
+CREATE TABLE property_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_id UUID NOT NULL
+        REFERENCES properties(id) ON DELETE RESTRICT,
+    storage_key TEXT NOT NULL UNIQUE,
+    original_filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL
+        CHECK (mime_type IN ('image/jpeg', 'image/png', 'image/webp')),
+    file_size INTEGER NOT NULL
+        CHECK (file_size > 0 AND file_size <= 5242880),
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    display_order INTEGER NOT NULL DEFAULT 0
+        CHECK (display_order >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX property_images_property_id_idx
+    ON property_images(property_id);
+
+CREATE UNIQUE INDEX property_images_one_primary_per_property_idx
+    ON property_images(property_id)
+    WHERE is_primary = TRUE;
+
+
+--property agent authorizations
+CREATE TYPE property_authorization_status AS ENUM (
+    'active',
+    'revoked'
+);
+
+CREATE TABLE property_authorizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_id UUID NOT NULL
+        REFERENCES properties(id) ON DELETE RESTRICT,
+    agent_id UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+    authorized_by UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+    status property_authorization_status NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT property_authorizations_property_agent_unique
+        UNIQUE (property_id, agent_id)
+);
+
+CREATE INDEX property_authorizations_agent_status_idx
+    ON property_authorizations(agent_id, status);
+
+CREATE INDEX property_authorizations_property_status_idx
+    ON property_authorizations(property_id, status);
+
+
