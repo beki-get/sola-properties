@@ -16,14 +16,18 @@
   "engines": {
     "node": ">=24"
   },
- "devEngines": {
-  "packageManager": {
-    "name": "npm",
-    "version": "11.20.0"
-  }
-},
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "11.20.0"
+    }
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "allowScripts": {
+    "argon2@0.45.1": true,
+    "esbuild@0.28.2": true
+  }
 }
