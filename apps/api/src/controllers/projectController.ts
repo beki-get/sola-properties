@@ -21,8 +21,9 @@ import {
   ProjectServiceError,
   setDeveloperProjectStatus,
   updateProjectDetails,
+  getDeveloperProjectProperties,
 } from "../services/projectService";
-
+import { propertyListQuerySchema } from "../schemas/propertySchemas";
 function handleError(
   error: unknown,
   res: Response,
@@ -75,7 +76,7 @@ export const createProjectController: RequestHandler = async (
       parsed.data,
     );
 
-    res.status(201).json({ project });
+    res.status(201).json({ message: "Project created successfully", project });
   } catch (error) {
     handleError(error, res, next);
   }
@@ -103,7 +104,7 @@ export const getMyProjectsController: RequestHandler = async (
       parsed.data,
     );
 
-    res.status(200).json(result);
+    res.status(200).json({result, message: "Projects retrieved successfully" });
   } catch (error) {
     handleError(error, res, next);
   }
@@ -123,7 +124,7 @@ export const getMyProjectController: RequestHandler = async (
       req.currentUser!.id,
     );
 
-    res.status(200).json({ project });
+    res.status(200).json({ message: "Project retrieved successfully", project });
   } catch (error) {
     handleError(error, res, next);
   }
@@ -155,7 +156,7 @@ export const updateProjectController: RequestHandler = async (
       parsed.data,
     );
 
-    res.status(200).json({ project });
+    res.status(200).json({ message:"Project Updated successfully",project });
   } catch (error) {
     handleError(error, res, next);
   }
@@ -188,8 +189,44 @@ export const updateProjectStatusController: RequestHandler = async (
       parsed.data.status,
     );
 
-    res.status(200).json({ project });
+    res.status(200).json({ message:"Project status updated", project });
   } catch (error) {
     handleError(error, res, next);
   }
 };
+
+
+export const getDeveloperProjectPropertiesController: RequestHandler =
+  async (req, res, next) => {
+    try {
+      const projectId = readProjectId(req, res);
+      if (!projectId) return;
+
+      const parsed = propertyListQuerySchema.safeParse(req.query);
+
+      if (!parsed.success) {
+        res.status(400).json({
+          message: "Invalid pagination parameters",
+          code: "VALIDATION_ERROR",
+          errors: parsed.error.flatten(),
+        });
+        return;
+      }
+
+      const result = await getDeveloperProjectProperties(
+        projectId,
+        req.currentUser!.id,
+        {
+          page: parsed.data.page,
+          limit: parsed.data.limit,
+        },
+      );
+
+      res.status(200).json({
+        message: "Project properties retrieved successfully",
+        result,
+      });
+    } catch (error) {
+      handleError(error, res, next);
+    }
+  };

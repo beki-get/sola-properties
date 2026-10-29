@@ -1,9 +1,4 @@
-import type {
-  Request,
-  Response,
-  NextFunction,
-  RequestHandler,
-} from "express";
+import type { Request, Response, NextFunction, RequestHandler } from "express";
 
 import { z } from "zod";
 
@@ -15,11 +10,7 @@ import {
   ProjectServiceError,
 } from "../services/projectService";
 
-function handleError(
-  error: unknown,
-  res: Response,
-  next: NextFunction,
-): void {
+function handleError(error: unknown, res: Response, next: NextFunction): void {
   if (error instanceof ProjectServiceError) {
     res.status(error.statusCode).json({
       message: error.message,
