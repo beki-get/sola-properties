@@ -1,7 +1,6 @@
-
 import { SignJWT, jwtVerify } from "jose";
 
-const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+const ACCESS_TOKEN_TTL_SECONDS = 30 * 60;
 
 const secret = process.env.JWT_ACCESS_SECRET;
 

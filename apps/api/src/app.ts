@@ -8,10 +8,13 @@ import agentProfileRoutes from "./routes/agentProfileRoutes";
 import developerProfileRoutes from "./routes/developerProfileRoutes";
 import buyerPreferencesRoutes from "./routes/buyerPreferencesRoutes";
 import developerProjectRoutes from "./routes/developerProjectRoutes";
+import propertyRoutes from "./routes/propertyRoutes";
 import adminProjectRoutes from "./routes/adminProjectRoutes";
+import propertyAuthorizationRoutes from "./routes/propertyAuthorizationRoutes";
 
 import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
 import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRoutes";
+import adminPropertyRoutes from "./routes/adminPropertyRoutes";
 
 const app = express();
 
@@ -46,6 +49,10 @@ app.use("/api/v1/developer/projects", developerProjectRoutes);
 app.use("/api/v1/admin/projects", adminProjectRoutes);
 app.use("/api/v1/developer", developerProfileRoutes);
 app.use("/api/v1/buyer", buyerPreferencesRoutes);
+app.use("/api/v1/properties", propertyRoutes);
+app.use("/api/v1", propertyAuthorizationRoutes);
+
+app.use("/api/v1/admin/properties", adminPropertyRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
