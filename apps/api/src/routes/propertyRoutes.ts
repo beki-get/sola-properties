@@ -31,8 +31,16 @@ router.get(
   requireApprovedAccount,
   recommendedPropertiesController,
 );
+//get my all properties private route
+router.get(
+  "/me",
+  authenticate,
+  authorizeRoles("agent", "developer"),
+  requireApprovedAccount,
+  getMyPropertiesController,
+);
 
-// Public property routes
+// Public property route
 router.get("/:propertyId", getPublicPropertyController);
 
 router.use(
@@ -43,7 +51,7 @@ router.use(
 
 // Private property routes
 router.post("/", createPropertyController); //create property
-router.get("/me", getMyPropertiesController); //get my all properties
+
 
 router.post(
   "/:propertyId/images",
@@ -55,7 +63,7 @@ router.get("/:propertyId/images", getPropertyImagesController); //get property i
 
 router.delete("/:propertyId/images/:imageId", deletePropertyImageController); //delete property image
 
-router.get("/:propertyId", getMyPropertyController); //get property by id
+router.get("/me/:propertyId", getMyPropertyController); //get property by id
 router.patch("/:propertyId", updatePropertyController); //update property
 router.patch("/:propertyId/status", updatePropertyStatusController); //update property status
 router.get("/:propertyId/history", getMyPropertyHistoryController);//get owner property history

@@ -898,6 +898,7 @@ export async function listRecommendedProperties(userId: string) {
   return result.rows;
 }
 
+// Admin property queries
 export async function getAdminPendingProperties(
   query: AdminPendingPropertyListQuery,
 ) {

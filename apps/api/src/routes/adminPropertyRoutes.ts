@@ -12,8 +12,8 @@ const router = Router();
 
 router.use(authenticate, authorizeRoles("admin"));
 
-router.get("/", getAdminPendingPropertiesController);
-router.get("/:propertyId", getAdminPendingPropertyController);
-router.patch("/:propertyId/decision", decideAdminPropertyController);
+router.get("/", getAdminPendingPropertiesController);//retrieve all pending properties
+router.get("/:propertyId", getAdminPendingPropertyController);//get single property
+router.patch("/:propertyId/decision", decideAdminPropertyController);//approve or reject property
 
 export default router;

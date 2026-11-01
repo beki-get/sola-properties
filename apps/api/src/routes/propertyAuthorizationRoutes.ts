@@ -22,6 +22,7 @@ router.get(
   listApprovedAgentsController,
 );
 
+// Developer: view a specific approved agent.
 router.get(
   "/developer/agents/:agentId",
   authenticate,
@@ -39,6 +40,7 @@ router.post(
   authorizeAgentController,
 );
 
+// Developer: view currently authorized agents for an owned property.
 router.get(
   "/developer/properties/:propertyId/agents",
   authenticate,
@@ -47,6 +49,7 @@ router.get(
   listAuthorizedAgentsController,
 );
 
+// Developer: revoke an agent's authorization for an owned property.
 router.patch(
   "/developer/properties/:propertyId/agents/:agentId",
   authenticate,

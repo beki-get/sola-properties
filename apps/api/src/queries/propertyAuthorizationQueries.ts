@@ -116,7 +116,7 @@ export async function authorizeAgent(
       status: "active" | "revoked";
     }>(
       `SELECT id, status
-       FROM property_agent_authorizations
+       FROM property_authorizations
        WHERE property_id = $1 AND agent_id = $2
        FOR UPDATE`,
       [propertyId, agentId],
@@ -134,7 +134,7 @@ export async function authorizeAgent(
 
     if (existing.rows[0]) {
       result = await client.query(
-        `UPDATE property_agent_authorizations
+        `UPDATE property_authorizations
          SET status = 'active',
              authorized_by = $3,
              updated_at = NOW()
@@ -145,7 +145,7 @@ export async function authorizeAgent(
       );
     } else {
       result = await client.query(
-        `INSERT INTO property_agent_authorizations
+        `INSERT INTO property_authorizations
            (property_id, agent_id, authorized_by)
          VALUES ($1, $2, $3)
          RETURNING id, property_id, agent_id, authorized_by,
@@ -224,7 +224,7 @@ export async function listAuthorizedAgents(
 
   const count = await pool.query<{ count: string }>(
     `SELECT COUNT(*)::text AS count
-     FROM property_agent_authorizations paa
+     FROM property_authorizations paa
      JOIN users u ON u.id = paa.agent_id
      LEFT JOIN agent_profiles ap ON ap.user_id = u.id
      WHERE ${whereSql}`,
@@ -237,7 +237,7 @@ export async function listAuthorizedAgents(
     `SELECT u.id, u.full_name, u.status, ap.agency_name,
             paa.status AS authorization_status,
             paa.created_at AS authorized_at
-     FROM property_agent_authorizations paa
+     FROM property_authorizations paa
      JOIN users u ON u.id = paa.agent_id
      LEFT JOIN agent_profiles ap ON ap.user_id = u.id
      WHERE ${whereSql}
@@ -288,7 +288,7 @@ export async function revokeAgentAuthorization(
       status: string;
     }>(
       `SELECT id, status
-       FROM property_agent_authorizations
+       FROM property_authorizations
        WHERE property_id = $1 AND agent_id = $2
        FOR UPDATE`,
       [propertyId, agentId],
@@ -311,7 +311,7 @@ export async function revokeAgentAuthorization(
     }
 
     const result = await client.query(
-      `UPDATE property_agent_authorizations
+      `UPDATE property_authorizations
        SET status = 'revoked', updated_at = NOW()
        WHERE id = $1
        RETURNING id, property_id, agent_id, authorized_by,
@@ -385,7 +385,7 @@ export async function listAgentAuthorizedProperties(
 
   const count = await pool.query<{ count: string }>(
     `SELECT COUNT(*)::text AS count
-     FROM property_agent_authorizations paa
+     FROM property_authorizations paa
      JOIN properties p ON p.id = paa.property_id
      WHERE ${whereSql}`,
     values,
@@ -398,7 +398,7 @@ export async function listAgentAuthorizedProperties(
             p.location, p.size_sqm, p.bedrooms, p.bathrooms,
             p.price, p.payment_plan, p.status, p.project_id,
             paa.created_at AS authorized_at
-     FROM property_agent_authorizations paa
+     FROM property_authorizations paa
      JOIN properties p ON p.id = paa.property_id
      WHERE ${whereSql}
      ORDER BY paa.created_at DESC
