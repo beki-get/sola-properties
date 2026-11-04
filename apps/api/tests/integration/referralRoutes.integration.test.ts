@@ -3,6 +3,17 @@ import express from "express";
 import request from "supertest";
 import { ReferralError } from "../../src/queries/referralQueries";
 
+type TestRole = "buyer" | "agent" | "developer" | "admin";
+
+type TestCurrentUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: TestRole;
+  status: "approved";
+  emailVerified: boolean;
+};
+
 const {
   mockCreateReferral,
   mockGetMyReferrals,
@@ -25,12 +36,12 @@ const {
   mockGetBuyerReferralsService: vi.fn(),
 }));
 
-let currentUser = {
+let currentUser: TestCurrentUser = {
   id: "buyer-123",
   fullName: "Buyer Test User",
   email: "buyer@example.com",
-  role: "buyer" as const,
-  status: "approved" as const,
+  role: "buyer",
+  status: "approved",
   emailVerified: true,
 };
 
