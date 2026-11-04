@@ -606,3 +606,156 @@ CREATE TABLE favorites (
 
 CREATE INDEX favorites_buyer_created_at_idx
 ON favorites (buyer_id, created_at DESC);
+
+CREATE TABLE property_visits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    referral_id UUID NOT NULL
+        REFERENCES referrals(id) ON DELETE RESTRICT,
+
+    -- Buyer's preferred date and time
+    requested_at TIMESTAMPTZ NOT NULL,
+
+    -- Final date and time set by the seller
+    scheduled_at TIMESTAMPTZ,
+
+    location TEXT,
+    notes TEXT,
+
+    status TEXT NOT NULL DEFAULT 'requested'
+        CHECK (
+            status IN (
+                'requested',
+                'scheduled',
+                'completed',
+                'cancelled'
+            )
+        ),
+
+    outcome TEXT
+        CHECK (
+            outcome IS NULL OR outcome IN (
+                'interested',
+                'not_interested',
+                'requested_another_visit'
+            )
+        ),
+
+    outcome_note TEXT,
+
+    outcome_recorded_by UUID
+        REFERENCES users(id) ON DELETE SET NULL,
+
+    outcome_recorded_at TIMESTAMPTZ,
+
+    -- Preserve previous outcomes when an outcome is updated
+    outcome_history JSONB NOT NULL DEFAULT '[]'::jsonb,
+
+    created_by UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    cancelled_at TIMESTAMPTZ,
+
+    CONSTRAINT property_visits_location_not_blank
+        CHECK (location IS NULL OR LENGTH(BTRIM(location)) > 0),
+
+    CONSTRAINT property_visits_notes_not_blank
+        CHECK (notes IS NULL OR LENGTH(BTRIM(notes)) > 0),
+
+    CONSTRAINT property_visits_outcome_note_not_blank
+        CHECK (outcome_note IS NULL OR LENGTH(BTRIM(outcome_note)) > 0),
+
+    CONSTRAINT property_visits_scheduled_time_required
+        CHECK (status NOT IN ('scheduled', 'completed') OR scheduled_at IS NOT NULL),
+
+    CONSTRAINT property_visits_outcome_required
+        CHECK (
+            status <> 'completed'
+            OR (
+                outcome IS NOT NULL
+                AND outcome_recorded_by IS NOT NULL
+                AND outcome_recorded_at IS NOT NULL
+            )
+        )
+);
+
+-- Only one active visit request or scheduled visit per referral.
+CREATE UNIQUE INDEX property_visits_one_active_per_referral_idx
+ON property_visits (referral_id)
+WHERE status IN ('requested', 'scheduled');
+
+CREATE INDEX property_visits_referral_date_idx
+ON property_visits (referral_id, requested_at DESC);
+
+CREATE INDEX property_visits_created_by_idx
+ON property_visits (created_by);
+
+--referral issues
+CREATE TABLE referral_issues (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    referral_id UUID NOT NULL
+        REFERENCES referrals(id) ON DELETE RESTRICT,
+
+    reported_by UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    category TEXT NOT NULL CHECK (
+        category IN (
+            'communication',
+            'property_information',
+            'seller_behavior',
+            'buyer_behavior',
+            'payment',
+            'visit_or_scheduling',
+            'fraud_or_suspicious_activity',
+            'other'
+        )
+    ),
+
+    subject VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+
+    status TEXT NOT NULL DEFAULT 'open'
+        CHECK (status IN (
+            'open',
+            'under_review',
+            'resolved',
+            'dismissed'
+        )),
+
+    admin_notes TEXT,
+    resolution TEXT,
+
+    reviewed_by UUID
+        REFERENCES users(id) ON DELETE SET NULL,
+
+    reviewed_at TIMESTAMPTZ,
+    resolved_at TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT referral_issues_subject_not_blank
+        CHECK (LENGTH(BTRIM(subject)) > 0),
+
+    CONSTRAINT referral_issues_description_not_blank
+        CHECK (LENGTH(BTRIM(description)) > 0),
+
+    CONSTRAINT referral_issues_admin_notes_not_blank
+        CHECK (admin_notes IS NULL OR LENGTH(BTRIM(admin_notes)) > 0),
+
+    CONSTRAINT referral_issues_resolution_not_blank
+        CHECK (resolution IS NULL OR LENGTH(BTRIM(resolution)) > 0)
+);
+
+CREATE INDEX referral_issues_referral_idx
+    ON referral_issues (referral_id, created_at DESC);
+
+CREATE INDEX referral_issues_reporter_idx
+    ON referral_issues (reported_by, created_at DESC);
+
+CREATE INDEX referral_issues_status_idx
+    ON referral_issues (status, created_at DESC);
