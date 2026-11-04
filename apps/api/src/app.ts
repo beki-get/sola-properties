@@ -16,6 +16,8 @@ import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
 import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRoutes";
 import adminPropertyRoutes from "./routes/adminPropertyRoutes";
 import referralRoutes from "./routes/referralRoutes";
+import favoriteRoutes from "./routes/favoriteRoutes";
+import referralOperationsRoutes from "./routes/referralOperationsRoutes";
 
 const app = express();
 
@@ -55,6 +57,8 @@ app.use("/api/v1", propertyAuthorizationRoutes);
 
 app.use("/api/v1/admin/properties", adminPropertyRoutes);
 app.use("/api/v1/referrals", referralRoutes);
+app.use("/api/v1/favorites", favoriteRoutes);
+app.use("/api/v1/referral", referralOperationsRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
