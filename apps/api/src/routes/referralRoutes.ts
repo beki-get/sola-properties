@@ -11,6 +11,8 @@ import {
   getBuyerReferralsController,
   createReferralFollowUpController,
   getReferralFollowUpsController,
+   createReferralMessageController,
+  getReferralMessagesController,
 } from "../controllers/referralController";
 import { authenticate } from "../middlewares/authenticate";
 import { authorizeRoles } from "../middlewares/authorizeRoles";
@@ -88,4 +90,20 @@ router.get(
   requireApprovedAccount,
   getReferralFollowUpsController,
 );
+
+//messages
+// Buyer and assigned seller can send messages.
+router.post(
+  "/:referralId/messages",
+  authorizeRoles("buyer", "agent", "developer"),
+  createReferralMessageController,
+);
+
+// Buyer, assigned seller, and admin can read messages.
+router.get(
+  "/:referralId/messages",
+  authorizeRoles("buyer", "agent", "developer", "admin"),
+  getReferralMessagesController,
+);
+
 export default router;

@@ -55,4 +55,8 @@ export const createFollowUpSchema = z.object({
   dueAt: z.string().datetime({ offset: true }).optional(),
 });
 
+export const createReferralMessageSchema = z.object({
+  body: z.string().trim().min(1).max(2000),
+});
+
 export const referralIdSchema = z.string().uuid();

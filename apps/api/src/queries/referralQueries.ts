@@ -709,7 +709,7 @@ export async function getBuyerReferrals(buyerId: string) {
   return result.rows;
 }
 
-//folow-up messages for a referral, visible to the assigned agent/developer 
+//folow-up messages for a referral, visible to the assigned agent/developer
 export async function createReferralFollowUp(input: {
   referralId: string;
   senderId: string;
@@ -781,10 +781,7 @@ export async function getReferralFollowUps(input: {
     throw new ReferralError(404, "REFERRAL_NOT_FOUND", "Referral not found");
   }
 
-  if (
-    !input.isAdmin &&
-    referral.rows[0].assigned_to !== input.userId
-  ) {
+  if (!input.isAdmin && referral.rows[0].assigned_to !== input.userId) {
     throw new ReferralError(
       403,
       "REFERRAL_NOT_ASSIGNED",
@@ -831,4 +828,504 @@ export async function getReferralFollowUps(input: {
       totalPages: Math.ceil(total / input.limit),
     },
   };
+}
+
+// Send a message between the buyer and the assigned seller.
+export async function createReferralMessage(input: {
+  referralId: string;
+  senderId: string;
+  senderRole: "buyer" | "agent" | "developer";
+  body: string;
+}) {
+  const result = await pool.query(
+    `INSERT INTO referral_messages (
+       referral_id,
+       sender_id,
+       kind,
+       body
+     )
+     SELECT r.id, $2, 'message', $4
+     FROM referrals r
+     WHERE r.id = $1
+       AND (
+         ($3 = 'buyer' AND r.buyer_id = $2)
+         OR
+         ($3 IN ('agent', 'developer') AND r.assigned_to = $2)
+       )
+       AND r.status IN ('assigned', 'accepted', 'in_progress', 'agreement')
+     RETURNING id, referral_id, sender_id, kind, body, created_at`,
+    [input.referralId, input.senderId, input.senderRole, input.body],
+  );
+
+  if (result.rows.length === 0) {
+    const referral = await pool.query(
+      `SELECT id, buyer_id, assigned_to, status
+       FROM referrals
+       WHERE id = $1`,
+      [input.referralId],
+    );
+
+    if (referral.rows.length === 0) {
+      throw new ReferralError(404, "REFERRAL_NOT_FOUND", "Referral not found");
+    }
+
+    const currentReferral = referral.rows[0];
+
+    if (
+      input.senderRole === "buyer" &&
+      currentReferral.buyer_id !== input.senderId
+    ) {
+      throw new ReferralError(
+        403,
+        "REFERRAL_ACCESS_DENIED",
+        "You do not have access to this referral",
+      );
+    }
+
+    if (
+      ["agent", "developer"].includes(input.senderRole) &&
+      currentReferral.assigned_to !== input.senderId
+    ) {
+      throw new ReferralError(
+        403,
+        "REFERRAL_NOT_ASSIGNED",
+        "You are not assigned to this referral",
+      );
+    }
+
+    throw new ReferralError(
+      409,
+      "REFERRAL_NOT_OPEN",
+      "Messages cannot be sent for a rejected or closed referral",
+    );
+  }
+
+  return result.rows[0];
+}
+
+// Retrieve messages for the buyer, assigned seller, or admin.
+export async function getReferralMessages(input: {
+  referralId: string;
+  userId: string;
+  isAdmin: boolean;
+  page: number;
+  limit: number;
+}) {
+  const referral = await pool.query(
+    `SELECT id, buyer_id, assigned_to
+     FROM referrals
+     WHERE id = $1`,
+    [input.referralId],
+  );
+
+  if (referral.rows.length === 0) {
+    throw new ReferralError(404, "REFERRAL_NOT_FOUND", "Referral not found");
+  }
+
+  const currentReferral = referral.rows[0];
+
+  if (
+    !input.isAdmin &&
+    currentReferral.buyer_id !== input.userId &&
+    currentReferral.assigned_to !== input.userId
+  ) {
+    throw new ReferralError(
+      403,
+      "REFERRAL_ACCESS_DENIED",
+      "You do not have access to this referral",
+    );
+  }
+
+  const offset = (input.page - 1) * input.limit;
+
+  const [countResult, result] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM referral_messages
+       WHERE referral_id = $1
+         AND kind = 'message'`,
+      [input.referralId],
+    ),
+
+    pool.query(
+      `SELECT
+         rm.id,
+         rm.referral_id,
+         rm.sender_id,
+         u.full_name AS sender_name,
+         rm.body,
+         rm.created_at
+       FROM referral_messages rm
+       JOIN users u ON u.id = rm.sender_id
+       WHERE rm.referral_id = $1
+         AND rm.kind = 'message'
+       ORDER BY rm.created_at ASC, rm.id ASC
+       LIMIT $2 OFFSET $3`,
+      [input.referralId, input.limit, offset],
+    ),
+  ]);
+
+  const total = countResult.rows[0].total;
+
+  return {
+    messages: result.rows,
+    pagination: {
+      page: input.page,
+      limit: input.limit,
+      total,
+      totalPages: Math.ceil(total / input.limit),
+    },
+  };
+}
+
+//issues and disputes related to a referral, visible to the assigned agent/developer and admin
+type ReferralIssueReporterRole = "buyer" | "agent" | "developer";
+
+type CreateReferralIssueInput = {
+  referralId: string;
+  reportedBy: string;
+  reporterRole: ReferralIssueReporterRole;
+  category: string;
+  subject: string;
+  description: string;
+};
+
+//referral issues and disputes
+export async function createReferralIssue(input: CreateReferralIssueInput) {
+  const result = await pool.query(
+    `INSERT INTO referral_issues (
+       referral_id,
+       reported_by,
+       category,
+       subject,
+       description
+     )
+     SELECT
+       r.id,
+       $2,
+       $4,
+       $5,
+       $6
+     FROM referrals r
+     WHERE r.id = $1
+       AND (
+         ($3 = 'buyer' AND r.buyer_id = $2)
+         OR
+         ($3 IN ('agent', 'developer') AND r.assigned_to = $2)
+       )
+     RETURNING *`,
+    [
+      input.referralId,
+      input.reportedBy,
+      input.reporterRole,
+      input.category,
+      input.subject,
+      input.description,
+    ],
+  );
+
+  if (result.rows.length === 0) {
+    const referral = await pool.query(
+      `SELECT id, buyer_id, assigned_to
+       FROM referrals
+       WHERE id = $1`,
+      [input.referralId],
+    );
+
+    if (referral.rows.length === 0) {
+      throw new ReferralError(404, "REFERRAL_NOT_FOUND", "Referral not found");
+    }
+
+    throw new ReferralError(
+      403,
+      "REFERRAL_ACCESS_DENIED",
+      "You are not authorized to report an issue for this referral",
+    );
+  }
+
+  return result.rows[0];
+}
+
+const referralIssueAdminSelect = `
+  SELECT
+    ri.id,
+    ri.referral_id,
+    ri.reported_by,
+    ri.category,
+    ri.subject,
+    ri.description,
+    ri.status,
+    ri.admin_notes,
+    ri.resolution,
+    ri.reviewed_by,
+    ri.reviewed_at,
+    ri.resolved_at,
+    ri.created_at,
+    ri.updated_at,
+
+    r.reference_code,
+    r.status AS referral_status,
+
+    p.id AS property_id,
+    p.title AS property_title,
+    p.location AS property_location,
+    p.status AS property_status,
+
+    reporter.full_name AS reporter_name,
+    reporter.email AS reporter_email,
+    reporter.role AS reporter_role,
+
+    COALESCE(
+      buyer_profile.phone_number,
+      agent_profile.phone_number,
+      developer_profile.contact_phone
+    ) AS reporter_phone,
+
+    buyer.id AS buyer_id,
+    buyer.full_name AS buyer_name,
+    buyer.email AS buyer_email,
+
+    assigned.id AS assigned_seller_id,
+    assigned.full_name AS assigned_seller_name,
+    assigned.email AS assigned_seller_email,
+    assigned.role AS assigned_seller_role
+
+  FROM referral_issues ri
+  JOIN referrals r ON r.id = ri.referral_id
+  JOIN properties p ON p.id = r.property_id
+  JOIN users reporter ON reporter.id = ri.reported_by
+
+  LEFT JOIN buyer_profiles buyer_profile
+    ON buyer_profile.user_id = reporter.id
+
+  LEFT JOIN agent_profiles agent_profile
+    ON agent_profile.user_id = reporter.id
+
+  LEFT JOIN developer_profiles developer_profile
+    ON developer_profile.user_id = reporter.id
+
+  JOIN users buyer ON buyer.id = r.buyer_id
+  JOIN users assigned ON assigned.id = r.assigned_to
+`;
+
+// Retrieve referral issues reported by a specific user with pagination
+export async function getMyReferralIssues(input: {
+  userId: string;
+  page: number;
+  limit: number;
+}) {
+  const offset = (input.page - 1) * input.limit;
+
+  const [issuesResult, countResult] = await Promise.all([
+    pool.query(
+      `SELECT
+         ri.id,
+         ri.referral_id,
+         ri.category,
+         ri.subject,
+         ri.description,
+         ri.status,
+         ri.created_at,
+         r.reference_code,
+         p.title AS property_title
+       FROM referral_issues ri
+       JOIN referrals r ON r.id = ri.referral_id
+       JOIN properties p ON p.id = r.property_id
+       WHERE ri.reported_by = $1
+       ORDER BY ri.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [input.userId, input.limit, offset],
+    ),
+
+    pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM referral_issues
+       WHERE reported_by = $1`,
+      [input.userId],
+    ),
+  ]);
+
+  const total = countResult.rows[0].total;
+
+  return {
+    issues: issuesResult.rows,
+    pagination: {
+      page: input.page,
+      limit: input.limit,
+      total,
+      totalPages: Math.ceil(total / input.limit),
+    },
+  };
+}
+
+// Admin view of all referral issues with optional status filter and pagination
+export async function getAdminReferralIssues(input: {
+  page: number;
+  limit: number;
+  status?: string;
+}) {
+  const offset = (input.page - 1) * input.limit;
+
+  const [issuesResult, countResult] = await Promise.all([
+    pool.query(
+      `${referralIssueAdminSelect}
+       WHERE ($1::text IS NULL OR ri.status = $1)
+       ORDER BY ri.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [input.status ?? null, input.limit, offset],
+    ),
+
+    pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM referral_issues
+       WHERE ($1::text IS NULL OR status = $1)`,
+      [input.status ?? null],
+    ),
+  ]);
+
+  const total = countResult.rows[0].total;
+
+  return {
+    issues: issuesResult.rows,
+    pagination: {
+      page: input.page,
+      limit: input.limit,
+      total,
+      totalPages: Math.ceil(total / input.limit),
+    },
+  };
+}
+
+// Admin view of a specific referral issue by its ID
+export async function getAdminReferralIssueById(issueId: string) {
+  const result = await pool.query(
+    `${referralIssueAdminSelect}
+     WHERE ri.id = $1`,
+    [issueId],
+  );
+
+  if (result.rows.length === 0) {
+    throw new ReferralError(
+      404,
+      "REFERRAL_ISSUE_NOT_FOUND",
+      "Referral issue report not found",
+    );
+  }
+
+  return result.rows[0];
+}
+
+// Admin updates the status, notes, and resolution of a referral issue
+export async function updateReferralIssue(input: {
+  issueId: string;
+  adminId: string;
+  status?: string;
+  adminNotes?: string | null;
+  resolution?: string | null;
+}) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const existingResult = await client.query(
+      `SELECT id, status, resolution
+       FROM referral_issues
+       WHERE id = $1
+       FOR UPDATE`,
+      [input.issueId],
+    );
+
+    const existing = existingResult.rows[0];
+
+    if (!existing) {
+      throw new ReferralError(
+        404,
+        "REFERRAL_ISSUE_NOT_FOUND",
+        "Referral issue report not found",
+      );
+    }
+
+    const transitions: Record<string, string[]> = {
+      open: ["under_review", "dismissed", "resolved"],
+      under_review: ["resolved", "dismissed", "open"],
+      resolved: [],
+      dismissed: [],
+    };
+
+    if (
+      input.status &&
+      input.status !== existing.status &&
+      !transitions[existing.status]?.includes(input.status)
+    ) {
+      throw new ReferralError(
+        400,
+        "INVALID_ISSUE_STATUS_TRANSITION",
+        `Cannot change report status from ${existing.status} to ${input.status}`,
+      );
+    }
+
+    const nextStatus = input.status ?? existing.status;
+
+    const nextResolution =
+      input.resolution !== undefined ? input.resolution : existing.resolution;
+
+    if (nextStatus === "resolved" && !nextResolution?.trim()) {
+      throw new ReferralError(
+        400,
+        "RESOLUTION_REQUIRED",
+        "A resolution is required when resolving a report",
+      );
+    }
+
+    const result = await client.query(
+      `UPDATE referral_issues
+       SET
+         status = $2,
+         admin_notes = CASE
+           WHEN $3::boolean THEN $4
+           ELSE admin_notes
+         END,
+         resolution = CASE
+           WHEN $5::boolean THEN $6
+           ELSE resolution
+         END,
+         reviewed_by = CASE
+           WHEN $2 = 'under_review' AND reviewed_by IS NULL
+           THEN $7
+           ELSE reviewed_by
+         END,
+         reviewed_at = CASE
+           WHEN $2 = 'under_review' AND reviewed_at IS NULL
+           THEN NOW()
+           ELSE reviewed_at
+         END,
+         resolved_at = CASE
+           WHEN $2 = 'resolved' THEN COALESCE(resolved_at, NOW())
+           WHEN $2 = 'open' THEN NULL
+           ELSE resolved_at
+         END,
+         updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        input.issueId,
+        nextStatus,
+        input.adminNotes !== undefined,
+        input.adminNotes ?? null,
+        input.resolution !== undefined,
+        input.resolution ?? null,
+        input.adminId,
+      ],
+    );
+
+    await client.query("COMMIT");
+
+    return result.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
