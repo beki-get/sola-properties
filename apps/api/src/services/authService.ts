@@ -217,7 +217,7 @@ export async function login(
 
   if (user.status === "suspended" || user.status === "deactivated") {
     throw new AuthServiceError(
-      "Your account is not available",
+      "Your account has been suspended or deactivated. Please contact support.",
       "ACCOUNT_UNAVAILABLE",
     );
   }
