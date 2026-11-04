@@ -31,3 +31,28 @@ export const referralStatusSchema = z.discriminatedUnion("status", [
     reason: z.string().trim().min(1).max(1000),
   }),
 ]);
+
+
+export const reassignReferralSchema = z.object({
+  newAssigneeId: z.string().uuid(),
+  reason: z.string().trim().min(1).max(1000).optional(),
+});
+
+export const adminReferralFilterSchema = z.object({
+  status: z.enum([
+    "assigned",
+    "accepted",
+    "rejected",
+    "in_progress",
+    "agreement",
+    "closed_won",
+    "closed_lost",
+  ]).optional(),
+});
+
+export const createFollowUpSchema = z.object({
+  body: z.string().trim().min(1).max(2000),
+  dueAt: z.string().datetime({ offset: true }).optional(),
+});
+
+export const referralIdSchema = z.string().uuid();
