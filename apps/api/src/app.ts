@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { requestLogger } from "./middlewares/requestLogger";
+import { errorHandler } from "./middlewares/errorHandler";
 import authRoutes from "./routes/authRoutes";
 import accountVerificationRoutes from "./routes/accountVerificationRoutes";
 import buyerProfileRoutes from "./routes/buyerProfileRoutes";
@@ -18,6 +19,7 @@ import adminPropertyRoutes from "./routes/adminPropertyRoutes";
 import referralRoutes from "./routes/referralRoutes";
 import favoriteRoutes from "./routes/favoriteRoutes";
 import referralOperationsRoutes from "./routes/referralOperationsRoutes";
+import referralIssueRoutes from "./routes/referralIssueRoutes";
 
 const app = express();
 
@@ -59,6 +61,7 @@ app.use("/api/v1/admin/properties", adminPropertyRoutes);
 app.use("/api/v1/referrals", referralRoutes);
 app.use("/api/v1/favorites", favoriteRoutes);
 app.use("/api/v1/referral", referralOperationsRoutes);
+app.use("/api/v1/referral-issues", referralIssueRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
@@ -66,5 +69,7 @@ app.get("/", (_req, res) => {
     message: "Express backend is running",
   });
 });
+
+app.use(errorHandler);
 
 export default app;
