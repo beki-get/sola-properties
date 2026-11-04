@@ -133,3 +133,7 @@ CREATE TABLE referral_messages (
 
 CREATE INDEX referral_messages_history_idx
     ON referral_messages (referral_id, created_at DESC);
+
+ALTER TABLE referral_events
+ADD COLUMN previous_assigned_to UUID
+REFERENCES users(id) ON DELETE SET NULL;
