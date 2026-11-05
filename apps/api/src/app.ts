@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { requestLogger } from "./middlewares/requestLogger";
+import { errorHandler } from "./middlewares/errorHandler";
 import authRoutes from "./routes/authRoutes";
 import accountVerificationRoutes from "./routes/accountVerificationRoutes";
 import buyerProfileRoutes from "./routes/buyerProfileRoutes";
@@ -8,10 +9,17 @@ import agentProfileRoutes from "./routes/agentProfileRoutes";
 import developerProfileRoutes from "./routes/developerProfileRoutes";
 import buyerPreferencesRoutes from "./routes/buyerPreferencesRoutes";
 import developerProjectRoutes from "./routes/developerProjectRoutes";
+import propertyRoutes from "./routes/propertyRoutes";
 import adminProjectRoutes from "./routes/adminProjectRoutes";
+import propertyAuthorizationRoutes from "./routes/propertyAuthorizationRoutes";
 
 import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
 import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRoutes";
+import adminPropertyRoutes from "./routes/adminPropertyRoutes";
+import referralRoutes from "./routes/referralRoutes";
+import favoriteRoutes from "./routes/favoriteRoutes";
+import referralOperationsRoutes from "./routes/referralOperationsRoutes";
+import referralIssueRoutes from "./routes/referralIssueRoutes";
 
 const app = express();
 
@@ -46,6 +54,14 @@ app.use("/api/v1/developer/projects", developerProjectRoutes);
 app.use("/api/v1/admin/projects", adminProjectRoutes);
 app.use("/api/v1/developer", developerProfileRoutes);
 app.use("/api/v1/buyer", buyerPreferencesRoutes);
+app.use("/api/v1/properties", propertyRoutes);
+app.use("/api/v1", propertyAuthorizationRoutes);
+
+app.use("/api/v1/admin/properties", adminPropertyRoutes);
+app.use("/api/v1/referrals", referralRoutes);
+app.use("/api/v1/favorites", favoriteRoutes);
+app.use("/api/v1/referral", referralOperationsRoutes);
+app.use("/api/v1/referral-issues", referralIssueRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
@@ -53,5 +69,7 @@ app.get("/", (_req, res) => {
     message: "Express backend is running",
   });
 });
+
+app.use(errorHandler);
 
 export default app;

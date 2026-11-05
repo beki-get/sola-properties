@@ -1,159 +1,123 @@
-# Turborepo starter
+# Sola Properties
 
-This Turborepo starter is maintained by the Turborepo core team.
+Sola Properties is a real-estate platform backend and web-app monorepo. The API supports property discovery and management, buyer inquiries, and workflows for buyers, agents, developers, and administrators.
 
-## Using this example
+> **Project status:** The API and its OpenAPI documentation are implemented. The Next.js web app is currently a starter scaffold and has not yet been connected to the platform API.
 
-Run the following command:
+## Features
 
-```sh
-npx create-turbo@latest
+- Account registration, email verification, login, refresh sessions, logout, and password reset
+- Buyer, agent, and developer profiles, plus buyer property preferences and recommendations
+- Developer project management
+- Property listings with search, filters, sorting, comparison, and image uploads
+- Property approval and account-verification workflows for administrators
+- Developer-to-agent property authorizations
+- Buyer inquiries and referral tracking
+- PostgreSQL persistence, S3-compatible file storage, and structured API logging
+- Interactive API documentation generated from an OpenAPI specification
+
+## Repository structure
+
+```text
+.
+├── apps/
+│   ├── api/                 # Express + TypeScript API
+│   └── web/                 # Next.js web app (starter scaffold)
+├── packages/
+│   ├── eslint-config/       # Shared ESLint configuration
+│   ├── shared-types/        # Shared TypeScript types
+│   ├── typescript-config/   # Shared TypeScript configuration
+│   └── ui/                  # Shared React UI components
+├── package.json             # npm workspaces and root scripts
+└── turbo.json               # Turborepo task configuration
 ```
 
-## What's inside?
+## Tech stack
 
-This Turborepo includes the following packages/apps:
+- **Web:** Next.js 16, React 19, TypeScript
+- **API:** Node.js, Express, TypeScript
+- **Database:** PostgreSQL
+- **File storage:** S3-compatible object storage
+- **Monorepo:** npm workspaces and Turborepo
 
-### Apps and Packages
+## Prerequisites
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- Node.js 24 or later
+- npm 11.20.0
+- A PostgreSQL database
+- SMTP credentials for email verification and password-reset emails
+- S3-compatible storage credentials and buckets for uploaded files
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+## Getting started
 
-### Utilities
+1. Clone the repository and install dependencies from the repository root:
 
-This Turborepo has some additional tools already setup for you:
+   ```bash
+   git clone https://github.com/beki-get/sola-properties.git
+   cd sola-properties
+   npm install
+   ```
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+2. Create and configure the database. The base schema is in `apps/api/database/schema.sql`; review and apply any applicable SQL migrations in `apps/api/database/migrations/` for your database state.
 
-### Build
+3. Configure the API environment variables. The API reads configuration from environment variables, including:
 
-To build all apps and packages, run the following command:
+   | Variable | Purpose |
+   | --- | --- |
+   | `DATABASE_URL` | PostgreSQL connection string |
+   | `JWT_ACCESS_SECRET` | Secret used to sign access tokens (at least 32 characters) |
+   | `CLIENT_URL` | Web app origin allowed by CORS (defaults to `http://localhost:3000`) |
+   | `PORT` | API port (defaults to `8080`) |
+   | `MAILTRAP_HOST`, `MAILTRAP_PORT`, `MAILTRAP_USER`, `MAILTRAP_PASSWORD` | SMTP settings for email |
+   | `AWS_ENDPOINT_URL_S3`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | S3-compatible storage connection |
+   | `NEON_STORAGE_BUCKET` | Bucket for account-verification documents |
+   | `NEON_PROPERTY_IMAGES_BUCKET` | Bucket for property images |
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+   Keep credentials private; do not commit real secrets. The API's seed script also requires `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_FINANCE_ADMIN_EMAIL`, and `SEED_FINANCE_ADMIN_PASSWORD`.
 
-```sh
-cd my-turborepo
-turbo build
-```
+4. Start the development tasks from the repository root:
 
-Without global `turbo`, use your package manager:
+   ```bash
+   npm run dev
+   ```
 
-```sh
-cd my-turborepo
-npx turbo build
-npm exec turbo build
-npm exec turbo build
-```
+   The web app runs at [http://localhost:3000](http://localhost:3000), and the API runs at [http://localhost:8080](http://localhost:8080). The API checks its PostgreSQL connection when it starts.
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## API documentation
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+Once the API is running, open [http://localhost:8080/api/docs](http://localhost:8080/api/docs) for the interactive Swagger UI. The OpenAPI document is also available at [http://localhost:8080/api/docs/openapi.json](http://localhost:8080/api/docs/openapi.json).
 
-```sh
-turbo build --filter=docs
-```
+The deployed API is listed in the OpenAPI specification at [https://sola-properties.onrender.com](https://sola-properties.onrender.com).
 
-Without global `turbo`:
+## Useful commands
 
-```sh
-npx turbo build --filter=docs
-npm exec turbo build --filter=docs
-npm exec turbo build --filter=docs
-```
+Run these commands from the repository root:
 
-### Develop
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start development tasks |
+| `npm run build` | Build all workspaces with a build task |
+| `npm run lint` | Run lint tasks configured in the workspaces |
+| `npm run check-types` | Run TypeScript checks for configured workspaces |
+| `npm run format` | Format TypeScript, TSX, and Markdown files with Prettier |
+| `npm run --workspace=api test` | Run API tests |
+| `npm run --workspace=api test:watch` | Run API tests in watch mode |
+| `npm run --workspace=api seed:auth-test-users` | Create or update the privileged test users (requires the seed environment variables above) |
 
-To develop all apps and packages, run the following command:
+## API overview
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+The API is versioned under `/api/v1`. Main route groups include:
 
-```sh
-cd my-turborepo
-turbo dev
-```
+- `/api/v1/auth` — account and session operations
+- `/api/v1/account-verification` — agent and developer verification applications
+- `/api/v1/buyer`, `/api/v1/agent`, `/api/v1/developer` — profiles and preferences
+- `/api/v1/developer/projects` and `/api/v1/admin/projects` — project management
+- `/api/v1/properties` — property search, details, comparisons, management, and images
+- `/api/v1/admin/properties` — property review and decisions
+- `/api/v1/referrals` — buyer inquiries and referral management
 
-Without global `turbo`, use your package manager:
+For request and response schemas, authentication requirements, and the complete endpoint list, use the interactive API documentation.
 
-```sh
-cd my-turborepo
-npx turbo dev
-npm exec turbo dev
-npm exec turbo dev
-```
+## Contributing
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-npm exec turbo dev --filter=web
-npm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-npm exec turbo login
-npm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-npm exec turbo link
-npm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Contributions and suggestions are welcome. For changes to the API, use the OpenAPI docs and existing tests as a guide. Please avoid committing secrets or production data.

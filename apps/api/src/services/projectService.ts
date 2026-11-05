@@ -5,7 +5,10 @@ import {
   findProjectById,
   listProjects,
   updateDeveloperProject,
+  
+
 } from "../queries/projectQueries";
+import { listDeveloperProjectProperties } from "../queries/propertyQueries";
 
 import type { ProjectStatus } from "../queries/projectQueries";
 import type {
@@ -179,4 +182,28 @@ export async function getAdminProject(projectId: string) {
   }
 
   return project;
+}
+
+
+
+export async function getDeveloperProjectProperties(
+  projectId: string,
+  developerId: string,
+  query: { page: number; limit: number },
+) {
+  const result = await listDeveloperProjectProperties(
+    projectId,
+    developerId,
+    query,
+  );
+
+  if (!result) {
+    throw new ProjectServiceError(
+      404,
+      "PROJECT_NOT_FOUND",
+      "Project not found",
+    );
+  }
+
+  return result;
 }

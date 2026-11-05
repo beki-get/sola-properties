@@ -265,7 +265,7 @@ describe("authService — PostgreSQL integration tests", () => {
 
     await expectServiceError(
       login({ email: user.email, password: TEST_PASSWORD }),
-      "ACCOUNT_NOT_APPROVED",
+      "ACCOUNT_UNAVAILABLE",
     );
   });
 

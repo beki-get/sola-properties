@@ -308,31 +308,29 @@ CREATE TYPE property_status AS ENUM (
     'pending_approval',
     'active',
     'inactive',
-    'sold'
+    'sold',
+    'rejected'
+    
 );
 
 --properties
 CREATE TABLE properties (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
     owner_id UUID NOT NULL
         REFERENCES users(id) ON DELETE RESTRICT,
-
     project_id UUID
         REFERENCES projects(id) ON DELETE RESTRICT,
-
     title TEXT NOT NULL,
     description TEXT,
-
     property_type TEXT NOT NULL,
     location TEXT NOT NULL,
-
     size_sqm NUMERIC(12, 2),
     bedrooms INTEGER,
     bathrooms INTEGER,
-
     features TEXT[] NOT NULL DEFAULT '{}',
-
+     price NUMERIC(14, 2),
+    payment_plan TEXT,
+    rejection_reason TEXT,
     status property_status NOT NULL DEFAULT 'draft',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -362,6 +360,7 @@ CREATE INDEX properties_project_id_idx
 
 CREATE INDEX properties_status_idx
     ON properties (status);
+
 
 --audit_logs
 CREATE TABLE audit_logs (
@@ -398,3 +397,365 @@ CREATE TABLE verification_documents (
 
 CREATE INDEX verification_documents_request_idx
   ON verification_documents (verification_request_id);
+
+
+  --property_images
+CREATE TABLE property_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_id UUID NOT NULL
+        REFERENCES properties(id) ON DELETE RESTRICT,
+    storage_key TEXT NOT NULL UNIQUE,
+    original_filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL
+        CHECK (mime_type IN ('image/jpeg', 'image/png', 'image/webp')),
+    file_size INTEGER NOT NULL
+        CHECK (file_size > 0 AND file_size <= 5242880),
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    display_order INTEGER NOT NULL DEFAULT 0
+        CHECK (display_order >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX property_images_property_id_idx
+    ON property_images(property_id);
+
+CREATE UNIQUE INDEX property_images_one_primary_per_property_idx
+    ON property_images(property_id)
+    WHERE is_primary = TRUE;
+
+
+--property agent authorizations
+CREATE TYPE property_authorization_status AS ENUM (
+    'active',
+    'revoked'
+);
+
+CREATE TABLE property_authorizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_id UUID NOT NULL
+        REFERENCES properties(id) ON DELETE RESTRICT,
+    agent_id UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+    authorized_by UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+    status property_authorization_status NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT property_authorizations_property_agent_unique
+        UNIQUE (property_id, agent_id)
+);
+
+CREATE INDEX property_authorizations_agent_status_idx
+    ON property_authorizations(agent_id, status);
+
+CREATE INDEX property_authorizations_property_status_idx
+    ON property_authorizations(property_id, status);
+
+
+-- Buyer Inquiry and Referral Management
+
+-- Referral status
+CREATE TYPE referral_status AS ENUM (
+    'assigned',
+    'accepted',
+    'rejected',
+    'in_progress',
+    'agreement',
+    'closed_won',
+    'closed_lost'
+);
+
+CREATE SEQUENCE referral_seq START WITH 1000;
+
+-- Referrals: buyer inquiry and referral 
+CREATE TABLE referrals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    reference_code TEXT NOT NULL UNIQUE
+        DEFAULT ('REF-' || nextval('referral_seq')),
+
+    buyer_id UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    property_id UUID NOT NULL
+        REFERENCES properties(id) ON DELETE RESTRICT,
+
+    assigned_to UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    message TEXT,
+
+    status referral_status NOT NULL DEFAULT 'assigned',
+    status_reason TEXT,
+
+    assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    accepted_at TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT referrals_message_not_blank
+        CHECK (message IS NULL OR LENGTH(BTRIM(message)) > 0),
+
+    CONSTRAINT referrals_status_reason_not_blank
+        CHECK (
+            status_reason IS NULL
+            OR LENGTH(BTRIM(status_reason)) > 0
+        )
+);
+
+-- One unresolved referral per buyer and property.
+-- Rejected referrals remain included because an admin may reassign them.
+CREATE UNIQUE INDEX referrals_one_open_per_buyer_property
+    ON referrals (buyer_id, property_id)
+    WHERE status NOT IN ('closed_won', 'closed_lost');
+
+CREATE INDEX referrals_assigned_status_idx
+    ON referrals (assigned_to, status);
+
+CREATE INDEX referrals_buyer_idx
+    ON referrals (buyer_id);
+
+CREATE INDEX referrals_property_idx
+    ON referrals (property_id);
+
+CREATE INDEX referrals_created_at_idx
+    ON referrals (created_at DESC);
+
+--  Referral events: status and assignment history
+CREATE TABLE referral_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    referral_id UUID NOT NULL
+        REFERENCES referrals(id) ON DELETE RESTRICT,
+
+    actor_id UUID
+        REFERENCES users(id) ON DELETE SET NULL,
+
+    event_type TEXT NOT NULL
+        CHECK (event_type IN (
+            'created',
+            'assigned',
+            'accepted',
+            'rejected',
+            'status_changed',
+            'reassigned'
+        )),
+
+    status referral_status NOT NULL,
+
+    assigned_to UUID
+        REFERENCES users(id) ON DELETE SET NULL,
+
+    note TEXT,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT referral_events_note_not_blank
+        CHECK (note IS NULL OR LENGTH(BTRIM(note)) > 0)
+);
+
+CREATE INDEX referral_events_history_idx
+    ON referral_events (referral_id, created_at DESC);
+
+CREATE INDEX referral_events_actor_idx
+    ON referral_events (actor_id, created_at DESC);
+
+--  Referral messages and private follow-up notes
+CREATE TABLE referral_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    referral_id UUID NOT NULL
+        REFERENCES referrals(id) ON DELETE RESTRICT,
+
+    sender_id UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    kind TEXT NOT NULL
+        CHECK (kind IN ('message', 'follow_up')),
+
+    body TEXT NOT NULL,
+
+    due_at TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT referral_messages_body_not_blank
+        CHECK (LENGTH(BTRIM(body)) > 0)
+);
+
+CREATE INDEX referral_messages_history_idx
+    ON referral_messages (referral_id, created_at DESC);
+
+--favorites
+CREATE TABLE favorites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    buyer_id UUID NOT NULL
+        REFERENCES users(id) ON DELETE CASCADE,
+
+    property_id UUID NOT NULL
+        REFERENCES properties(id) ON DELETE CASCADE,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT favorites_buyer_property_unique
+        UNIQUE (buyer_id, property_id)
+);
+
+CREATE INDEX favorites_buyer_created_at_idx
+ON favorites (buyer_id, created_at DESC);
+
+CREATE TABLE property_visits (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    referral_id UUID NOT NULL
+        REFERENCES referrals(id) ON DELETE RESTRICT,
+
+    -- Buyer's preferred date and time
+    requested_at TIMESTAMPTZ NOT NULL,
+
+    -- Final date and time set by the seller
+    scheduled_at TIMESTAMPTZ,
+
+    location TEXT,
+    notes TEXT,
+
+    status TEXT NOT NULL DEFAULT 'requested'
+        CHECK (
+            status IN (
+                'requested',
+                'scheduled',
+                'completed',
+                'cancelled'
+            )
+        ),
+
+    outcome TEXT
+        CHECK (
+            outcome IS NULL OR outcome IN (
+                'interested',
+                'not_interested',
+                'requested_another_visit'
+            )
+        ),
+
+    outcome_note TEXT,
+
+    outcome_recorded_by UUID
+        REFERENCES users(id) ON DELETE SET NULL,
+
+    outcome_recorded_at TIMESTAMPTZ,
+
+    -- Preserve previous outcomes when an outcome is updated
+    outcome_history JSONB NOT NULL DEFAULT '[]'::jsonb,
+
+    created_by UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    cancelled_at TIMESTAMPTZ,
+
+    CONSTRAINT property_visits_location_not_blank
+        CHECK (location IS NULL OR LENGTH(BTRIM(location)) > 0),
+
+    CONSTRAINT property_visits_notes_not_blank
+        CHECK (notes IS NULL OR LENGTH(BTRIM(notes)) > 0),
+
+    CONSTRAINT property_visits_outcome_note_not_blank
+        CHECK (outcome_note IS NULL OR LENGTH(BTRIM(outcome_note)) > 0),
+
+    CONSTRAINT property_visits_scheduled_time_required
+        CHECK (status NOT IN ('scheduled', 'completed') OR scheduled_at IS NOT NULL),
+
+    CONSTRAINT property_visits_outcome_required
+        CHECK (
+            status <> 'completed'
+            OR (
+                outcome IS NOT NULL
+                AND outcome_recorded_by IS NOT NULL
+                AND outcome_recorded_at IS NOT NULL
+            )
+        )
+);
+
+-- Only one active visit request or scheduled visit per referral.
+CREATE UNIQUE INDEX property_visits_one_active_per_referral_idx
+ON property_visits (referral_id)
+WHERE status IN ('requested', 'scheduled');
+
+CREATE INDEX property_visits_referral_date_idx
+ON property_visits (referral_id, requested_at DESC);
+
+CREATE INDEX property_visits_created_by_idx
+ON property_visits (created_by);
+
+--referral issues
+CREATE TABLE referral_issues (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    referral_id UUID NOT NULL
+        REFERENCES referrals(id) ON DELETE RESTRICT,
+
+    reported_by UUID NOT NULL
+        REFERENCES users(id) ON DELETE RESTRICT,
+
+    category TEXT NOT NULL CHECK (
+        category IN (
+            'communication',
+            'property_information',
+            'seller_behavior',
+            'buyer_behavior',
+            'payment',
+            'visit_or_scheduling',
+            'fraud_or_suspicious_activity',
+            'other'
+        )
+    ),
+
+    subject VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+
+    status TEXT NOT NULL DEFAULT 'open'
+        CHECK (status IN (
+            'open',
+            'under_review',
+            'resolved',
+            'dismissed'
+        )),
+
+    admin_notes TEXT,
+    resolution TEXT,
+
+    reviewed_by UUID
+        REFERENCES users(id) ON DELETE SET NULL,
+
+    reviewed_at TIMESTAMPTZ,
+    resolved_at TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT referral_issues_subject_not_blank
+        CHECK (LENGTH(BTRIM(subject)) > 0),
+
+    CONSTRAINT referral_issues_description_not_blank
+        CHECK (LENGTH(BTRIM(description)) > 0),
+
+    CONSTRAINT referral_issues_admin_notes_not_blank
+        CHECK (admin_notes IS NULL OR LENGTH(BTRIM(admin_notes)) > 0),
+
+    CONSTRAINT referral_issues_resolution_not_blank
+        CHECK (resolution IS NULL OR LENGTH(BTRIM(resolution)) > 0)
+);
+
+CREATE INDEX referral_issues_referral_idx
+    ON referral_issues (referral_id, created_at DESC);
+
+CREATE INDEX referral_issues_reporter_idx
+    ON referral_issues (reported_by, created_at DESC);
+
+CREATE INDEX referral_issues_status_idx
+    ON referral_issues (status, created_at DESC);
