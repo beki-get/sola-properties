@@ -1,66 +1,53 @@
-CREATE TABLE referral_issues (
+
+-- Disputes
+CREATE TABLE disputes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    referral_id UUID NOT NULL
-        REFERENCES referrals(id) ON DELETE RESTRICT,
+    entity_type TEXT NOT NULL
+        CHECK (entity_type IN ('transaction', 'commission')),
+
+    entity_id UUID NOT NULL,
 
     reported_by UUID NOT NULL
         REFERENCES users(id) ON DELETE RESTRICT,
 
-    category TEXT NOT NULL CHECK (
-        category IN (
-            'communication',
-            'property_information',
-            'seller_behavior',
-            'buyer_behavior',
-            'payment',
-            'visit_or_scheduling',
-            'fraud_or_suspicious_activity',
-            'other'
-        )
-    ),
-
-    subject VARCHAR(200) NOT NULL,
-    description TEXT NOT NULL,
+    reason TEXT NOT NULL
+        CHECK (LENGTH(BTRIM(reason)) > 0),
 
     status TEXT NOT NULL DEFAULT 'open'
-        CHECK (status IN (
-            'open',
-            'under_review',
-            'resolved',
-            'dismissed'
-        )),
+        CHECK (status IN ('open', 'resolved', 'rejected')),
 
-    admin_notes TEXT,
-    resolution TEXT,
-
-    reviewed_by UUID
+    resolution_note TEXT,
+    resolved_by UUID
         REFERENCES users(id) ON DELETE SET NULL,
-
-    reviewed_at TIMESTAMPTZ,
     resolved_at TIMESTAMPTZ,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT referral_issues_subject_not_blank
-        CHECK (LENGTH(BTRIM(subject)) > 0),
+    CONSTRAINT disputes_resolution_note_required
+        CHECK (
+            status = 'open'
+            OR NULLIF(BTRIM(resolution_note), '') IS NOT NULL
+        ),
 
-    CONSTRAINT referral_issues_description_not_blank
-        CHECK (LENGTH(BTRIM(description)) > 0),
-
-    CONSTRAINT referral_issues_admin_notes_not_blank
-        CHECK (admin_notes IS NULL OR LENGTH(BTRIM(admin_notes)) > 0),
-
-    CONSTRAINT referral_issues_resolution_not_blank
-        CHECK (resolution IS NULL OR LENGTH(BTRIM(resolution)) > 0)
+    CONSTRAINT disputes_resolution_fields_consistent
+        CHECK (
+            (status = 'open' AND resolved_by IS NULL AND resolved_at IS NULL)
+            OR
+            (status IN ('resolved', 'rejected')
+                AND resolved_by IS NOT NULL
+                AND resolved_at IS NOT NULL)
+        )
 );
 
-CREATE INDEX referral_issues_referral_idx
-    ON referral_issues (referral_id, created_at DESC);
+CREATE INDEX disputes_entity_status_idx
+    ON disputes (entity_type, entity_id, status);
 
-CREATE INDEX referral_issues_reporter_idx
-    ON referral_issues (reported_by, created_at DESC);
+CREATE INDEX disputes_reported_by_idx
+    ON disputes (reported_by, created_at DESC);
 
-CREATE INDEX referral_issues_status_idx
-    ON referral_issues (status, created_at DESC);
+CREATE UNIQUE INDEX disputes_one_open_per_entity_idx
+    ON disputes (entity_type, entity_id)
+    WHERE status = 'open';
+
+
