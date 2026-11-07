@@ -1248,7 +1248,7 @@ export async function updateReferralIssue(input: {
 
     const transitions: Record<string, string[]> = {
       open: ["under_review", "dismissed", "resolved"],
-      under_review: ["resolved", "dismissed", "open"],
+      under_review: ["resolved", "dismissed"],
       resolved: [],
       dismissed: [],
     };
