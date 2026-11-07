@@ -12,14 +12,17 @@ import developerProjectRoutes from "./routes/developerProjectRoutes";
 import propertyRoutes from "./routes/propertyRoutes";
 import adminProjectRoutes from "./routes/adminProjectRoutes";
 import propertyAuthorizationRoutes from "./routes/propertyAuthorizationRoutes";
-
-import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
-import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRoutes";
-import adminPropertyRoutes from "./routes/adminPropertyRoutes";
 import referralRoutes from "./routes/referralRoutes";
 import favoriteRoutes from "./routes/favoriteRoutes";
 import referralOperationsRoutes from "./routes/referralOperationsRoutes";
 import referralIssueRoutes from "./routes/referralIssueRoutes";
+import transactionRoutes from "./routes/transactionRoutes";
+import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRoutes";
+import adminPropertyRoutes from "./routes/adminPropertyRoutes";
+
+import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
+import disputeRoutes from "./routes/disputeRoutes";
+import commissionAgreementRoutes from "./routes/commissionAgreementRoutes";
 
 const app = express();
 
@@ -62,6 +65,10 @@ app.use("/api/v1/referrals", referralRoutes);
 app.use("/api/v1/favorites", favoriteRoutes);
 app.use("/api/v1/referral", referralOperationsRoutes);
 app.use("/api/v1/referral-issues", referralIssueRoutes);
+app.use("/api/v1/transactions", transactionRoutes);
+app.use("/api/v1/disputes", disputeRoutes);
+app.use("/api/v1/commission-agreements", commissionAgreementRoutes);
+app.use("/api/v1", commissionAgreementRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
