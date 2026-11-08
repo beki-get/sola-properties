@@ -23,6 +23,8 @@ import adminPropertyRoutes from "./routes/adminPropertyRoutes";
 import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
 import disputeRoutes from "./routes/disputeRoutes";
 import commissionAgreementRoutes from "./routes/commissionAgreementRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
+import notificationPreferenceRoutes from "./routes/notificationPreferenceRoutes";
 
 const app = express();
 
@@ -69,6 +71,8 @@ app.use("/api/v1/transactions", transactionRoutes);
 app.use("/api/v1/disputes", disputeRoutes);
 app.use("/api/v1/commission-agreements", commissionAgreementRoutes);
 app.use("/api/v1", commissionAgreementRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/notifications/preferences", notificationPreferenceRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
