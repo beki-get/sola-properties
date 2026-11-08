@@ -9,6 +9,8 @@ import {
 } from "../queries/commissionAgreementQueries";
 
 import { notifyUser } from "./notificationService";
+import { logger } from "../utils/logger";
+
 export async function createCommissionAgreementService(input: {
   sellerId?: string;
   commissionRatePct: number;
@@ -48,7 +50,25 @@ export async function approveCommissionService(
   commissionId: string,
   actorId: string,
 ) {
-  return approveCommission(commissionId, actorId);
+  const result = await approveCommission(commissionId, actorId);
+
+  try {
+    await notifyUser({
+      recipientId: result.sellerId,
+      type: "commission_approved",
+      title: "Commission approved",
+      message: "Your commission has been approved.",
+      entityType: "commission",
+      entityId: commissionId,
+    });
+  } catch (error) {
+    logger.error(
+      { err: error, commissionId },
+      "Failed to create commission approval notification",
+    );
+  }
+
+  return result.commission;
 }
 
 export async function recordCommissionPaymentService(input: {
@@ -58,7 +78,26 @@ export async function recordCommissionPaymentService(input: {
   reference?: string;
   actorId: string;
 }) {
-  return recordCommissionPayment(input);
+  const result = await recordCommissionPayment(input);
+
+  try {
+    await notifyUser({
+      recipientId: result.sellerId,
+      type: "commission_payment_recorded",
+      title: "Commission payment recorded",
+      message: "A payment has been recorded against your commission.",
+      entityType: "commission",
+      entityId: input.commissionId,
+    });
+  } catch (error) {
+    logger.error(
+      { err: error, commissionId: input.commissionId },
+      "Failed to create commission payment notification",
+    );
+  }
+
+  const { sellerId: _sellerId, ...response } = result;
+  return response;
 }
 
 export async function createCommissionAdjustment(
@@ -74,19 +113,29 @@ export async function createCommissionAdjustment(
     reason,
   );
 
-  // Notification failure must not undo a committed financial adjustment.
-  const notification = await notifyUser({
-    recipientId: result.sellerId,
-    type: "commission_adjustment",
-    title: "Commission adjusted",
-    message: `Your commission amount owed has been adjusted. New amount owed: ${result.amountOwed}.`,
-    entityType: "commission",
-    entityId: commissionId,
-  }).catch(() => null);
+  let notificationSent = false;
+
+  try {
+    const notification = await notifyUser({
+      recipientId: result.sellerId,
+      type: "commission_adjustment",
+      title: "Commission adjusted",
+      message: `Your commission amount owed has been adjusted. New amount owed: ${result.amountOwed}.`,
+      entityType: "commission",
+      entityId: commissionId,
+    });
+
+    notificationSent = Boolean(notification);
+  } catch (error) {
+    logger.error(
+      { err: error, commissionId },
+      "Failed to create commission adjustment notification",
+    );
+  }
 
   return {
     ...result.adjustment,
     amountOwed: result.amountOwed,
-    notificationSent: Boolean(notification),
+    notificationSent,
   };
 }
