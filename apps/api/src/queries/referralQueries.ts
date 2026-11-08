@@ -838,22 +838,37 @@ export async function createReferralMessage(input: {
   body: string;
 }) {
   const result = await pool.query(
-    `INSERT INTO referral_messages (
-       referral_id,
-       sender_id,
-       kind,
-       body
-     )
-     SELECT r.id, $2, 'message', $4
-     FROM referrals r
-     WHERE r.id = $1
-       AND (
-         ($3 = 'buyer' AND r.buyer_id = $2)
-         OR
-         ($3 IN ('agent', 'developer') AND r.assigned_to = $2)
+    `WITH target_referral AS MATERIALIZED (
+       SELECT id, buyer_id, assigned_to
+       FROM referrals
+       WHERE id = $1
+         AND (
+           ($3 = 'buyer' AND buyer_id = $2)
+           OR
+           ($3 IN ('agent', 'developer') AND assigned_to = $2)
+         )
+         AND status IN ('assigned', 'accepted', 'in_progress', 'agreement')
+       FOR UPDATE
+     ),
+     inserted_message AS (
+       INSERT INTO referral_messages (
+         referral_id,
+         sender_id,
+         kind,
+         body
        )
-       AND r.status IN ('assigned', 'accepted', 'in_progress', 'agreement')
-     RETURNING id, referral_id, sender_id, kind, body, created_at`,
+       SELECT id, $2, 'message', $4
+       FROM target_referral
+       RETURNING id, referral_id, sender_id, kind, body, created_at
+     )
+     SELECT
+       inserted_message.*,
+       CASE
+         WHEN $3 = 'buyer' THEN target_referral.assigned_to
+         ELSE target_referral.buyer_id
+       END AS recipient_id
+     FROM inserted_message
+     CROSS JOIN target_referral`,
     [input.referralId, input.senderId, input.senderRole, input.body],
   );
 

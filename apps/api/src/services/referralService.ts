@@ -13,12 +13,15 @@ import {
   getReferralFollowUps,
   createReferralMessage,
   getReferralMessages,
-   createReferralIssue,
+  createReferralIssue,
   getMyReferralIssues,
   getAdminReferralIssues,
   getAdminReferralIssueById,
   updateReferralIssue,
 } from "../queries/referralQueries";
+
+import { notifyUser } from "./notificationService";
+import { logger } from "../utils/logger";
 
 interface CreateReferralInput {
   buyerId: string;
@@ -26,8 +29,29 @@ interface CreateReferralInput {
   message?: string | null;
 }
 
+async function sendReferralNotification(
+  input: Parameters<typeof notifyUser>[0],
+) {
+  try {
+    await notifyUser(input);
+  } catch (error) {
+    logger.error({ err: error }, "Failed to create referral notification");
+  }
+}
+
 export async function createReferral(input: CreateReferralInput) {
-  return createReferralWithHistory(input);
+  const referral = await createReferralWithHistory(input);
+
+  await sendReferralNotification({
+    recipientId: referral.assigned_to,
+    type: "referral_created",
+    title: "New buyer inquiry",
+    message: "You have received a new inquiry about a property.",
+    entityType: "referral",
+    entityId: referral.id,
+  });
+
+  return referral;
 }
 
 export async function getMyReferrals(agentId: string) {
@@ -40,7 +64,23 @@ export async function respondToReferral(input: {
   decision: "accepted" | "rejected";
   reason?: string;
 }) {
-  return decideReferral(input);
+  const referral = await decideReferral(input);
+
+  await sendReferralNotification({
+    recipientId: referral.buyer_id,
+    type:
+      input.decision === "accepted" ? "referral_accepted" : "referral_rejected",
+    title:
+      input.decision === "accepted" ? "Inquiry accepted" : "Inquiry rejected",
+    message:
+      input.decision === "accepted"
+        ? "The seller has accepted your property inquiry."
+        : `The seller has rejected your property inquiry.${referral.status_reason ? ` Reason: ${referral.status_reason}` : ""}`,
+    entityType: "referral",
+    entityId: referral.id,
+  });
+
+  return referral;
 }
 
 export async function updateReferralStatus(input: {
@@ -49,13 +89,33 @@ export async function updateReferralStatus(input: {
   status: "in_progress" | "agreement" | "closed_won" | "closed_lost";
   reason?: string;
 }) {
-  return changeReferralStatus(input);
+  const referral = await changeReferralStatus(input);
+
+  await sendReferralNotification({
+    recipientId: referral.buyer_id,
+    type: "referral_status_changed",
+    title: "Referral status updated",
+    message: `Your property inquiry status has changed to ${input.status.replace(/_/g, " ")}.`,
+    entityType: "referral",
+    entityId: referral.id,
+  });
+
+  return referral;
 }
 
-export async function reassignReferralService(
-  input: ReassignReferralInput,
-) {
-  return reassignReferral(input);
+export async function reassignReferralService(input: ReassignReferralInput) {
+  const referral = await reassignReferral(input);
+
+  await sendReferralNotification({
+    recipientId: referral.assigned_to,
+    type: "referral_reassigned",
+    title: "New referral assigned",
+    message: "An administrator has assigned a referral to you.",
+    entityType: "referral",
+    entityId: referral.id,
+  });
+
+  return referral;
 }
 
 export async function getAllReferralsService(status?: string) {
@@ -99,9 +159,21 @@ export async function createReferralMessageService(input: {
   senderRole: "buyer" | "agent" | "developer";
   body: string;
 }) {
-  return createReferralMessage(input);
-}
+  const { recipient_id, ...message } = await createReferralMessage(input);
 
+  if (recipient_id) {
+    await sendReferralNotification({
+      recipientId: recipient_id,
+      type: "referral_message_received",
+      title: "New referral message",
+      message: "You have received a new message about a referral.",
+      entityType: "referral",
+      entityId: input.referralId,
+    });
+  }
+
+  return message;
+}
 export async function getReferralMessagesService(input: {
   referralId: string;
   userId: string;
