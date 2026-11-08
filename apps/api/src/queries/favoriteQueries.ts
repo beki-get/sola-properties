@@ -171,3 +171,15 @@ export async function removeFavorite(
 
   return result.rows[0];
 }
+
+// Get a list of buyer IDs who have favorited a specific property.
+export async function getPropertyFavoriteBuyerIds(propertyId: string) {
+  const result = await pool.query<{ buyer_id: string }>(
+    `SELECT DISTINCT buyer_id
+     FROM favorites
+     WHERE property_id = $1`,
+    [propertyId],
+  );
+
+  return result.rows.map((row) => row.buyer_id);
+}
