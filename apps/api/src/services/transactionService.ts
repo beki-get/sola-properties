@@ -17,7 +17,8 @@ import {
   updateTransaction as editTransaction,
 } from "../queries/transactionQueries";
 import { logger } from "../utils/logger";
-import {pool} from "../config/database";
+import { notifyUser } from "./notificationService";
+import { pool } from "../config/database";
 
 const transactionDocumentsBucket =
   process.env.NEON_TRANSACTION_DOCUMENTS_BUCKET;
@@ -225,5 +226,29 @@ export async function decideTransaction(input: {
   decision: "verified" | "rejected";
   reason?: string;
 }) {
-  return reviewTransaction(input);
+  const result = await reviewTransaction(input);
+
+  try {
+    await notifyUser({
+      recipientId: result.seller_id,
+      type: "transaction_status_changed",
+      title:
+        input.decision === "verified"
+          ? "Transaction verified"
+          : "Transaction rejected",
+      message:
+        input.decision === "verified"
+          ? "Your transaction has been verified."
+          : "Your transaction has been rejected.",
+      entityType: "transaction",
+      entityId: input.transactionId,
+    });
+  } catch (error) {
+    logger.error(
+      { err: error, transactionId: input.transactionId },
+      "Failed to create transaction decision notification",
+    );
+  }
+
+  return result;
 }
