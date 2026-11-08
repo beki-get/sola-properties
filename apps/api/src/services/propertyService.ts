@@ -12,6 +12,7 @@ import {
   getAdminPendingProperty as queryAdminPendingProperty,
   decideAdminProperty as queryDecideAdminProperty,
   getMyPropertyHistory as queryGetMyPropertyHistory,
+  updateMyPropertyPricing
 } from "../queries/propertyQueries";
 import type {
   CreatePropertyInput,
@@ -21,6 +22,10 @@ import type {
   AdminPendingPropertyListQuery,
   AdminPropertyDecisionInput,
 } from "../schemas/propertySchemas";
+
+import { notifyMany } from "./notificationService";
+import { logger } from "../utils/logger";
+import { getPropertyFavoriteBuyerIds } from "../queries/favoriteQueries";
 
 import {
   DeleteObjectCommand,
@@ -73,9 +78,28 @@ export async function updatePropertyStatus(
   propertyId: string,
   status: "inactive" | "sold",
 ) {
-  return queryChangePropertyStatus(ownerId, propertyId, status);
-}
+  const property = await queryChangePropertyStatus(ownerId, propertyId, status);
 
+  try {
+    const recipientIds = await getPropertyFavoriteBuyerIds(propertyId);
+
+    await notifyMany({
+      recipientIds,
+      type: "property_status_changed",
+      title: "Property availability updated",
+      message: `A property you favorited is now ${status}.`,
+      entityType: "property",
+      entityId: propertyId,
+    });
+  } catch (error) {
+    logger.error(
+      { err: error, propertyId },
+      "Failed to notify property followers",
+    );
+  }
+
+  return property;
+}
 const propertyImagesBucket = process.env.NEON_PROPERTY_IMAGES_BUCKET;
 
 function requirePropertyImagesBucket(): string {
@@ -257,4 +281,45 @@ export async function getMyPropertyHistoryService(
   propertyId: string,
 ) {
   return queryGetMyPropertyHistory(ownerId, propertyId);
+}
+
+//
+export async function updatePropertyPricing(
+  ownerId: string,
+  propertyId: string,
+  input: { price: number },
+) {
+  const { property, previousPrice } = await updateMyPropertyPricing(
+    ownerId,
+    propertyId,
+    input,
+  );
+
+  const priceDecreased =
+    previousPrice !== null &&
+    Number(property.price) < Number(previousPrice);
+
+  if (priceDecreased) {
+    try {
+      const recipientIds = await getPropertyFavoriteBuyerIds(propertyId);
+
+      if (recipientIds.length > 0) {
+        await notifyMany({
+          recipientIds,
+          type: "property_price_decreased",
+          title: "Property price reduced",
+          message: "A property you favorited has had its price reduced.",
+          entityType: "property",
+          entityId: propertyId,
+        });
+      }
+    } catch (error) {
+      logger.error(
+        { err: error, propertyId },
+        "Failed to create property price decrease notifications",
+      );
+    }
+  }
+
+  return property;
 }

@@ -127,8 +127,7 @@ export type PublicPropertyListQuery = z.infer<
   typeof publicPropertyListQuerySchema
 >;
 
-
-//admin schemas 
+//admin schemas
 export const adminPendingPropertyListQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).default(1),
@@ -143,9 +142,7 @@ export const adminPropertyDecisionSchema = z
   })
   .strict()
   .refine(
-    (data) =>
-      data.decision !== "reject" ||
-      data.rejection_reason !== undefined,
+    (data) => data.decision !== "reject" || data.rejection_reason !== undefined,
     {
       message: "A rejection reason is required",
       path: ["rejection_reason"],
@@ -159,3 +156,9 @@ export type AdminPendingPropertyListQuery = z.infer<
 export type AdminPropertyDecisionInput = z.infer<
   typeof adminPropertyDecisionSchema
 >;
+
+export const updatePropertyPricingSchema = z
+  .object({
+    price: z.number().positive(),
+  })
+  .strict();

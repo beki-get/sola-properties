@@ -1072,3 +1072,67 @@ export async function listDeveloperProjectProperties(
     totalPages: Math.ceil(total / query.limit),
   };
 }
+
+// Update property pricing for a property owner.
+export async function updateMyPropertyPricing(
+  ownerId: string,
+  propertyId: string,
+  input: { price: number },
+): Promise<{ property: Property; previousPrice: string | null }> {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const current = await getClientProperty(
+      client,
+      propertyId,
+      ownerId,
+      true,
+    );
+
+    if (current.status !== "active") {
+      throw new PropertyQueryError(
+        409,
+        "PROPERTY_NOT_ACTIVE",
+        "Only active properties can have their pricing updated",
+      );
+    }
+
+    const previousPrice = current.price;
+
+    // Avoid unnecessary updates and audit records when the price is unchanged.
+    if (previousPrice !== null && Number(previousPrice) === input.price) {
+      await client.query("COMMIT");
+      return { property: current, previousPrice };
+    }
+
+    const result = await client.query<Property>(
+      `UPDATE properties
+       SET price = $1, updated_at = NOW()
+       WHERE id = $2 AND owner_id = $3
+       RETURNING *`,
+      [input.price, propertyId, ownerId],
+    );
+
+    const updated = result.rows[0]!;
+
+    await audit(
+      client,
+      ownerId,
+      propertyId,
+      "property.pricing_updated",
+      { price: previousPrice },
+      { price: updated.price },
+    );
+
+    await client.query("COMMIT");
+
+    return { property: updated, previousPrice };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
