@@ -450,19 +450,10 @@ export async function approveCommission(commissionId: string, actorId: string) {
       ],
     );
 
-    await createNotification(
-      {
-        recipientId: commission.seller_id,
-        type: "commission_approved",
-        title: "Commission approved",
-        message: "Your commission has been approved.",
-        entityType: "commission",
-        entityId: commissionId,
-      },
-      client,
-    );
-
-    return result.rows[0];
+    return {
+      commission: result.rows[0],
+      sellerId: commission.seller_id,
+    };
   });
 }
 
@@ -610,23 +601,12 @@ export async function recordCommissionPayment(input: {
       ],
     );
 
-    await createNotification(
-      {
-        recipientId: commission.seller_id,
-        type: "commission_payment_recorded",
-        title: "Commission payment recorded",
-        message: "A payment has been recorded against your commission.",
-        entityType: "commission",
-        entityId: input.commissionId,
-      },
-      client,
-    );
-
     return {
       payment: paymentResult.rows[0],
       amountOwed: amount_owed,
       paidTotal: updatedTotals.paid_total,
       outstanding: updatedTotals.outstanding,
+      sellerId: commission.seller_id,
     };
   });
 }
@@ -728,20 +708,6 @@ export async function createCommissionAdjustment(
           amount_owed: new_owed,
         }),
       ],
-    );
-
-    // Notify the seller about the adjustment
-
-    await createNotification(
-      {
-        recipientId: commission.seller_id,
-        type: "commission_adjustment",
-        title: "Commission adjusted",
-        message: `Your commission amount owed has been adjusted. New amount owed: ${new_owed}.`,
-        entityType: "commission",
-        entityId: commissionId,
-      },
-      client,
     );
 
     // A positive adjustment may reopen a previously paid commission.
