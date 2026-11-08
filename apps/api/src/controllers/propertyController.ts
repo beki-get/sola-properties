@@ -7,8 +7,9 @@ import {
   updatePropertyStatusSchema,
   publicPropertyListQuerySchema,
   comparePropertiesQuerySchema,
-   adminPendingPropertyListQuerySchema,
+  adminPendingPropertyListQuerySchema,
   adminPropertyDecisionSchema,
+  updatePropertyPricingSchema,
 } from "../schemas/propertySchemas";
 import {
   createProperty,
@@ -23,10 +24,11 @@ import {
   getPublicProperty,
   comparePublicProperties,
   listRecommendedProperties,
-   getAdminPendingProperties,
+  getAdminPendingProperties,
   getAdminPendingProperty,
   decideAdminProperty,
   getMyPropertyHistoryService,
+  updatePropertyPricing,
 } from "../services/propertyService";
 import { PropertyQueryError } from "../queries/propertyQueries";
 
@@ -304,7 +306,9 @@ export const deletePropertyImageController: RequestHandler = async (
 
 // Public property controllers
 export const listPublicPropertiesController: RequestHandler = async (
-  req, res, next,
+  req,
+  res,
+  next,
 ) => {
   try {
     const parsed = publicPropertyListQuerySchema.safeParse(req.query);
@@ -325,7 +329,9 @@ export const listPublicPropertiesController: RequestHandler = async (
 };
 
 export const getPublicPropertyController: RequestHandler = async (
-  req, res, next,
+  req,
+  res,
+  next,
 ) => {
   try {
     const propertyId = readPropertyId(req, res);
@@ -348,7 +354,9 @@ export const getPublicPropertyController: RequestHandler = async (
 };
 
 export const comparePropertiesController: RequestHandler = async (
-  req, res, next,
+  req,
+  res,
+  next,
 ) => {
   try {
     const parsed = comparePropertiesQuerySchema.safeParse(req.query);
@@ -379,7 +387,9 @@ export const comparePropertiesController: RequestHandler = async (
 };
 
 export const recommendedPropertiesController: RequestHandler = async (
-  req, res, next,
+  req,
+  res,
+  next,
 ) => {
   try {
     const properties = await listRecommendedProperties(req.currentUser!.id);
@@ -390,85 +400,140 @@ export const recommendedPropertiesController: RequestHandler = async (
 };
 
 // Admin property controllers
-export const getAdminPendingPropertiesController: RequestHandler =
-  async (req, res, next) => {
-    try {
-      const parsed = adminPendingPropertyListQuerySchema.safeParse(req.query);
+export const getAdminPendingPropertiesController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const parsed = adminPendingPropertyListQuerySchema.safeParse(req.query);
 
-      if (!parsed.success) {
-        res.status(400).json({
-          message: "Invalid pagination parameters",
-          code: "VALIDATION_ERROR",
-          errors: parsed.error.flatten(),
-        });
-        return;
-      }
-
-      const result = await getAdminPendingProperties(parsed.data);
-      res.status(200).json(result);
-    } catch (error) {
-      handleError(error, res, next);
-    }
-  };
-
-export const getAdminPendingPropertyController: RequestHandler =
-  async (req, res, next) => {
-    try {
-      const propertyId = readPropertyId(req, res);
-      if (!propertyId) return;
-
-      const property = await getAdminPendingProperty(propertyId);
-      res.status(200).json({ property });
-    } catch (error) {
-      handleError(error, res, next);
-    }
-  };
-
-export const decideAdminPropertyController: RequestHandler =
-  async (req, res, next) => {
-    try {
-      const propertyId = readPropertyId(req, res);
-      if (!propertyId) return;
-
-      const parsed = adminPropertyDecisionSchema.safeParse(req.body);
-
-      if (!parsed.success) {
-        res.status(400).json({
-          message: "Invalid property decision",
-          code: "VALIDATION_ERROR",
-          errors: parsed.error.flatten(),
-        });
-        return;
-      }
-
-      const property = await decideAdminProperty(
-        propertyId,
-        req.currentUser!.id,
-        parsed.data,
-      );
-
-      res.status(200).json({ property });
-    } catch (error) {
-      handleError(error, res, next);
-    }
-  };
-
-  export const getMyPropertyHistoryController: RequestHandler =
-  async (req, res, next) => {
-    try {
-      const propertyId = readPropertyId(req, res);
-      if (!propertyId) return;
-
-      const history = await getMyPropertyHistoryService(
-        req.currentUser!.id,
-        propertyId,
-      );
-
-      res.status(200).json({
-        message: "Property history retrieved successfully",
-        data: history,
+    if (!parsed.success) {
+      res.status(400).json({
+        message: "Invalid pagination parameters",
+        code: "VALIDATION_ERROR",
+        errors: parsed.error.flatten(),
       });
-    } catch (error) {
-      handleError(error, res, next);
+      return;
     }
-  };
+
+    const result = await getAdminPendingProperties(parsed.data);
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(error, res, next);
+  }
+};
+
+export const getAdminPendingPropertyController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const propertyId = readPropertyId(req, res);
+    if (!propertyId) return;
+
+    const property = await getAdminPendingProperty(propertyId);
+    res.status(200).json({ property });
+  } catch (error) {
+    handleError(error, res, next);
+  }
+};
+
+export const decideAdminPropertyController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const propertyId = readPropertyId(req, res);
+    if (!propertyId) return;
+
+    const parsed = adminPropertyDecisionSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      res.status(400).json({
+        message: "Invalid property decision",
+        code: "VALIDATION_ERROR",
+        errors: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const property = await decideAdminProperty(
+      propertyId,
+      req.currentUser!.id,
+      parsed.data,
+    );
+
+    res.status(200).json({ property });
+  } catch (error) {
+    handleError(error, res, next);
+  }
+};
+
+export const getMyPropertyHistoryController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const propertyId = readPropertyId(req, res);
+    if (!propertyId) return;
+
+    const history = await getMyPropertyHistoryService(
+      req.currentUser!.id,
+      propertyId,
+    );
+
+    res.status(200).json({
+      message: "Property history retrieved successfully",
+      data: history,
+    });
+  } catch (error) {
+    handleError(error, res, next);
+  }
+};
+
+// Update property pricing controller
+export const updatePropertyPricingController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const role = getOwnerRole(req.currentUser!.role);
+
+    if (!role) {
+      res.status(403).json({
+        message: "Only agents and developers can update property pricing",
+        code: "ROLE_NOT_ALLOWED",
+      });
+      return;
+    }
+
+    const propertyId = readPropertyId(req, res);
+    if (!propertyId) return;
+
+    const parsed = updatePropertyPricingSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      res.status(400).json({
+        message: "Invalid pricing data",
+        code: "VALIDATION_ERROR",
+        errors: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const property = await updatePropertyPricing(
+      req.currentUser!.id,
+      propertyId,
+      parsed.data,
+    );
+
+    res.json({ property });
+  } catch (error) {
+    handleError(error, res, next);
+  }
+};
