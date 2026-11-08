@@ -149,7 +149,7 @@ export async function createBuyerVisitRequest(
     await client.query("BEGIN");
 
     const referralResult = await client.query(
-      `SELECT id, buyer_id, status
+      `SELECT id, buyer_id, assigned_to,status
        FROM referrals
        WHERE id = $1
        FOR UPDATE`,
@@ -219,7 +219,7 @@ export async function createBuyerVisitRequest(
     );
 
     await client.query("COMMIT");
-    return result.rows[0];
+    return { ...result.rows[0], recipient_id: referral.assigned_to };
   } catch (error) {
     try {
       await client.query("ROLLBACK");
@@ -340,7 +340,7 @@ export async function schedulePropertyVisit(
     await client.query("BEGIN");
 
     const visitResult = await client.query(
-      `SELECT pv.*, r.assigned_to, r.status AS referral_status
+      `SELECT pv.*, r.assigned_to, r.buyer_id, r.status AS referral_status
        FROM property_visits pv
        JOIN referrals r ON r.id = pv.referral_id
        WHERE pv.id = $1
@@ -395,7 +395,10 @@ export async function schedulePropertyVisit(
     );
 
     await client.query("COMMIT");
-    return result.rows[0];
+    return {
+      ...result.rows[0],
+      recipient_id: visit.buyer_id,
+    };
   } catch (error) {
     try {
       await client.query("ROLLBACK");
@@ -423,7 +426,7 @@ export async function updatePropertyVisit(
     await client.query("BEGIN");
 
     const visitResult = await client.query(
-      `SELECT pv.*, r.assigned_to, r.status AS referral_status
+      `SELECT pv.*, r.assigned_to,r.buyer_id, r.status AS referral_status
        FROM property_visits pv
        JOIN referrals r ON r.id = pv.referral_id
        WHERE pv.id = $1
@@ -484,7 +487,10 @@ export async function updatePropertyVisit(
     );
 
     await client.query("COMMIT");
-    return result.rows[0];
+    return {
+      ...result.rows[0],
+      recipient_id: visit.buyer_id,
+    };
   } catch (error) {
     try {
       await client.query("ROLLBACK");
@@ -524,7 +530,10 @@ export async function cancelPropertyVisit(visitId: string, userId: string) {
     );
 
     await client.query("COMMIT");
-    return result.rows[0];
+    return {
+      ...result.rows[0],
+      recipient_id: visit.buyer_id,
+    };
   } catch (error) {
     try {
       await client.query("ROLLBACK");
