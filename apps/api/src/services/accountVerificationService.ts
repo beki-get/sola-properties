@@ -21,7 +21,10 @@ import {
 import { randomUUID } from "node:crypto";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, verificationBucket } from "../config/s3Client";
-import type { Express } from "express";
+
+import { writeAuditLog } from "../utils/auditLog";
+import { notifyUser } from "./notificationService";
+import { logger } from "../utils/logger";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -170,6 +173,18 @@ export async function submitVerificationRequest(
     // A rejected applicant returns to pending when resubmitting.
     await setApplicantPending(userId, client);
 
+    //records both first-time submissions and resubmissions in the audit log
+    await writeAuditLog(client, {
+      actorId: userId,
+      action: "account_verification.submitted",
+      entityType: "account_verification_request",
+      entityId: request.id,
+      newValues: {
+        applicant_role: applicant.role,
+        status: "pending",
+      },
+    });
+
     await client.query("COMMIT");
     return request;
   } catch (error: unknown) {
@@ -211,12 +226,14 @@ export async function submitVerificationRequest(
   }
 }
 
+//get the verification history for the currently authenticated user
 export async function getMyVerificationHistory(
   userId: string,
 ): Promise<AccountVerificationRequest[]> {
   return findVerificationHistory(userId);
 }
 
+//get the pending verification requests for admin review with pagination
 export async function listPendingVerificationRequests(
   page: number,
   pageSize: number,
@@ -235,6 +252,7 @@ export async function listPendingVerificationRequests(
   };
 }
 
+//get a specific verification request by ID for admin review
 export async function getVerificationRequestForAdmin(requestId: string) {
   if (!UUID_PATTERN.test(requestId)) {
     throw new AccountVerificationError(
@@ -257,6 +275,7 @@ export async function getVerificationRequestForAdmin(requestId: string) {
   return request;
 }
 
+//decide a verification request for approval or rejection by an admin
 export async function decideVerificationRequest(
   adminId: string,
   requestId: string,
@@ -358,7 +377,50 @@ export async function decideVerificationRequest(
       );
     }
 
+    await writeAuditLog(client, {
+      actorId: adminId,
+      action: `account_verification.${decision}`,
+      entityType: "account_verification_request",
+      entityId: requestId,
+      oldValues: {
+        request_status: request.status,
+        account_status: applicant.status,
+      },
+      newValues: {
+        request_status: decision,
+        account_status: decision,
+        rejection_reason: decision === "rejected" ? rejectionReason : null,
+      },
+    });
+
     await client.query("COMMIT");
+
+    // Notify the applicant only after the decision commits.
+    try {
+      await notifyUser({
+        recipientId: request.user_id,
+        type:
+          decision === "approved"
+            ? "account_verification_approved"
+            : "account_verification_rejected",
+        title:
+          decision === "approved"
+            ? "Account verification approved"
+            : "Account verification rejected",
+        message:
+          decision === "approved"
+            ? "Your account verification has been approved."
+            : `Your account verification was rejected. Reason: ${rejectionReason}`,
+        entityType: "account_verification_request",
+        entityId: requestId,
+      });
+    } catch (error) {
+      logger.error(
+        { err: error, requestId, decision },
+        "Failed to create account verification notification",
+      );
+    }
+
     return updatedRequest;
   } catch (error: unknown) {
     try {
