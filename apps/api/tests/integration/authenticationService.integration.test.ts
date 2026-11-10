@@ -114,12 +114,27 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  // Delete only users created by this test, never unrelated database data.
-  if (testEmails.length > 0) {
-    await pool.query(`DELETE FROM users WHERE email = ANY($1::text[])`, [
-      testEmails.splice(0),
-    ]);
-  }
+  if (testEmails.length === 0) return;
+
+  const emails = [...testEmails];
+
+  await pool.query(
+    `DELETE FROM audit_logs
+     WHERE actor_id IN (
+       SELECT id
+       FROM users
+       WHERE email = ANY($1::text[])
+     )`,
+    [emails],
+  );
+
+  await pool.query(
+    `DELETE FROM users
+     WHERE email = ANY($1::text[])`,
+    [emails],
+  );
+
+  testEmails.length = 0;
 });
 
 afterAll(async () => {
