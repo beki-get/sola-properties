@@ -507,3 +507,18 @@ export async function updateUserProfile(
 
   return result.rows[0] ?? null;
 }
+
+export async function findUserByIdForUpdate(
+  userId: string,
+  client: PoolClient,
+) {
+  const result = await client.query(
+    `SELECT *
+     FROM users
+     WHERE id = $1
+     FOR UPDATE`,
+    [userId],
+  );
+
+  return result.rows[0] ?? null;
+}
