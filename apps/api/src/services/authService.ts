@@ -1,5 +1,5 @@
-import type { PoolClient } from "pg";
-import { pool } from "../config/database";
+import { withTransaction } from "../utils/withTransaction";
+import { writeAuditLog } from "../utils/auditLog";
 import {
   createEmailVerification,
   createUser,
@@ -21,6 +21,7 @@ import {
   updateUserPassword,
   revokeAllUserRefreshTokens,
   updateUserProfile,
+  findUserByIdForUpdate,
 } from "../queries/authQueries";
 import {
   registerSchema,
@@ -83,45 +84,39 @@ export async function register(input: unknown): Promise<RegisterResult> {
   const verificationTokenHash = hashToken(verificationToken);
   const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
 
-  let client: PoolClient | undefined;
   let user: Awaited<ReturnType<typeof createUser>>;
 
   try {
-    client = await pool.connect();
+    user = await withTransaction(async (client) => {
+      const createdUser = await createUser(
+        { fullName, email, passwordHash, role },
+        client,
+      );
 
-    await client.query("BEGIN");
+      await createEmailVerification(
+        {
+          userId: createdUser.id,
+          emailToVerify: email,
+          tokenHash: verificationTokenHash,
+          expiresAt,
+        },
+        client,
+      );
 
-    user = await createUser(
-      {
-        fullName,
-        email,
-        passwordHash,
-        role,
-      },
-      client,
-    );
+      await writeAuditLog(client, {
+        actorId: createdUser.id,
+        action: "user.registered",
+        entityType: "user",
+        entityId: createdUser.id,
+        newValues: {
+          role: createdUser.role,
+          status: createdUser.status,
+        },
+      });
 
-    await createEmailVerification(
-      {
-        userId: user.id,
-        emailToVerify: email,
-        tokenHash: verificationTokenHash,
-        expiresAt,
-      },
-      client,
-    );
-
-    await client.query("COMMIT");
+      return createdUser;
+    });
   } catch (error: unknown) {
-    if (client) {
-      try {
-        await client.query("ROLLBACK");
-      } catch {
-        // Preserve the original database error.
-      }
-    }
-
-    // Handle a concurrent registration for the same email.
     if (
       typeof error === "object" &&
       error !== null &&
@@ -135,10 +130,7 @@ export async function register(input: unknown): Promise<RegisterResult> {
     }
 
     throw error;
-  } finally {
-    client?.release();
   }
-
   // Send email only after the transaction commits.
   let verificationEmailSent = true;
 
@@ -255,33 +247,41 @@ export async function refreshSession(
   rawToken: string,
   metadata: SessionMetadata = {},
 ): Promise<RefreshResult> {
-  const client = await pool.connect();
+  type TransactionResult =
+    | { outcome: "success"; result: RefreshResult }
+    | { outcome: "reuse" }
+    | { outcome: "expired" }
+    | { outcome: "inactive" };
 
-  let result: RefreshResult | undefined;
-  let reuseDetected = false;
-
-  try {
-    await client.query("BEGIN");
-
-    const oldToken = await findRefreshTokenByHash(
-      hashToken(rawToken),
-      client,
-      true,
-    );
-
-    if (!oldToken) {
-      throw new AuthServiceError(
-        "Invalid refresh token",
-        "INVALID_REFRESH_TOKEN",
+  const transactionResult = await withTransaction<TransactionResult>(
+    async (client) => {
+      const oldToken = await findRefreshTokenByHash(
+        hashToken(rawToken),
+        client,
+        true,
       );
-    }
 
-    // A previously rotated token is being reused.
-    if (oldToken.replaced_by_token_id !== null) {
-      await revokeRefreshTokenFamily(oldToken.token_family_id, client);
-      await client.query("COMMIT");
-      reuseDetected = true;
-    } else {
+      if (!oldToken) {
+        throw new AuthServiceError(
+          "Invalid refresh token",
+          "INVALID_REFRESH_TOKEN",
+        );
+      }
+
+      if (oldToken.replaced_by_token_id !== null) {
+        await revokeRefreshTokenFamily(oldToken.token_family_id, client);
+
+        await writeAuditLog(client, {
+          actorId: oldToken.user_id,
+          action: "auth.refresh_token_reuse_detected",
+          entityType: "refresh_token",
+          entityId: oldToken.id,
+          newValues: { token_family_revoked: true },
+        });
+
+        return { outcome: "reuse" };
+      }
+
       if (oldToken.revoked_at !== null) {
         throw new AuthServiceError(
           "Invalid refresh token",
@@ -291,12 +291,7 @@ export async function refreshSession(
 
       if (oldToken.expires_at.getTime() <= Date.now()) {
         await revokeRefreshToken(oldToken.id, client);
-        await client.query("COMMIT");
-
-        throw new AuthServiceError(
-          "Refresh token expired",
-          "INVALID_REFRESH_TOKEN",
-        );
+        return { outcome: "expired" };
       }
 
       const userResult = await client.query<{
@@ -321,13 +316,9 @@ export async function refreshSession(
         user.status === "deactivated"
       ) {
         await revokeRefreshTokenFamily(oldToken.token_family_id, client);
-        await client.query("COMMIT");
-
-        throw new AuthServiceError(
-          "Account is not eligible for login",
-          "ACCOUNT_INACTIVE",
-        );
+        return { outcome: "inactive" };
       }
+
       const replacementRawToken = generateSecureToken();
 
       const replacement = await createRefreshToken(
@@ -350,37 +341,38 @@ export async function refreshSession(
           "buyer" | "agent" | "developer" | "admin" | "finance_admin",
       });
 
-      await client.query("COMMIT");
-
-      result = {
-        accessToken,
-        refreshToken: replacementRawToken,
+      return {
+        outcome: "success",
+        result: {
+          accessToken,
+          refreshToken: replacementRawToken,
+        },
       };
-    }
-  } catch (error: unknown) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original error.
-    }
+    },
+  );
 
-    throw error;
-  } finally {
-    client.release();
-  }
-
-  if (reuseDetected) {
+  if (transactionResult.outcome === "reuse") {
     throw new AuthServiceError(
       "Refresh token reuse detected. Please log in again.",
       "REFRESH_TOKEN_REUSE",
     );
   }
 
-  if (!result) {
-    throw new Error("Refresh session did not produce a result");
+  if (
+    transactionResult.outcome === "expired" ||
+    transactionResult.outcome === "inactive"
+  ) {
+    throw new AuthServiceError(
+      transactionResult.outcome === "expired"
+        ? "Refresh token expired"
+        : "Account is not eligible for login",
+      transactionResult.outcome === "expired"
+        ? "INVALID_REFRESH_TOKEN"
+        : "ACCOUNT_INACTIVE",
+    );
   }
 
-  return result;
+  return transactionResult.result;
 }
 
 //verify email
@@ -397,11 +389,7 @@ export async function verifyEmail(
   }
 
   const tokenHash = hashToken(parsed.data.token);
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
+  return withTransaction(async (client) => {
     const verification = await findEmailVerificationByHash(tokenHash, client);
 
     if (
@@ -437,22 +425,25 @@ export async function verifyEmail(
       );
     }
 
-    await client.query("COMMIT");
+    await writeAuditLog(client, {
+      actorId: user.id,
+      action: "user.email_verified",
+      entityType: "user",
+      entityId: user.id,
+      oldValues: { email_verified: false },
+      newValues: {
+        email_verified: true,
+        role: user.role,
+        status: user.status,
+      },
+    });
 
     return {
       id: user.id,
       role: user.role,
       status: user.status,
     };
-  } catch (error: unknown) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {}
-
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 // Resend verification email
@@ -476,11 +467,7 @@ export async function resendVerification(input: unknown): Promise<void> {
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + RESEND_VERIFICATION_TTL_MS);
 
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
+  await withTransaction(async (client) => {
     await expireUnusedEmailVerifications(user.id, client);
 
     await createEmailVerification(
@@ -492,19 +479,7 @@ export async function resendVerification(input: unknown): Promise<void> {
       },
       client,
     );
-
-    await client.query("COMMIT");
-  } catch (error: unknown) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original database error.
-    }
-
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 
   try {
     await sendVerificationEmail(user.email, token);
@@ -538,12 +513,7 @@ export async function requestPasswordReset(input: unknown): Promise<void> {
   const rawToken = generateSecureToken();
   const tokenHash = hashToken(rawToken);
   const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS);
-
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
+  await withTransaction(async (client) => {
     await expireUnusedPasswordResets(user.id, client);
 
     await createPasswordReset(
@@ -554,20 +524,7 @@ export async function requestPasswordReset(input: unknown): Promise<void> {
       },
       client,
     );
-
-    await client.query("COMMIT");
-  } catch (error: unknown) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original error.
-    }
-
-    throw error;
-  } finally {
-    client.release();
-  }
-
+  });
   // Send only after the database transaction commits.
   try {
     await sendPasswordResetEmail(user.email, rawToken);
@@ -591,11 +548,7 @@ export async function resetPassword(input: unknown): Promise<void> {
 
   // Perform expensive password hashing before opening the transaction.
   const passwordHash = await hashPassword(newPassword);
-  const client = await pool.connect();
-
-  try {
-    await client.query("BEGIN");
-
+  await withTransaction(async (client) => {
     const reset = await findPasswordResetByHash(tokenHash, client, true);
 
     if (
@@ -609,7 +562,6 @@ export async function resetPassword(input: unknown): Promise<void> {
       );
     }
 
-    // The conditional update protects against token reuse.
     const consumed = await markPasswordResetUsed(reset.id, client);
 
     if (!consumed) {
@@ -635,18 +587,14 @@ export async function resetPassword(input: unknown): Promise<void> {
     await expireUnusedPasswordResets(reset.user_id, client);
     await revokeAllUserRefreshTokens(reset.user_id, client);
 
-    await client.query("COMMIT");
-  } catch (error: unknown) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original error.
-    }
-
-    throw error;
-  } finally {
-    client.release();
-  }
+    await writeAuditLog(client, {
+      actorId: reset.user_id,
+      action: "user.password_reset_completed",
+      entityType: "user",
+      entityId: reset.user_id,
+      newValues: { password_reset_completed: true },
+    });
+  });
 }
 
 //get current user
@@ -687,9 +635,8 @@ export async function logout(rawToken: string | undefined): Promise<void> {
   if (!rawToken) {
     return;
   }
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
+
+  await withTransaction(async (client) => {
     const token = await findRefreshTokenByHash(
       hashToken(rawToken),
       client,
@@ -699,19 +646,7 @@ export async function logout(rawToken: string | undefined): Promise<void> {
     if (token) {
       await revokeRefreshTokenFamily(token.token_family_id, client);
     }
-
-    await client.query("COMMIT");
-  } catch (error: unknown) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original error.
-    }
-
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 //update user profile
@@ -727,53 +662,80 @@ export async function updateProfile(userId: string, input: unknown) {
     );
   }
 
-  const user = await findUserById(userId);
-
-  if (!user) {
-    throw new AuthServiceError("User not found", "USER_NOT_FOUND");
-  }
-
-  const fullName = parsed.data.fullName ?? user.full_name;
-  const email = parsed.data.email ?? user.email;
-  const emailChanged = email !== user.email;
   let verificationToken: string | null = null;
-
-  const client = await pool.connect();
   let updatedUser;
 
   try {
-    await client.query("BEGIN");
+    const result = await withTransaction(async (client) => {
+      const user = await findUserByIdForUpdate(userId, client);
 
-    updatedUser = await updateUserProfile(userId, fullName, email, client);
+      if (!user) {
+        throw new AuthServiceError("User not found", "USER_NOT_FOUND");
+      }
 
-    if (!updatedUser) {
-      throw new AuthServiceError("User not found", "USER_NOT_FOUND");
-    }
+      const fullName = parsed.data.fullName ?? user.full_name;
+      const email = parsed.data.email ?? user.email;
+      const emailChanged = email !== user.email;
+      const fullNameChanged = fullName !== user.full_name;
 
-    if (emailChanged) {
-      await expireUnusedEmailVerifications(userId, client);
+      const updated = await updateUserProfile(userId, fullName, email, client);
 
-      verificationToken = generateSecureToken();
+      if (!updated) {
+        throw new AuthServiceError("User not found", "USER_NOT_FOUND");
+      }
 
-      await createEmailVerification(
-        {
-          userId,
-          emailToVerify: email,
-          tokenHash: hashToken(verificationToken),
-          expiresAt: new Date(Date.now() + PROFILE_VERIFICATION_TTL_MS),
-        },
-        client,
-      );
-    }
+      if (emailChanged) {
+        await expireUnusedEmailVerifications(userId, client);
 
-    await client.query("COMMIT");
+        verificationToken = generateSecureToken();
+
+        await createEmailVerification(
+          {
+            userId,
+            emailToVerify: email,
+            tokenHash: hashToken(verificationToken),
+            expiresAt: new Date(Date.now() + PROFILE_VERIFICATION_TTL_MS),
+          },
+          client,
+        );
+      }
+
+      if (fullNameChanged || emailChanged) {
+        await writeAuditLog(client, {
+          actorId: userId,
+          action: "user.profile_updated",
+          entityType: "user",
+          entityId: userId,
+          oldValues: {
+            ...(fullNameChanged && { full_name: user.full_name }),
+            ...(emailChanged && { email: user.email }),
+          },
+          newValues: {
+            ...(fullNameChanged && { full_name: updated.full_name }),
+            ...(emailChanged && { email: updated.email }),
+          },
+        });
+      }
+
+      if (emailChanged) {
+        await writeAuditLog(client, {
+          actorId: userId,
+          action: "user.email_changed",
+          entityType: "user",
+          entityId: userId,
+          oldValues: { email: user.email },
+          newValues: {
+            email: updated.email,
+            email_verification_required: true,
+          },
+        });
+      }
+
+      return updated;
+    });
+
+    updatedUser = result;
   } catch (error: unknown) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original error.
-    }
-
     if (
       typeof error === "object" &&
       error !== null &&
@@ -787,21 +749,20 @@ export async function updateProfile(userId: string, input: unknown) {
     }
 
     throw error;
-  } finally {
-    client.release();
   }
 
   let verificationEmailSent = true;
 
   if (verificationToken) {
     try {
-      await sendVerificationEmail(email, verificationToken);
+      await sendVerificationEmail(updatedUser.email, verificationToken);
     } catch (error: unknown) {
       verificationEmailSent = false;
 
       logger.warn({ err: error }, "Profile email verification delivery failed");
     }
   }
+
   return {
     id: updatedUser.id,
     fullName: updatedUser.full_name,
