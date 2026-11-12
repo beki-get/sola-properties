@@ -8,6 +8,8 @@ import type {
   AdminPendingPropertyListQuery,
   AdminPropertyDecisionInput,
 } from "../schemas/propertySchemas";
+import { writeAuditLog } from "../utils/auditLog";
+
 
 export type PropertyStatus =
   "draft" | "pending_approval" | "active" | "inactive" | "sold" | "rejected";
@@ -41,28 +43,6 @@ export class PropertyQueryError extends Error {
     super(message);
     this.name = "PropertyQueryError";
   }
-}
-
-async function audit(
-  client: PoolClient,
-  actorId: string,
-  propertyId: string,
-  action: string,
-  oldValues: unknown,
-  newValues: unknown,
-) {
-  await client.query(
-    `INSERT INTO audit_logs
-       (actor_id, action, entity_type, entity_id, old_values, new_values)
-     VALUES ($1, $2, 'property', $3, $4, $5)`,
-    [
-      actorId,
-      action,
-      propertyId,
-      oldValues == null ? null : JSON.stringify(oldValues),
-      newValues == null ? null : JSON.stringify(newValues),
-    ],
-  );
 }
 
 async function getClientProperty(
@@ -160,10 +140,17 @@ export async function createProperty(
 
     const property = result.rows[0]!;
 
-    await audit(client, ownerId, property.id, "property.created", null, {
-      title: property.title,
-      project_id: property.project_id,
-      status: property.status,
+    await writeAuditLog(client, {
+      actorId: ownerId,
+      action: "property.created",
+      entityType: "property",
+      entityId: property.id,
+      oldValues: null,
+      newValues: {
+        title: property.title,
+        project_id: property.project_id,
+        status: property.status,
+      },
     });
 
     await client.query("COMMIT");
@@ -295,13 +282,12 @@ export async function updateMyProperty(
     );
 
     const updated = result.rows[0]!;
-
-    await audit(
-      client,
-      ownerId,
-      propertyId,
-      "property.updated",
-      {
+    await writeAuditLog(client, {
+      actorId: ownerId,
+      action: "property.updated",
+      entityType: "property",
+      entityId: propertyId,
+      oldValues: {
         title: current.title,
         description: current.description,
         property_type: current.property_type,
@@ -315,7 +301,7 @@ export async function updateMyProperty(
         project_id: current.project_id,
         status: current.status,
       },
-      {
+      newValues: {
         title: updated.title,
         description: updated.description,
         property_type: updated.property_type,
@@ -329,7 +315,7 @@ export async function updateMyProperty(
         project_id: updated.project_id,
         status: updated.status,
       },
-    );
+    });
 
     await client.query("COMMIT");
     return updated;
@@ -374,14 +360,14 @@ export async function changeMyPropertyStatus(
 
     const updated = result.rows[0]!;
 
-    await audit(
-      client,
-      ownerId,
-      propertyId,
-      "property.status_changed",
-      { status: current.status },
-      { status: updated.status },
-    );
+    await writeAuditLog(client, {
+      actorId: ownerId,
+      action: "property.status_changed",
+      entityType: "property",
+      entityId: propertyId,
+      oldValues: { status: current.status },
+      newValues: { status: updated.status },
+    });
 
     await client.query("COMMIT");
     return updated;
@@ -510,8 +496,13 @@ export async function insertPropertyImages(
       inserted.push(result.rows[0]!);
     }
 
-    await audit(client, ownerId, propertyId, "property.images_uploaded", null, {
-      image_count: inserted.length,
+    await writeAuditLog(client, {
+      actorId: ownerId,
+      action: "property.images_uploaded",
+      entityType: "property",
+      entityId: propertyId,
+      oldValues: null,
+      newValues: { image_count: inserted.length },
     });
 
     await client.query("COMMIT");
@@ -657,14 +648,14 @@ export async function deletePropertyImageMetadata(
       }
     }
 
-    await audit(
-      client,
-      ownerId,
-      propertyId,
-      "property.image_deleted",
-      { image_id: image.id },
-      null,
-    );
+    await writeAuditLog(client, {
+      actorId: ownerId,
+      action: "property.image_deleted",
+      entityType: "property",
+      entityId: propertyId,
+      oldValues: { image_id: image.id },
+      newValues: null,
+    });
 
     await client.query("COMMIT");
     return image;
@@ -1000,21 +991,23 @@ export async function decideAdminProperty(
     );
 
     const updated = updatedResult.rows[0]!;
-
-    await audit(
-      client,
-      adminId,
-      propertyId,
-      input.decision === "approve" ? "property.approved" : "property.rejected",
-      {
+    await writeAuditLog(client, {
+      actorId: adminId,
+      action:
+        input.decision === "approve"
+          ? "property.approved"
+          : "property.rejected",
+      entityType: "property",
+      entityId: propertyId,
+      oldValues: {
         status: current.status,
         rejection_reason: current.rejection_reason,
       },
-      {
+      newValues: {
         status: updated.status,
         rejection_reason: updated.rejection_reason,
       },
-    );
+    });
 
     await client.query("COMMIT");
     return updated;
@@ -1084,12 +1077,7 @@ export async function updateMyPropertyPricing(
   try {
     await client.query("BEGIN");
 
-    const current = await getClientProperty(
-      client,
-      propertyId,
-      ownerId,
-      true,
-    );
+    const current = await getClientProperty(client, propertyId, ownerId, true);
 
     if (current.status !== "active") {
       throw new PropertyQueryError(
@@ -1117,14 +1105,14 @@ export async function updateMyPropertyPricing(
 
     const updated = result.rows[0]!;
 
-    await audit(
-      client,
-      ownerId,
-      propertyId,
-      "property.pricing_updated",
-      { price: previousPrice },
-      { price: updated.price },
-    );
+    await writeAuditLog(client, {
+      actorId: ownerId,
+      action: "property.pricing_updated",
+      entityType: "property",
+      entityId: propertyId,
+      oldValues: { price: previousPrice },
+      newValues: { price: updated.price },
+    });
 
     await client.query("COMMIT");
 
