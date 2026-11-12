@@ -25,6 +25,7 @@ import disputeRoutes from "./routes/disputeRoutes";
 import commissionAgreementRoutes from "./routes/commissionAgreementRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import notificationPreferenceRoutes from "./routes/notificationPreferenceRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.use("/api/v1/commission-agreements", commissionAgreementRoutes);
 app.use("/api/v1", commissionAgreementRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/notifications/preferences", notificationPreferenceRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
