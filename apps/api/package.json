@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "node init && tsx watch src/server.ts",
-    "build": "node init && tsc",
-    "start": "node init && node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "test": "vitest run tests",
     "test:watch": "vitest tests",
     "seed:auth-test-users": "tsx scripts/seedAuthTestUsers.ts"
