@@ -52,6 +52,9 @@ export const NOTIFICATION_TYPES = [
   "transaction_status_changed",
   "account_verification_approved",
   "account_verification_rejected",
+  "account_status_changed",
+  "property_agent_authorized",
+  "property_agent_authorization_revoked",
 ] as const;
 
 export const notificationPreferenceUpdateSchema = z
