@@ -1,12 +1,15 @@
 import {
-  authorizeAgent,
+  authorizeAgent as queryAuthorizeAgent,
   getApprovedAgent,
   listAgentAuthorizedProperties,
   listApprovedAgents,
   listAuthorizedAgents,
-  revokeAgentAuthorization,
+  revokeAgentAuthorization as queryRevokeAgentAuthorization,
   type ListOptions,
 } from "../queries/propertyAuthorizationQueries";
+
+import { notifyUser } from "./notificationService";
+import { logger } from "../utils/logger";
 
 export function parseListOptions(query: Record<string, unknown>): ListOptions {
   const rawPage = query.page === undefined ? 1 : Number(query.page);
@@ -53,11 +56,69 @@ export function parseListOptions(query: Record<string, unknown>): ListOptions {
   };
 }
 
+export async function authorizeAgent(
+  propertyId: string,
+  developerId: string,
+  agentId: string,
+) {
+  const authorization = await queryAuthorizeAgent(
+    propertyId,
+    developerId,
+    agentId,
+  );
+
+  try {
+    await notifyUser({
+      recipientId: agentId,
+      type: "property_agent_authorized",
+      title: "Property authorization received",
+      message: "A developer has authorized you to manage a property.",
+      entityType: "property",
+      entityId: propertyId,
+    });
+  } catch (error) {
+    logger.error(
+      { error, propertyId, agentId },
+      "Failed to notify agent about property authorization",
+    );
+  }
+
+  return authorization;
+}
+
+export async function revokeAgentAuthorization(
+  propertyId: string,
+  developerId: string,
+  agentId: string,
+) {
+  const authorization = await queryRevokeAgentAuthorization(
+    propertyId,
+    developerId,
+    agentId,
+  );
+
+  try {
+    await notifyUser({
+      recipientId: agentId,
+      type: "property_agent_authorization_revoked",
+      title: "Property authorization revoked",
+      message: "A developer has revoked your authorization for a property.",
+      entityType: "property",
+      entityId: propertyId,
+    });
+  } catch (error) {
+    logger.error(
+      { error, propertyId, agentId },
+      "Failed to notify agent about revoked property authorization",
+    );
+  }
+
+  return authorization;
+}
+
 export {
-  authorizeAgent,
   getApprovedAgent,
   listAgentAuthorizedProperties,
   listApprovedAgents,
   listAuthorizedAgents,
-  revokeAgentAuthorization,
 };
