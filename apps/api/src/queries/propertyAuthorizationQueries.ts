@@ -1,5 +1,6 @@
 import type { QueryResultRow } from "pg";
 import { pool } from "../config/database";
+import { writeAuditLog } from "../utils/auditLog";
 
 export class PropertyAuthorizationError extends Error {
   constructor(
@@ -153,26 +154,20 @@ export async function authorizeAgent(
         [propertyId, agentId, developerId],
       );
     }
-
-    await client.query(
-      `INSERT INTO audit_logs
-         (actor_id, action, entity_type, entity_id, old_values, new_values)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)`,
-      [
-        developerId,
-        existing.rows[0]
-          ? "property.agent_authorization_reactivated"
-          : "property.agent_authorized",
-        "property_agent_authorization",
-        result.rows[0].id,
-        existing.rows[0] ? JSON.stringify({ status: "revoked" }) : null,
-        JSON.stringify({
-          property_id: propertyId,
-          agent_id: agentId,
-          status: "active",
-        }),
-      ],
-    );
+    await writeAuditLog(client, {
+      actorId: developerId,
+      action: existing.rows[0]
+        ? "property.agent_authorization_reactivated"
+        : "property.agent_authorized",
+      entityType: "property_agent_authorization",
+      entityId: result.rows[0].id,
+      oldValues: existing.rows[0] ? { status: "revoked" } : null,
+      newValues: {
+        property_id: propertyId,
+        agent_id: agentId,
+        status: "active",
+      },
+    });
 
     await client.query("COMMIT");
     return result.rows[0];
@@ -319,28 +314,18 @@ export async function revokeAgentAuthorization(
       [auth.rows[0].id],
     );
 
-    await client.query(
-      `INSERT INTO audit_logs
-         (actor_id, action, entity_type, entity_id, old_values, new_values)
-       VALUES (
-         $1,
-         'property.agent_authorization_revoked',
-         'property_agent_authorization',
-         $2,
-         $3::jsonb,
-         $4::jsonb
-       )`,
-      [
-        developerId,
-        auth.rows[0].id,
-        JSON.stringify({ status: "active" }),
-        JSON.stringify({
-          property_id: propertyId,
-          agent_id: agentId,
-          status: "revoked",
-        }),
-      ],
-    );
+    await writeAuditLog(client, {
+      actorId: developerId,
+      action: "property.agent_authorization_revoked",
+      entityType: "property_agent_authorization",
+      entityId: auth.rows[0].id,
+      oldValues: { status: "active" },
+      newValues: {
+        property_id: propertyId,
+        agent_id: agentId,
+        status: "revoked",
+      },
+    });
 
     await client.query("COMMIT");
     return result.rows[0];
