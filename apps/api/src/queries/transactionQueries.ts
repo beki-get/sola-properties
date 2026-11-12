@@ -1,5 +1,6 @@
 import type { PoolClient, QueryResultRow } from "pg";
 import { pool } from "../config/database";
+import { writeAuditLog } from "../utils/auditLog";
 
 export type TransactionStatus = "submitted" | "verified" | "rejected";
 
@@ -40,30 +41,6 @@ export class TransactionError extends Error {
     super(message);
     this.name = "TransactionError";
   }
-}
-
-async function writeAudit(
-  client: PoolClient,
-  actorId: string | null,
-  action: string,
-  entityType: string,
-  entityId: string,
-  oldValues: unknown,
-  newValues: unknown,
-) {
-  await client.query(
-    `INSERT INTO audit_logs
-       (actor_id, action, entity_type, entity_id, old_values, new_values)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [
-      actorId,
-      action,
-      entityType,
-      entityId,
-      oldValues == null ? null : JSON.stringify(oldValues),
-      newValues == null ? null : JSON.stringify(newValues),
-    ],
-  );
 }
 
 export async function createTransaction(input: {
@@ -159,15 +136,13 @@ export async function createTransaction(input: {
         "Failed to create the transaction.",
       );
     }
-
-    await writeAudit(
-      client,
-      input.sellerId,
-      "transaction.created",
-      "transaction",
-      transaction.id,
-      null,
-      {
+    await writeAuditLog(client, {
+      actorId: input.sellerId,
+      action: "transaction.created",
+      entityType: "transaction",
+      entityId: transaction.id,
+      oldValues: null,
+      newValues: {
         referral_id: transaction.referral_id,
         buyer_id: transaction.buyer_id,
         property_id: transaction.property_id,
@@ -176,7 +151,7 @@ export async function createTransaction(input: {
         closing_date: transaction.closing_date,
         status: transaction.status,
       },
-    );
+    });
 
     await client.query("COMMIT");
     return transaction;
@@ -385,28 +360,26 @@ export async function updateTransaction(input: {
       );
     }
 
-    await writeAudit(
-      client,
-      input.sellerId,
-      "transaction.updated",
-      "transaction",
-      row.id,
-      {
+    await writeAuditLog(client, {
+      actorId: input.sellerId,
+      action: "transaction.updated",
+      entityType: "transaction",
+      entityId: row.id,
+      oldValues: {
         sale_amount: transaction.sale_amount,
         closing_date: transaction.closing_date,
         notes: transaction.notes,
         status: transaction.status,
         rejection_reason: transaction.rejection_reason,
       },
-      {
+      newValues: {
         sale_amount: row.sale_amount,
         closing_date: row.closing_date,
         notes: row.notes,
         status: row.status,
         rejection_reason: row.rejection_reason,
       },
-    );
-
+    });
     await client.query("COMMIT");
     return row;
   } catch (error) {
@@ -498,15 +471,17 @@ export async function createTransactionDocument(input: {
       );
     }
 
-    await writeAudit(
-      client,
-      input.sellerId,
-      "transaction.document_uploaded",
-      "transaction",
-      input.transactionId,
-      null,
-      { document_id: document.id, file_key: input.fileKey },
-    );
+    await writeAuditLog(client, {
+      actorId: input.sellerId,
+      action: "transaction.document_uploaded",
+      entityType: "transaction",
+      entityId: input.transactionId,
+      oldValues: null,
+      newValues: {
+        document_id: document.id,
+        file_key: input.fileKey,
+      },
+    });
 
     await client.query("COMMIT");
     return document;
@@ -607,25 +582,37 @@ export async function decideTransaction(input: {
     }
 
     if (input.decision === "verified") {
-      await client.query(
-        `UPDATE properties
-         SET status = 'sold',
-             updated_at = NOW()
-         WHERE id = $1
-           AND status <> 'sold'`,
+      const propertyResult = await client.query<{ status: string }>(
+        `SELECT status
+   FROM properties
+   WHERE id = $1
+   FOR UPDATE`,
         [transaction.property_id],
       );
 
-      await writeAudit(
-        client,
-        input.actorId,
-        "property.sold",
-        "property",
-        transaction.property_id,
-        { status: "active" },
-        { status: "sold", transaction_id: transaction.id },
-      );
+      const previousProperty = propertyResult.rows[0];
 
+      if (previousProperty && previousProperty.status !== "sold") {
+        await client.query(
+          `UPDATE properties
+     SET status = 'sold',
+         updated_at = NOW()
+     WHERE id = $1`,
+          [transaction.property_id],
+        );
+
+        await writeAuditLog(client, {
+          actorId: input.actorId,
+          action: "property.sold",
+          entityType: "property",
+          entityId: transaction.property_id,
+          oldValues: { status: previousProperty.status },
+          newValues: {
+            status: "sold",
+            transaction_id: transaction.id,
+          },
+        });
+      }
       // Find the seller-specific active agreement, falling back to the platform default.
       const agreementResult = await client.query<{
         id: string;
@@ -722,15 +709,13 @@ export async function decideTransaction(input: {
           "Failed to create the transaction commission.",
         );
       }
-
-      await writeAudit(
-        client,
-        input.actorId,
-        "commission.created",
-        "commission",
-        commission.id,
-        null,
-        {
+      await writeAuditLog(client, {
+        actorId: input.actorId,
+        action: "commission.created",
+        entityType: "commission",
+        entityId: commission.id,
+        oldValues: null,
+        newValues: {
           transaction_id: transaction.id,
           seller_id: transaction.seller_id,
           agreement_id: agreement.id,
@@ -741,29 +726,29 @@ export async function decideTransaction(input: {
           platform_amount: commission.platform_amount,
           seller_amount: commission.seller_amount,
         },
-      );
+      });
     }
-    await writeAudit(
-      client,
-      input.actorId,
-      input.decision === "verified"
-        ? "transaction.verified"
-        : "transaction.rejected",
-      "transaction",
-      row.id,
-      {
+    await writeAuditLog(client, {
+      actorId: input.actorId,
+      action:
+        input.decision === "verified"
+          ? "transaction.verified"
+          : "transaction.rejected",
+      entityType: "transaction",
+      entityId: row.id,
+      oldValues: {
         status: transaction.status,
         rejection_reason: transaction.rejection_reason,
         reviewed_by: transaction.reviewed_by,
         reviewed_at: transaction.reviewed_at,
       },
-      {
+      newValues: {
         status: row.status,
         rejection_reason: row.rejection_reason,
         reviewed_by: row.reviewed_by,
         reviewed_at: row.reviewed_at,
       },
-    );
+    });
 
     await client.query("COMMIT");
     return row;
