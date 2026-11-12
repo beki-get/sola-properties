@@ -1,4 +1,5 @@
 import { pool } from "../config/database";
+import { writeAuditLog } from "../utils/auditLog";
 
 export class ReferralError extends Error {
   constructor(
@@ -146,6 +147,20 @@ export async function createReferralWithHistory(input: CreateReferralInput) {
          ($1, NULL, 'assigned', 'assigned', $3)`,
       [referral.id, input.buyerId, assignedTo],
     );
+
+    await writeAuditLog(client, {
+      actorId: input.buyerId,
+      action: "referral.created",
+      entityType: "referral",
+      entityId: referral.id,
+      oldValues: null,
+      newValues: {
+        buyer_id: referral.buyer_id,
+        property_id: referral.property_id,
+        assigned_to: referral.assigned_to,
+        status: referral.status,
+      },
+    });
 
     await client.query("COMMIT");
 
@@ -295,6 +310,24 @@ export async function decideReferral(input: {
         input.decision === "rejected" ? input.reason!.trim() : null,
       ],
     );
+    await writeAuditLog(client, {
+      actorId: input.actorId,
+      action:
+        input.decision === "accepted"
+          ? "referral.accepted"
+          : "referral.rejected",
+      entityType: "referral",
+      entityId: input.referralId,
+      oldValues: {
+        status: referral.status,
+      },
+      newValues: {
+        status: input.decision,
+        status_reason:
+          input.decision === "rejected" ? input.reason!.trim() : null,
+        assigned_to: input.actorId,
+      },
+    });
 
     await client.query("COMMIT");
     return updated.rows[0];
@@ -392,6 +425,20 @@ export async function changeReferralStatus(input: {
         input.reason?.trim() || null,
       ],
     );
+
+    await writeAuditLog(client, {
+      actorId: input.actorId,
+      action: "referral.status_changed",
+      entityType: "referral",
+      entityId: input.referralId,
+      oldValues: {
+        status: referral.status,
+      },
+      newValues: {
+        status: input.status,
+        status_reason: input.reason?.trim() || null,
+      },
+    });
 
     await client.query("COMMIT");
     return updated.rows[0];
@@ -549,21 +596,21 @@ export async function reassignReferral(input: ReassignReferralInput) {
       ],
     );
 
-    await client.query(
-      `INSERT INTO audit_logs
-         (actor_id, action, entity_type, entity_id, old_values, new_values)
-       VALUES ($1, 'referral_reassigned', 'referral', $2, $3, $4)`,
-      [
-        input.actorId,
-        input.referralId,
-        { assignedTo: oldAssigneeId, status: referral.status },
-        {
-          assignedTo: input.newAssigneeId,
-          status: "assigned",
-          reason: input.reason?.trim() || null,
-        },
-      ],
-    );
+    await writeAuditLog(client, {
+      actorId: input.actorId,
+      action: "referral.reassigned",
+      entityType: "referral",
+      entityId: input.referralId,
+      oldValues: {
+        assigned_to: oldAssigneeId,
+        status: referral.status,
+      },
+      newValues: {
+        assigned_to: input.newAssigneeId,
+        status: "assigned",
+        reason: input.reason?.trim() || null,
+      },
+    });
 
     await client.query("COMMIT");
     return updated.rows[0];
@@ -580,7 +627,13 @@ export async function reassignReferral(input: ReassignReferralInput) {
 }
 
 //admin view of all referrals with optional status filter
-export async function getAllReferrals(status?: string) {
+export async function getAllReferrals(input: {
+  status?: string;
+  page: number;
+  limit: number;
+}) {
+  const offset = (input.page - 1) * input.limit;
+
   const result = await pool.query(
     `SELECT
        r.id,
@@ -603,11 +656,24 @@ export async function getAllReferrals(status?: string) {
      JOIN properties p ON p.id = r.property_id
      JOIN users assignee ON assignee.id = r.assigned_to
      WHERE ($1::referral_status IS NULL OR r.status = $1)
-     ORDER BY r.created_at DESC`,
-    [status || null],
+     ORDER BY r.created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [input.status ?? null, input.limit, offset],
   );
 
-  return result.rows;
+  const totalResult = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) AS count
+     FROM referrals r
+     WHERE ($1::referral_status IS NULL OR r.status = $1)`,
+    [input.status ?? null],
+  );
+
+  return {
+    items: result.rows,
+    page: input.page,
+    limit: input.limit,
+    total: Number(totalResult.rows[0]?.count ?? 0),
+  };
 }
 
 //admin view of a specific referral with details
@@ -1244,7 +1310,8 @@ export async function updateReferralIssue(input: {
     await client.query("BEGIN");
 
     const existingResult = await client.query(
-      `SELECT id, status, resolution
+      `SELECT id, status, resolution, admin_notes, reviewed_by,
+        reviewed_at, resolved_at
        FROM referral_issues
        WHERE id = $1
        FOR UPDATE`,
@@ -1334,9 +1401,34 @@ export async function updateReferralIssue(input: {
       ],
     );
 
+    const updatedIssue = result.rows[0];
+
+    await writeAuditLog(client, {
+      actorId: input.adminId,
+      action: "referral.issue_updated",
+      entityType: "referral_issue",
+      entityId: input.issueId,
+      oldValues: {
+        status: existing.status,
+        resolution: existing.resolution,
+        admin_notes: existing.admin_notes,
+        reviewed_by: existing.reviewed_by,
+        reviewed_at: existing.reviewed_at,
+        resolved_at: existing.resolved_at,
+      },
+      newValues: {
+        status: updatedIssue.status,
+        resolution: updatedIssue.resolution,
+        admin_notes: updatedIssue.admin_notes,
+        reviewed_by: updatedIssue.reviewed_by,
+        reviewed_at: updatedIssue.reviewed_at,
+        resolved_at: updatedIssue.resolved_at,
+      },
+    });
+
     await client.query("COMMIT");
 
-    return result.rows[0];
+    return updatedIssue;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

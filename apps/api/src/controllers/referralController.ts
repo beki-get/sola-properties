@@ -219,9 +219,13 @@ export const getAllReferralsController: RequestHandler = async (req, res) => {
   }
 
   try {
-    const referrals = await getAllReferralsService(parsed.data.status);
+    const referrals = await getAllReferralsService({
+      status: parsed.data.status,
+      page: parsed.data.page,
+      limit: parsed.data.limit,
+    });
 
-    res.status(200).json({ referrals });
+    res.status(200).json(referrals);
   } catch {
     res.status(500).json({
       message: "An unexpected error occurred.",

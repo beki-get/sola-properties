@@ -118,8 +118,12 @@ export async function reassignReferralService(input: ReassignReferralInput) {
   return referral;
 }
 
-export async function getAllReferralsService(status?: string) {
-  return getAllReferrals(status);
+export async function getAllReferralsService(input: {
+  status?: string;
+  page: number;
+  limit: number;
+}) {
+  return getAllReferrals(input);
 }
 
 export async function getReferralDetailsService(referralId: string) {

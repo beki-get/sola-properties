@@ -1,5 +1,6 @@
 
 import { z } from "zod";
+import { paginationSchema } from "../utils/pagination";
 
 export const createReferralSchema = z.object({
   propertyId: z.string().uuid(),
@@ -48,7 +49,8 @@ export const adminReferralFilterSchema = z.object({
     "closed_won",
     "closed_lost",
   ]).optional(),
-});
+})
+.extend(paginationSchema.shape);;
 
 export const createFollowUpSchema = z.object({
   body: z.string().trim().min(1).max(2000),
