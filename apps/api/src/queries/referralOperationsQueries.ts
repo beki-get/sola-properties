@@ -1,4 +1,5 @@
 import { pool } from "../config/database.js";
+import { writeAuditLog } from "../utils/auditLog.js";
 
 export class ReferralOperationError extends Error {
   statusCode: number;
@@ -218,8 +219,25 @@ export async function createBuyerVisitRequest(
       ],
     );
 
+    const visit = result.rows[0];
+
+    await writeAuditLog(client, {
+      actorId: buyerId,
+      action: "property_visit.requested",
+      entityType: "property_visit",
+      entityId: visit.id,
+      oldValues: null,
+      newValues: {
+        referral_id: visit.referral_id,
+        requested_at: visit.requested_at,
+        location: visit.location,
+        notes: visit.notes,
+        status: visit.status,
+      },
+    });
+
     await client.query("COMMIT");
-    return { ...result.rows[0], recipient_id: referral.assigned_to };
+    return { ...visit, recipient_id: referral.assigned_to };
   } catch (error) {
     try {
       await client.query("ROLLBACK");
@@ -393,10 +411,29 @@ export async function schedulePropertyVisit(
        RETURNING *`,
       [visitId, data.scheduledAt, data.location ?? null, data.notes ?? null],
     );
+    const updatedVisit = result.rows[0];
 
+    await writeAuditLog(client, {
+      actorId: sellerId,
+      action: "property_visit.scheduled",
+      entityType: "property_visit",
+      entityId: visitId,
+      oldValues: {
+        status: visit.status,
+        scheduled_at: visit.scheduled_at,
+        location: visit.location,
+        notes: visit.notes,
+      },
+      newValues: {
+        status: updatedVisit.status,
+        scheduled_at: updatedVisit.scheduled_at,
+        location: updatedVisit.location,
+        notes: updatedVisit.notes,
+      },
+    });
     await client.query("COMMIT");
     return {
-      ...result.rows[0],
+      ...updatedVisit,
       recipient_id: visit.buyer_id,
     };
   } catch (error) {
@@ -485,10 +522,28 @@ export async function updatePropertyVisit(
         data.notes ?? null,
       ],
     );
+    const updatedVisit = result.rows[0];
+
+    await writeAuditLog(client, {
+      actorId: sellerId,
+      action: "property_visit.updated",
+      entityType: "property_visit",
+      entityId: visitId,
+      oldValues: {
+        scheduled_at: visit.scheduled_at,
+        location: visit.location,
+        notes: visit.notes,
+      },
+      newValues: {
+        scheduled_at: updatedVisit.scheduled_at,
+        location: updatedVisit.location,
+        notes: updatedVisit.notes,
+      },
+    });
 
     await client.query("COMMIT");
     return {
-      ...result.rows[0],
+      ...updatedVisit,
       recipient_id: visit.buyer_id,
     };
   } catch (error) {
@@ -528,11 +583,25 @@ export async function cancelPropertyVisit(visitId: string, userId: string) {
        RETURNING *`,
       [visitId],
     );
-
+    await writeAuditLog(client, {
+      actorId: userId,
+      action: "property_visit.cancelled",
+      entityType: "property_visit",
+      entityId: visitId,
+      oldValues: {
+        status: visit.status,
+        cancelled_at: visit.cancelled_at,
+      },
+      newValues: {
+        status: result.rows[0].status,
+        cancelled_at: result.rows[0].cancelled_at,
+      },
+    });
     await client.query("COMMIT");
     return {
       ...result.rows[0],
-      recipient_id: visit.buyer_id,
+      recipient_id:
+        userId === visit.buyer_id ? visit.assigned_to : visit.buyer_id,
     };
   } catch (error) {
     try {
@@ -643,8 +712,33 @@ export async function recordPropertyVisitOutcome(
       ],
     );
 
+    const updatedVisit = result.rows[0];
+
+    await writeAuditLog(client, {
+      actorId: sellerId,
+      action: "property_visit.outcome_recorded",
+      entityType: "property_visit",
+      entityId: visitId,
+      oldValues: {
+        status: visit.status,
+        outcome: visit.outcome,
+        outcome_note: visit.outcome_note,
+        outcome_recorded_by: visit.outcome_recorded_by,
+        outcome_recorded_at: visit.outcome_recorded_at,
+        outcome_history: visit.outcome_history,
+      },
+      newValues: {
+        status: updatedVisit.status,
+        outcome: updatedVisit.outcome,
+        outcome_note: updatedVisit.outcome_note,
+        outcome_recorded_by: updatedVisit.outcome_recorded_by,
+        outcome_recorded_at: updatedVisit.outcome_recorded_at,
+        outcome_history: updatedVisit.outcome_history,
+      },
+    });
+
     await client.query("COMMIT");
-    return result.rows[0];
+    return updatedVisit;
   } catch (error) {
     try {
       await client.query("ROLLBACK");
