@@ -323,11 +323,18 @@ CREATE TABLE properties (
     description TEXT,
     property_type TEXT NOT NULL,
     location TEXT NOT NULL,
+
+    -- New relational columns
+    category_id UUID NOT NULL
+        REFERENCES property_categories(id) ON DELETE RESTRICT,
+    location_id UUID NOT NULL
+        REFERENCES property_locations(id) ON DELETE RESTRICT,
+
     size_sqm NUMERIC(12, 2),
     bedrooms INTEGER,
     bathrooms INTEGER,
     features TEXT[] NOT NULL DEFAULT '{}',
-     price NUMERIC(14, 2),
+    price NUMERIC(14, 2),
     payment_plan TEXT,
     rejection_reason TEXT,
     status property_status NOT NULL DEFAULT 'draft',
@@ -1012,3 +1019,57 @@ CREATE INDEX commission_payments_idx
 
 CREATE INDEX commission_adjustments_commission_idx
   ON commission_adjustments(commission_id, created_at DESC);
+
+  -- Property categories
+CREATE TABLE property_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT property_categories_name_not_blank
+        CHECK (LENGTH(BTRIM(name)) > 0)
+);
+
+-- Property locations
+CREATE TABLE property_locations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT property_locations_name_not_blank
+        CHECK (LENGTH(BTRIM(name)) > 0)
+);
+
+CREATE UNIQUE INDEX property_categories_name_lower_idx
+    ON property_categories (LOWER(name));
+
+CREATE UNIQUE INDEX property_locations_name_lower_idx
+    ON property_locations (LOWER(name));
+
+CREATE INDEX properties_category_id_idx
+    ON properties (category_id);
+
+CREATE INDEX properties_location_id_idx
+    ON properties (location_id);
+
+    -- Buyer preferred property categories
+CREATE TABLE preference_categories (
+    user_id UUID NOT NULL
+        REFERENCES preferences(user_id) ON DELETE CASCADE,
+    category_id UUID NOT NULL
+        REFERENCES property_categories(id) ON DELETE RESTRICT,
+    PRIMARY KEY (user_id, category_id)
+);
+
+-- Buyer preferred property locations
+CREATE TABLE preference_locations (
+    user_id UUID NOT NULL
+        REFERENCES preferences(user_id) ON DELETE CASCADE,
+    location_id UUID NOT NULL
+        REFERENCES property_locations(id) ON DELETE RESTRICT,
+    PRIMARY KEY (user_id, location_id)
+);
