@@ -46,9 +46,7 @@ export async function addFavorite(buyerId: string, propertyId: string) {
 
     return result.rows[0];
   } catch (error) {
-    if (
-      error instanceof FavoriteError
-    ) {
+    if (error instanceof FavoriteError) {
       throw error;
     }
 
@@ -94,8 +92,10 @@ export async function getBuyerFavorites(
        p.id AS property_id,
        p.title,
        p.description,
-       p.property_type,
-       p.location,
+     p.category_id,
+p.location_id,
+c.name AS category_name,
+l.name AS location_name,
        p.size_sqm,
        p.bedrooms,
        p.bathrooms,
@@ -128,9 +128,11 @@ export async function getBuyerFavorites(
          '[]'::json
        ) AS images
 
-     FROM favorites f
-     JOIN properties p ON p.id = f.property_id
-     WHERE f.buyer_id = $1
+   FROM favorites f
+JOIN properties p ON p.id = f.property_id
+JOIN property_categories c ON c.id = p.category_id
+JOIN property_locations l ON l.id = p.location_id
+WHERE f.buyer_id = $1
      ORDER BY f.created_at DESC
      LIMIT $2 OFFSET $3`,
     [buyerId, limit, offset],
@@ -150,10 +152,7 @@ export async function getBuyerFavorites(
 }
 
 // Remove a buyer's own favorite.
-export async function removeFavorite(
-  buyerId: string,
-  propertyId: string,
-) {
+export async function removeFavorite(buyerId: string, propertyId: string) {
   const result = await pool.query(
     `DELETE FROM favorites
      WHERE buyer_id = $1 AND property_id = $2
@@ -162,11 +161,7 @@ export async function removeFavorite(
   );
 
   if (result.rowCount === 0) {
-    throw new FavoriteError(
-      404,
-      "FAVORITE_NOT_FOUND",
-      "Favorite not found",
-    );
+    throw new FavoriteError(404, "FAVORITE_NOT_FOUND", "Favorite not found");
   }
 
   return result.rows[0];

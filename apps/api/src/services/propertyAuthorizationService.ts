@@ -38,21 +38,19 @@ export function parseListOptions(query: Record<string, unknown>): ListOptions {
   const search =
     typeof query.search === "string" ? query.search.trim() : undefined;
 
-  const location =
-    typeof query.location === "string" ? query.location.trim() : undefined;
+  const locationId =
+    typeof query.location_id === "string" ? query.location_id : undefined;
 
-  const propertyType =
-    typeof query.property_type === "string"
-      ? query.property_type.trim()
-      : undefined;
+  const categoryId =
+    typeof query.category_id === "string" ? query.category_id : undefined;
 
   return {
     page: rawPage,
     limit: rawLimit,
     ...(search ? { search } : {}),
     ...(status ? { status } : {}),
-    ...(location ? { location } : {}),
-    ...(propertyType ? { propertyType } : {}),
+    ...(locationId ? { locationId } : {}),
+    ...(categoryId ? { categoryId } : {}),
   };
 }
 

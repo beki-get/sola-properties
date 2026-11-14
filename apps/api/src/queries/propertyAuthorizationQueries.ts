@@ -18,8 +18,8 @@ export interface ListOptions {
   limit: number;
   search?: string;
   status?: "active" | "revoked";
-  location?: string;
-  propertyType?: string;
+  locationId?: string;
+  categoryId?: string;
 }
 
 export interface AgentSummary extends QueryResultRow {
@@ -37,8 +37,10 @@ export interface AuthorizedProperty extends QueryResultRow {
   id: string;
   title: string;
   description: string | null;
-  property_type: string;
-  location: string;
+  category_id: string;
+  location_id: string;
+  category_name: string;
+  location_name: string;
   size_sqm: string | number | null;
   bedrooms: number | null;
   bathrooms: number | null;
@@ -352,26 +354,29 @@ export async function listAgentAuthorizedProperties(
     values.push(`%${options.search}%`);
     where.push(
       `(p.title ILIKE $${values.length}
-        OR p.location ILIKE $${values.length})`,
+ OR l.name ILIKE $${values.length}
+ OR c.name ILIKE $${values.length})`,
     );
   }
 
-  if (options.location) {
-    values.push(`%${options.location}%`);
-    where.push(`p.location ILIKE $${values.length}`);
+  if (options.locationId) {
+    values.push(options.locationId);
+    where.push(`p.location_id = $${values.length}`);
   }
 
-  if (options.propertyType) {
-    values.push(options.propertyType);
-    where.push(`p.property_type = $${values.length}`);
+  if (options.categoryId) {
+    values.push(options.categoryId);
+    where.push(`p.category_id = $${values.length}`);
   }
-
   const whereSql = where.join(" AND ");
 
   const count = await pool.query<{ count: string }>(
     `SELECT COUNT(*)::text AS count
      FROM property_authorizations paa
+    
      JOIN properties p ON p.id = paa.property_id
+     JOIN property_categories c ON c.id = p.category_id
+     JOIN property_locations l ON l.id = p.location_id
      WHERE ${whereSql}`,
     values,
   );
@@ -379,12 +384,17 @@ export async function listAgentAuthorizedProperties(
   values.push(options.limit, (options.page - 1) * options.limit);
 
   const result = await pool.query<AuthorizedProperty>(
-    `SELECT p.id, p.title, p.description, p.property_type,
-            p.location, p.size_sqm, p.bedrooms, p.bathrooms,
-            p.price, p.payment_plan, p.status, p.project_id,
-            paa.created_at AS authorized_at
+    `SELECT p.id, p.title, p.description,
+       p.category_id, p.location_id,
+       c.name AS category_name,
+       l.name AS location_name,
+       p.size_sqm, p.bedrooms, p.bathrooms,
+       p.price, p.payment_plan, p.status, p.project_id,
+       paa.created_at AS authorized_at
      FROM property_authorizations paa
      JOIN properties p ON p.id = paa.property_id
+     JOIN property_categories c ON c.id = p.category_id
+     JOIN property_locations l ON l.id = p.location_id
      WHERE ${whereSql}
      ORDER BY paa.created_at DESC
      LIMIT $${values.length - 1}

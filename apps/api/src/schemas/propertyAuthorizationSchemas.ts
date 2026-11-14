@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 const uuidSchema = z.string().uuid();
@@ -25,6 +24,6 @@ export const propertyAuthorizationQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
   search: z.string().trim().max(100).optional(),
   status: z.enum(["active", "revoked"]).optional(),
-  location: z.string().trim().max(200).optional(),
-  property_type: z.string().trim().max(100).optional(),
+  location_id: z.string().uuid().optional(),
+  category_id: z.string().uuid().optional(),
 });

@@ -2,30 +2,22 @@ import { z } from "zod";
 import {
   PAYMENT_PREFERENCES,
   PROPERTY_FEATURES,
-  PROPERTY_TYPES,
+
 } from "@repo/shared-types/propertyConstants";
 
-const propertyTypesSchema = z
-  .array(z.enum(PROPERTY_TYPES))
-  .max(PROPERTY_TYPES.length)
+const categoryIdsSchema = z
+  .array(z.string().uuid())
+  .max(50)
   .refine((items) => new Set(items).size === items.length, {
-    message: "Duplicate property types are not allowed",
+    message: "Duplicate categories are not allowed",
   });
 
-const locationsSchema = z
-  .array(
-    z
-      .string()
-      .trim()
-      .min(1)
-      .max(100)
-      .transform((location) => location.toLowerCase()),
-  )
-  .max(10)
+const locationIdsSchema = z
+  .array(z.string().uuid())
+  .max(50)
   .refine((items) => new Set(items).size === items.length, {
     message: "Duplicate locations are not allowed",
   });
-
 const featuresSchema = z
   .array(z.enum(PROPERTY_FEATURES))
   .max(PROPERTY_FEATURES.length)
@@ -36,8 +28,8 @@ const featuresSchema = z
 const preferencesFields = {
   budget_min: z.number().finite().nonnegative().nullable().optional(),
   budget_max: z.number().finite().nonnegative().nullable().optional(),
-  property_types: propertyTypesSchema.nullable().optional(),
-  locations: locationsSchema.nullable().optional(),
+  category_ids: categoryIdsSchema.nullable().optional(),
+  location_ids: locationIdsSchema.nullable().optional(),
   features: featuresSchema.nullable().optional(),
   min_size_sqm: z.number().finite().positive().nullable().optional(),
   min_bedrooms: z.number().int().positive().nullable().optional(),

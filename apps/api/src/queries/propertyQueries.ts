@@ -10,7 +10,6 @@ import type {
 } from "../schemas/propertySchemas";
 import { writeAuditLog } from "../utils/auditLog";
 
-
 export type PropertyStatus =
   "draft" | "pending_approval" | "active" | "inactive" | "sold" | "rejected";
 
@@ -20,8 +19,10 @@ export interface Property extends QueryResultRow {
   project_id: string | null;
   title: string;
   description: string | null;
-  property_type: string;
-  location: string;
+  category_id: string;
+  location_id: string;
+  category_name?: string;
+  location_name?: string;
   size_sqm: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
@@ -115,8 +116,7 @@ export async function createProperty(
 
     const result = await client.query<Property>(
       `INSERT INTO properties (
-         owner_id, project_id, title, description, property_type,
-         location, size_sqm, bedrooms, bathrooms, features,
+         owner_id, project_id, title, description, category_id, location_id, size_sqm, bedrooms, bathrooms, features,
          price, payment_plan, status
        )
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
@@ -127,8 +127,8 @@ export async function createProperty(
         input.project_id ?? null,
         input.title,
         input.description ?? null,
-        input.property_type,
-        input.location,
+        input.category_id,
+        input.location_id,
         input.size_sqm ?? null,
         input.bedrooms ?? null,
         input.bathrooms ?? null,
@@ -170,11 +170,17 @@ export async function listMyProperties(
   const offset = (query.page - 1) * query.limit;
 
   const result = await pool.query<Property>(
-    `SELECT * FROM properties
-     WHERE owner_id = $1
-       AND ($2::property_status IS NULL OR status = $2)
-     ORDER BY created_at DESC
-     LIMIT $3 OFFSET $4`,
+    `SELECT
+    p.*,
+    c.name AS category_name,
+    l.name AS location_name
+FROM properties p
+JOIN property_categories c ON c.id = p.category_id
+JOIN property_locations l ON l.id = p.location_id
+WHERE p.owner_id = $1
+  AND ($2::property_status IS NULL OR p.status = $2)
+ORDER BY p.created_at DESC
+LIMIT $3 OFFSET $4`,
     [ownerId, query.status ?? null, query.limit, offset],
   );
 
@@ -198,7 +204,14 @@ export async function getMyProperty(
   propertyId: string,
 ): Promise<Property> {
   const result = await pool.query<Property>(
-    `SELECT * FROM properties WHERE id = $1 AND owner_id = $2`,
+    `SELECT
+    p.*,
+    c.name AS category_name,
+    l.name AS location_name
+FROM properties p
+JOIN property_categories c ON c.id = p.category_id
+JOIN property_locations l ON l.id = p.location_id
+WHERE p.id = $1 AND p.owner_id = $2`,
     [propertyId, ownerId],
   );
 
@@ -246,11 +259,43 @@ export async function updateMyProperty(
       await verifyProject(client, input.project_id, ownerId);
     }
 
+    if (input.category_id !== undefined) {
+      const category = await client.query(
+        `SELECT id FROM property_categories
+     WHERE id = $1 AND is_active = TRUE`,
+        [input.category_id],
+      );
+
+      if (category.rowCount === 0) {
+        throw new PropertyQueryError(
+          400,
+          "INVALID_PROPERTY_CATEGORY",
+          "Property category does not exist or is inactive",
+        );
+      }
+    }
+
+    if (input.location_id !== undefined) {
+      const location = await client.query(
+        `SELECT id FROM property_locations
+     WHERE id = $1 AND is_active = TRUE`,
+        [input.location_id],
+      );
+
+      if (location.rowCount === 0) {
+        throw new PropertyQueryError(
+          400,
+          "INVALID_PROPERTY_LOCATION",
+          "Property location does not exist or is inactive",
+        );
+      }
+    }
+
     const fields: Array<keyof UpdatePropertyInput> = [
       "title",
       "description",
-      "property_type",
-      "location",
+      "category_id",
+      "location_id",
       "size_sqm",
       "bedrooms",
       "bathrooms",
@@ -281,7 +326,16 @@ export async function updateMyProperty(
       values,
     );
 
-    const updated = result.rows[0]!;
+    const updatedResult = await client.query<Property>(
+      `SELECT p.*, c.name AS category_name, l.name AS location_name
+   FROM properties p
+   JOIN property_categories c ON c.id = p.category_id
+   JOIN property_locations l ON l.id = p.location_id
+   WHERE p.id = $1`,
+      [propertyId],
+    );
+
+    const updated = updatedResult.rows[0]!;
     await writeAuditLog(client, {
       actorId: ownerId,
       action: "property.updated",
@@ -290,8 +344,8 @@ export async function updateMyProperty(
       oldValues: {
         title: current.title,
         description: current.description,
-        property_type: current.property_type,
-        location: current.location,
+        category_id: current.category_id,
+        location_id: current.location_id,
         size_sqm: current.size_sqm,
         bedrooms: current.bedrooms,
         bathrooms: current.bathrooms,
@@ -304,8 +358,8 @@ export async function updateMyProperty(
       newValues: {
         title: updated.title,
         description: updated.description,
-        property_type: updated.property_type,
-        location: updated.location,
+        category_id: updated.category_id,
+        location_id: updated.location_id,
         size_sqm: updated.size_sqm,
         bedrooms: updated.bedrooms,
         bathrooms: updated.bathrooms,
@@ -679,19 +733,22 @@ export async function listPublicProperties(query: PublicPropertyListQuery) {
 
   if (query.q) {
     const param = add(`%${query.q}%`);
-    conditions.push(
-      `(p.title ILIKE ${param} OR p.description ILIKE ${param} OR p.location ILIKE ${param})`,
-    );
+    conditions.push(`
+      (
+        p.title ILIKE ${param}
+        OR p.description ILIKE ${param}
+        OR c.name ILIKE ${param}
+        OR l.name ILIKE ${param}
+      )
+    `);
   }
 
-  if (query.location) {
-    conditions.push(`p.location ILIKE ${add(`%${query.location}%`)}`);
+  if (query.location_id) {
+    conditions.push(`p.location_id = ${add(query.location_id)}`);
   }
 
-  if (query.property_types?.length) {
-    conditions.push(
-      `p.property_type = ANY(${add(query.property_types)}::text[])`,
-    );
+  if (query.category_ids?.length) {
+    conditions.push(`p.category_id = ANY(${add(query.category_ids)}::uuid[])`);
   }
 
   if (query.features?.length) {
@@ -718,66 +775,72 @@ export async function listPublicProperties(query: PublicPropertyListQuery) {
     conditions.push(`p.payment_plan = ${add(query.payment_plan)}`);
   }
 
-  const offset = (query.page - 1) * query.limit;
-  const limitParam = add(query.limit);
-  const offsetParam = add(offset);
   const where = conditions.join(" AND ");
+  const countValues = [...values];
 
   const orderBy = {
-    newest: "created_at DESC",
-    price_asc: "price ASC NULLS LAST, created_at DESC",
-    price_desc: "price DESC NULLS LAST, created_at DESC",
-    location: "location ASC, created_at DESC",
+    newest: "p.created_at DESC",
+    price_asc: "p.price ASC NULLS LAST, p.created_at DESC",
+    price_desc: "p.price DESC NULLS LAST, p.created_at DESC",
+    location: "l.name ASC, p.created_at DESC",
     relevance: query.q
-      ? `CASE WHEN title ILIKE ${add(`${query.q}%`)} THEN 0
-              WHEN location ILIKE ${add(`%${query.q}%`)} THEN 1
-              ELSE 2 END, created_at DESC`
-      : "created_at DESC",
+      ? `CASE WHEN p.title ILIKE ${add(`${query.q}%`)} THEN 0
+              WHEN l.name ILIKE ${add(`%${query.q}%`)} THEN 1
+              ELSE 2 END, p.created_at DESC`
+      : "p.created_at DESC",
   }[query.sort];
 
-  // Collapse exact-detail matches to reduce repeated listings.
+  const limitParam = add(query.limit);
+  const offsetParam = add((query.page - 1) * query.limit);
+
   const result = await pool.query(
     `WITH ranked AS (
-       SELECT p.*,
-              ROW_NUMBER() OVER (
-                PARTITION BY
-                  LOWER(TRIM(p.title)),
-                  LOWER(TRIM(p.location)),
-                  p.property_type,
-                  p.price
-                ORDER BY p.created_at DESC
-              ) AS duplicate_rank,
-              COUNT(*) OVER (
-                PARTITION BY
-                  LOWER(TRIM(p.title)),
-                  LOWER(TRIM(p.location)),
-                  p.property_type,
-                  p.price
-              ) AS possible_duplicate_count
+       SELECT
+         p.*,
+         c.name AS category_name,
+         l.name AS location_name,
+         ROW_NUMBER() OVER (
+           PARTITION BY
+             LOWER(TRIM(p.title)),
+             p.category_id,
+             p.location_id,
+             p.price
+           ORDER BY p.created_at DESC
+         ) AS duplicate_rank,
+         COUNT(*) OVER (
+           PARTITION BY
+             LOWER(TRIM(p.title)),
+             p.category_id,
+             p.location_id,
+             p.price
+         ) AS possible_duplicate_count
        FROM properties p
+       JOIN property_categories c ON c.id = p.category_id
+       JOIN property_locations l ON l.id = p.location_id
        WHERE ${where}
-     ),
-     deduplicated AS (
-       SELECT * FROM ranked WHERE duplicate_rank = 1
      )
-     SELECT * FROM deduplicated
+     SELECT *
+     FROM ranked
+     WHERE duplicate_rank = 1
      ORDER BY ${orderBy}
      LIMIT ${limitParam} OFFSET ${offsetParam}`,
     values,
   );
 
-  const countValues = values.slice(0, values.length - 2);
-
   const count = await pool.query<{ count: string }>(
-    `WITH ranked AS (
-       SELECT LOWER(TRIM(p.title)), LOWER(TRIM(p.location)),
-              p.property_type, p.price
+    `SELECT COUNT(*) AS count
+     FROM (
+       SELECT 1
        FROM properties p
+       JOIN property_categories c ON c.id = p.category_id
+       JOIN property_locations l ON l.id = p.location_id
        WHERE ${where}
-       GROUP BY LOWER(TRIM(p.title)), LOWER(TRIM(p.location)),
-                p.property_type, p.price
-     )
-     SELECT COUNT(*) AS count FROM ranked`,
+       GROUP BY
+         LOWER(TRIM(p.title)),
+         p.category_id,
+         p.location_id,
+         p.price
+     ) AS grouped_properties`,
     countValues,
   );
 
@@ -792,11 +855,16 @@ export async function listPublicProperties(query: PublicPropertyListQuery) {
     total: Number(count.rows[0]?.count ?? 0),
   };
 }
-
 export async function getPublicProperty(propertyId: string) {
   const result = await pool.query<Property>(
-    `SELECT * FROM properties
-     WHERE id = $1 AND status = 'active'`,
+    `SELECT
+       p.*,
+       c.name AS category_name,
+       l.name AS location_name
+     FROM properties p
+     JOIN property_categories c ON c.id = p.category_id
+     JOIN property_locations l ON l.id = p.location_id
+     WHERE p.id = $1 AND p.status = 'active'`,
     [propertyId],
   );
 
@@ -805,8 +873,12 @@ export async function getPublicProperty(propertyId: string) {
 
 export async function comparePublicProperties(ids: string[]) {
   const result = await pool.query<Property>(
-    `SELECT * FROM properties
-     WHERE id = ANY($1::uuid[]) AND status = 'active'`,
+    `SELECT p.*, c.name AS category_name, l.name AS location_name
+FROM properties p
+JOIN property_categories c ON c.id = p.category_id
+JOIN property_locations l ON l.id = p.location_id
+WHERE p.id = ANY($1::uuid[])
+  AND p.status = 'active'`,
     [ids],
   );
 
@@ -819,20 +891,28 @@ export async function comparePublicProperties(ids: string[]) {
 
 export async function listRecommendedProperties(userId: string) {
   const result = await pool.query(
-    `SELECT p.*,
+    `SELECT
+       p.*,
+       c.name AS category_name,
+       l.name AS location_name,
        (
          CASE WHEN pref.budget_min IS NOT NULL
                    AND p.price >= pref.budget_min THEN 1 ELSE 0 END +
          CASE WHEN pref.budget_max IS NOT NULL
                    AND p.price <= pref.budget_max THEN 1 ELSE 0 END +
-         CASE WHEN cardinality(pref.property_types) > 0
-                   AND p.property_type = ANY(pref.property_types)
+         CASE WHEN EXISTS (
+                   SELECT 1
+                   FROM preference_categories pc
+                   WHERE pc.user_id = pref.user_id
+                     AND pc.category_id = p.category_id
+              )
               THEN 2 ELSE 0 END +
-         CASE WHEN cardinality(pref.locations) > 0
-                   AND EXISTS (
-                     SELECT 1 FROM unnest(pref.locations) loc
-                     WHERE p.location ILIKE '%' || loc || '%'
-                   )
+         CASE WHEN EXISTS (
+                   SELECT 1
+                   FROM preference_locations pl
+                   WHERE pl.user_id = pref.user_id
+                     AND pl.location_id = p.location_id
+              )
               THEN 2 ELSE 0 END +
          CASE WHEN cardinality(pref.features) > 0
                    AND p.features && pref.features
@@ -849,6 +929,8 @@ export async function listRecommendedProperties(userId: string) {
        ) AS match_score
      FROM properties p
      JOIN preferences pref ON pref.user_id = $1
+     JOIN property_categories c ON c.id = p.category_id
+     JOIN property_locations l ON l.id = p.location_id
      WHERE p.status = 'active'
        AND (
          pref.budget_min IS NULL OR p.price >= pref.budget_min
@@ -857,14 +939,29 @@ export async function listRecommendedProperties(userId: string) {
          pref.budget_max IS NULL OR p.price <= pref.budget_max
        )
        AND (
-         cardinality(pref.property_types) = 0
-         OR p.property_type = ANY(pref.property_types)
+         NOT EXISTS (
+           SELECT 1
+           FROM preference_categories pc
+           WHERE pc.user_id = pref.user_id
+         )
+         OR EXISTS (
+           SELECT 1
+           FROM preference_categories pc
+           WHERE pc.user_id = pref.user_id
+             AND pc.category_id = p.category_id
+         )
        )
        AND (
-         cardinality(pref.locations) = 0
+         NOT EXISTS (
+           SELECT 1
+           FROM preference_locations pl
+           WHERE pl.user_id = pref.user_id
+         )
          OR EXISTS (
-           SELECT 1 FROM unnest(pref.locations) loc
-           WHERE p.location ILIKE '%' || loc || '%'
+           SELECT 1
+           FROM preference_locations pl
+           WHERE pl.user_id = pref.user_id
+             AND pl.location_id = p.location_id
          )
        )
        AND (
@@ -896,11 +993,13 @@ export async function getAdminPendingProperties(
   const offset = (query.page - 1) * query.limit;
 
   const result = await pool.query<Property>(
-    `SELECT *
-     FROM properties
-     WHERE status = 'pending_approval'
-     ORDER BY created_at ASC
-     LIMIT $1 OFFSET $2`,
+    `SELECT p.*, c.name AS category_name, l.name AS location_name
+FROM properties p
+JOIN property_categories c ON c.id = p.category_id
+JOIN property_locations l ON l.id = p.location_id
+WHERE p.status = 'pending_approval'
+ORDER BY p.created_at ASC
+LIMIT $1 OFFSET $2`,
     [query.limit, offset],
   );
 
@@ -922,10 +1021,13 @@ export async function getAdminPendingProperty(
   propertyId: string,
 ): Promise<Property> {
   const result = await pool.query<Property>(
-    `SELECT *
-     FROM properties
-     WHERE id = $1
-       AND status = 'pending_approval'`,
+    `SELECT p.*, c.name AS category_name, l.name AS location_name
+FROM properties p
+JOIN property_categories c ON c.id = p.category_id
+JOIN property_locations l ON l.id = p.location_id
+WHERE p.id = $1 AND p.status = 'pending_approval'
+ORDER BY p.created_at ASC
+LIMIT $1 OFFSET $2`,
     [propertyId],
   );
 
@@ -980,17 +1082,26 @@ export async function decideAdminProperty(
     const rejectionReason =
       input.decision === "reject" ? input.rejection_reason! : null;
 
-    const updatedResult = await client.query<Property>(
+    await client.query(
       `UPDATE properties
        SET status = $1::property_status,
            rejection_reason = $2,
            updated_at = NOW()
-       WHERE id = $3
-       RETURNING *`,
+       WHERE id = $3`,
       [status, rejectionReason, propertyId],
     );
 
+    const updatedResult = await client.query<Property>(
+      `SELECT p.*, c.name AS category_name, l.name AS location_name
+       FROM properties p
+       JOIN property_categories c ON c.id = p.category_id
+       JOIN property_locations l ON l.id = p.location_id
+       WHERE p.id = $1`,
+      [propertyId],
+    );
+
     const updated = updatedResult.rows[0]!;
+
     await writeAuditLog(client, {
       actorId: adminId,
       action:
@@ -1018,7 +1129,6 @@ export async function decideAdminProperty(
     client.release();
   }
 }
-
 export async function listDeveloperProjectProperties(
   projectId: string,
   developerId: string,
@@ -1040,11 +1150,13 @@ export async function listDeveloperProjectProperties(
 
   // Return all properties, regardless of status.
   const result = await pool.query<Property>(
-    `SELECT *
-     FROM properties
-     WHERE project_id = $1
-     ORDER BY created_at DESC, id DESC
-     LIMIT $2 OFFSET $3`,
+    `SELECT p.*, c.name AS category_name, l.name AS location_name
+FROM properties p
+JOIN property_categories c ON c.id = p.category_id
+JOIN property_locations l ON l.id = p.location_id
+WHERE p.project_id = $1
+ORDER BY p.created_at DESC, p.id DESC
+LIMIT $2 OFFSET $3`,
     [projectId, query.limit, offset],
   );
 

@@ -6,10 +6,7 @@ import type { UpdateBuyerPreferencesInput } from "../schemas/buyerPreferencesSch
 
 type PreferencesInput = UpdateBuyerPreferencesInput;
 
-function validateBudgetRange(
-  min: number | null,
-  max: number | null,
-): void {
+function validateBudgetRange(min: number | null, max: number | null): void {
   if (min !== null && max !== null && min > max) {
     const error = new Error(
       "Minimum budget cannot exceed maximum budget",
@@ -33,13 +30,12 @@ export async function replaceBuyerPreferences(
   const budgetMax = input.budget_max ?? null;
 
   validateBudgetRange(budgetMin, budgetMax);
-
   return saveBuyerPreferences({
     userId,
     budgetMin,
     budgetMax,
-    propertyTypes: input.property_types ?? [],
-    locations: input.locations ?? [],
+    categoryIds: input.category_ids ?? [],
+    locationIds: input.location_ids ?? [],
     features: input.features ?? [],
     minSizeSqm: input.min_size_sqm ?? null,
     minBedrooms: input.min_bedrooms ?? null,
@@ -73,18 +69,18 @@ export async function patchBuyerPreferences(
     userId,
     budgetMin,
     budgetMax,
-    propertyTypes:
-      input.property_types === undefined
-        ? existing?.property_types ?? []
-        : input.property_types ?? [],
-    locations:
-      input.locations === undefined
-        ? existing?.locations ?? []
-        : input.locations ?? [],
+    categoryIds:
+      input.category_ids === undefined
+        ? (existing?.category_ids ?? [])
+        : (input.category_ids ?? []),
+    locationIds:
+      input.location_ids === undefined
+        ? (existing?.location_ids ?? [])
+        : (input.location_ids ?? []),
     features:
       input.features === undefined
-        ? existing?.features ?? []
-        : input.features ?? [],
+        ? (existing?.features ?? [])
+        : (input.features ?? []),
     minSizeSqm:
       input.min_size_sqm === undefined
         ? existing?.min_size_sqm == null
@@ -93,11 +89,11 @@ export async function patchBuyerPreferences(
         : input.min_size_sqm,
     minBedrooms:
       input.min_bedrooms === undefined
-        ? existing?.min_bedrooms ?? null
+        ? (existing?.min_bedrooms ?? null)
         : input.min_bedrooms,
     paymentPreference:
       input.payment_preference === undefined
-        ? existing?.payment_preference ?? null
+        ? (existing?.payment_preference ?? null)
         : input.payment_preference,
   });
 }

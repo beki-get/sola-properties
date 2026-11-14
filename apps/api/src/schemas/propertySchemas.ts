@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  PROPERTY_TYPES,
+ 
   PAYMENT_PREFERENCES,
   PROPERTY_FEATURES,
 } from "@repo/shared-types/propertyConstants";
@@ -9,8 +9,8 @@ export const createPropertySchema = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().max(10000).nullable().optional(),
-    property_type: z.enum(PROPERTY_TYPES),
-    location: z.string().trim().min(1).max(300),
+    category_id: z.string().uuid(),
+    location_id: z.string().uuid(),
     size_sqm: z.number().positive().nullable().optional(),
     bedrooms: z.number().int().nonnegative().nullable().optional(),
     bathrooms: z.number().int().nonnegative().nullable().optional(),
@@ -25,8 +25,8 @@ export const updatePropertySchema = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),
     description: z.string().trim().max(10000).nullable().optional(),
-    property_type: z.enum(PROPERTY_TYPES).optional(),
-    location: z.string().trim().min(1).max(300).optional(),
+    category_id: z.string().uuid().optional(),
+    location_id: z.string().uuid().optional(),
     size_sqm: z.number().positive().nullable().optional(),
     bedrooms: z.number().int().nonnegative().nullable().optional(),
     bathrooms: z.number().int().nonnegative().nullable().optional(),
@@ -80,10 +80,10 @@ export const publicPropertyListQuerySchema = z
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     q: z.string().trim().max(200).optional(),
-    location: z.string().trim().max(300).optional(),
-    property_types: z.preprocess(
+    location_id: z.string().uuid().optional(),
+    category_ids: z.preprocess(
       csvValues,
-      z.array(z.enum(PROPERTY_TYPES)).max(10).optional(),
+      z.array(z.string().uuid()).max(10).optional(),
     ),
     features: z.preprocess(
       csvValues,
