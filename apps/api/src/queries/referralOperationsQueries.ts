@@ -670,7 +670,13 @@ export async function recordPropertyVisitOutcome(
         "The visit must be scheduled before recording its outcome",
       );
     }
-
+    if (visit.status === "completed") {
+      throw new ReferralOperationError(
+        409,
+        "VISIT_ALREADY_COMPLETED",
+        "An outcome has already been recorded for this visit",
+      );
+    }
     if (new Date(visit.scheduled_at).getTime() > Date.now()) {
       throw new ReferralOperationError(
         409,
