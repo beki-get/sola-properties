@@ -19,6 +19,7 @@ import referralIssueRoutes from "./routes/referralIssueRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRoutes";
 import adminPropertyRoutes from "./routes/adminPropertyRoutes";
+import reportRoutes from "./routes/reportRoutes";
 
 import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
 import disputeRoutes from "./routes/disputeRoutes";
@@ -75,6 +76,7 @@ app.use("/api/v1", commissionAgreementRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/notifications/preferences", notificationPreferenceRoutes);
 app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/reports", reportRoutes);
 
 app.get("/", (_req, res) => {
   res.json({
