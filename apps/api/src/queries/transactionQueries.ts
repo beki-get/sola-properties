@@ -175,6 +175,21 @@ export async function listTransactions(input: {
   page: number;
   limit: number;
 }) {
+  const allowedRoles = [
+    "buyer",
+    "agent",
+    "developer",
+    "admin",
+    "finance_admin",
+  ];
+
+  if (!allowedRoles.includes(input.userRole)) {
+    throw new TransactionError(
+      403,
+      "TRANSACTION_ACCESS_DENIED",
+      "You are not allowed to list transactions.",
+    );
+  }
   const conditions: string[] = [];
   const params: unknown[] = [];
 
