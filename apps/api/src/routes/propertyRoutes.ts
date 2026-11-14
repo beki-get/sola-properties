@@ -15,6 +15,10 @@ import {
   getMyPropertyHistoryController,
   updatePropertyPricingController,
 } from "../controllers/propertyController";
+import {
+  listPropertyCategoriesController,
+  listPropertyLocationsController,
+} from "../controllers/propertyLookupController";
 
 import { authenticate } from "../middlewares/authenticate";
 import { authorizeRoles } from "../middlewares/authorizeRoles";
@@ -23,6 +27,8 @@ import { uploadPropertyImages } from "../middlewares/propertyImages";
 
 const router = Router();
 // Public property routes
+router.get("/categories", listPropertyCategoriesController);
+router.get("/locations", listPropertyLocationsController);
 router.get("/", listPublicPropertiesController);
 router.get("/compare", comparePropertiesController);
 router.get(
@@ -53,7 +59,6 @@ router.use(
 // Private property routes
 router.post("/", createPropertyController); //create property
 
-
 router.post(
   "/:propertyId/images",
   uploadPropertyImages,
@@ -66,8 +71,8 @@ router.delete("/:propertyId/images/:imageId", deletePropertyImageController); //
 
 router.get("/me/:propertyId", getMyPropertyController); //get property by id
 router.patch("/:propertyId", updatePropertyController); //update property
-router.patch("/:propertyId/pricing", updatePropertyPricingController);//update property pricing
+router.patch("/:propertyId/pricing", updatePropertyPricingController); //update property pricing
 router.patch("/:propertyId/status", updatePropertyStatusController); //update property status
-router.get("/:propertyId/history", getMyPropertyHistoryController);//get owner property history
+router.get("/:propertyId/history", getMyPropertyHistoryController); //get owner property history
 
 export default router;
