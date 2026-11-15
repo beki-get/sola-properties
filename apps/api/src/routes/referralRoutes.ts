@@ -11,8 +11,10 @@ import {
   getBuyerReferralsController,
   createReferralFollowUpController,
   getReferralFollowUpsController,
-   createReferralMessageController,
+  createReferralMessageController,
   getReferralMessagesController,
+  exportAllReferralsController,
+  exportMyReferralsController
 } from "../controllers/referralController";
 import { authenticate } from "../middlewares/authenticate";
 import { authorizeRoles } from "../middlewares/authorizeRoles";
@@ -32,6 +34,12 @@ router.get(
 ); //get my referrals for buyer
 
 router.get(
+  "/me/export",
+  authorizeRoles("agent", "developer"),
+  exportMyReferralsController,
+);//export data for owner
+
+router.get(
   "/me",
   authorizeRoles("agent", "developer"),
   getMyReferralsController,
@@ -47,6 +55,12 @@ router.patch(
   authorizeRoles("agent", "developer"),
   updateReferralStatusController,
 ); //update referral status
+
+router.get(
+  "/admin/export",
+  authorizeRoles("admin"),
+  exportAllReferralsController,
+); //export referral admin only
 
 router.get(
   "/admin",

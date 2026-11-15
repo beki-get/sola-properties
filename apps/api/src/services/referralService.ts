@@ -18,10 +18,13 @@ import {
   getAdminReferralIssues,
   getAdminReferralIssueById,
   updateReferralIssue,
+  getAllReferralsForExport,
 } from "../queries/referralQueries";
 
 import { notifyUser } from "./notificationService";
 import { logger } from "../utils/logger";
+import { generateCsv } from "../utils/csv";
+import type { AdminReferralFilter } from "../schemas/referralSchemas";
 
 interface CreateReferralInput {
   buyerId: string;
@@ -54,8 +57,48 @@ export async function createReferral(input: CreateReferralInput) {
   return referral;
 }
 
-export async function getMyReferrals(agentId: string) {
-  return getAssignedReferrals(agentId);
+//agent or developer 
+export async function getMyReferrals(assigneeId: string) {
+  return getAssignedReferrals(assigneeId);
+}
+
+//export for agent or developer
+export async function exportMyReferrals(assigneeId: string) {
+  const referrals = await getAssignedReferrals(assigneeId);
+
+  const headers = [
+    "Referral ID",
+    "Reference Code",
+    "Buyer ID",
+    "Buyer Name",
+    "Property ID",
+    "Property Title",
+    "Message",
+    "Status",
+    "Status Reason",
+    "Assigned At",
+    "Accepted At",
+    "Created At",
+    "Updated At",
+  ];
+
+  const rows = referrals.map((referral) => [
+    referral.id,
+    referral.reference_code,
+    referral.buyer_id,
+    referral.buyer_name,
+    referral.property_id,
+    referral.property_title,
+    referral.message,
+    referral.status,
+    referral.status_reason,
+    referral.assigned_at.toISOString(),
+    referral.accepted_at?.toISOString() ?? "",
+    referral.created_at.toISOString(),
+    referral.updated_at.toISOString(),
+  ]);
+
+  return generateCsv(headers, rows);
 }
 
 export async function respondToReferral(input: {
@@ -118,12 +161,50 @@ export async function reassignReferralService(input: ReassignReferralInput) {
   return referral;
 }
 
-export async function getAllReferralsService(input: {
-  status?: string;
-  page: number;
-  limit: number;
-}) {
+export async function getAllReferralsService(input: AdminReferralFilter) {
   return getAllReferrals(input);
+}
+
+export async function exportAllReferralsService(input: AdminReferralFilter) {
+  const referrals = await getAllReferralsForExport(input);
+
+  const headers = [
+    "Referral ID",
+    "Reference Code",
+    "Buyer ID",
+    "Buyer Name",
+    "Property ID",
+    "Property Title",
+    "Assigned To",
+    "Assignee Name",
+    "Message",
+    "Status",
+    "Status Reason",
+    "Assigned At",
+    "Accepted At",
+    "Created At",
+    "Updated At",
+  ];
+
+  const rows = referrals.map((referral) => [
+    referral.id,
+    referral.reference_code,
+    referral.buyer_id,
+    referral.buyer_name,
+    referral.property_id,
+    referral.property_title,
+    referral.assigned_to,
+    referral.assignee_name,
+    referral.message,
+    referral.status,
+    referral.status_reason,
+    referral.assigned_at?.toISOString() ?? "",
+    referral.accepted_at?.toISOString() ?? "",
+    referral.created_at.toISOString(),
+    referral.updated_at.toISOString(),
+  ]);
+
+  return generateCsv(headers, rows);
 }
 
 export async function getReferralDetailsService(referralId: string) {

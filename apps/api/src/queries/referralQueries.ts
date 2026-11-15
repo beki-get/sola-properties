@@ -1,5 +1,6 @@
 import { pool } from "../config/database";
 import { writeAuditLog } from "../utils/auditLog";
+import type { AdminReferralFilter } from "../schemas/referralSchemas";
 
 export class ReferralError extends Error {
   constructor(
@@ -16,6 +17,44 @@ interface CreateReferralInput {
   buyerId: string;
   propertyId: string;
   message?: string | null;
+}
+
+function buildAdminReferralFilters(input: AdminReferralFilter) {
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+
+  if (input.status) {
+    values.push(input.status);
+    conditions.push(`r.status = $${values.length}::referral_status`);
+  }
+
+  if (input.dateFrom) {
+    values.push(input.dateFrom);
+    conditions.push(`r.created_at >= $${values.length}::date`);
+  }
+
+  if (input.dateTo) {
+    values.push(input.dateTo);
+    conditions.push(
+      `r.created_at < ($${values.length}::date + INTERVAL '1 day')`,
+    );
+  }
+
+  if (input.q) {
+    const escapedQuery = input.q.replace(/[\\%_]/g, "\\$&");
+    values.push(`%${escapedQuery}%`);
+    conditions.push(`(
+      r.reference_code ILIKE $${values.length}
+      OR buyer.full_name ILIKE $${values.length}
+      OR p.title ILIKE $${values.length}
+      OR assignee.full_name ILIKE $${values.length}
+    )`);
+  }
+
+  return {
+    whereClause: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
+    values,
+  };
 }
 
 export async function createReferralWithHistory(input: CreateReferralInput) {
@@ -200,7 +239,7 @@ export async function createReferralWithHistory(input: CreateReferralInput) {
 
 //developer or agent
 
-export async function getAssignedReferrals(agentId: string) {
+export async function getAssignedReferrals(assigneeId: string) {
   const result = await pool.query(
     `SELECT
        r.id,
@@ -221,7 +260,7 @@ export async function getAssignedReferrals(agentId: string) {
      JOIN properties p ON p.id = r.property_id
      WHERE r.assigned_to = $1
      ORDER BY r.assigned_at DESC, r.created_at DESC`,
-    [agentId],
+    [assigneeId],
   );
 
   return result.rows;
@@ -627,11 +666,8 @@ export async function reassignReferral(input: ReassignReferralInput) {
 }
 
 //admin view of all referrals with optional status filter
-export async function getAllReferrals(input: {
-  status?: string;
-  page: number;
-  limit: number;
-}) {
+export async function getAllReferrals(input: AdminReferralFilter) {
+  const { whereClause, values } = buildAdminReferralFilters(input);
   const offset = (input.page - 1) * input.limit;
 
   const result = await pool.query(
@@ -655,17 +691,20 @@ export async function getAllReferrals(input: {
      JOIN users buyer ON buyer.id = r.buyer_id
      JOIN properties p ON p.id = r.property_id
      JOIN users assignee ON assignee.id = r.assigned_to
-     WHERE ($1::referral_status IS NULL OR r.status = $1)
+     ${whereClause}
      ORDER BY r.created_at DESC
-     LIMIT $2 OFFSET $3`,
-    [input.status ?? null, input.limit, offset],
+     LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+    [...values, input.limit, offset],
   );
 
   const totalResult = await pool.query<{ count: string }>(
     `SELECT COUNT(*) AS count
      FROM referrals r
-     WHERE ($1::referral_status IS NULL OR r.status = $1)`,
-    [input.status ?? null],
+     JOIN users buyer ON buyer.id = r.buyer_id
+     JOIN properties p ON p.id = r.property_id
+     JOIN users assignee ON assignee.id = r.assigned_to
+     ${whereClause}`,
+    values,
   );
 
   return {
@@ -674,6 +713,39 @@ export async function getAllReferrals(input: {
     limit: input.limit,
     total: Number(totalResult.rows[0]?.count ?? 0),
   };
+}
+
+//export referral
+export async function getAllReferralsForExport(input: AdminReferralFilter) {
+  const { whereClause, values } = buildAdminReferralFilters(input);
+
+  const result = await pool.query(
+    `SELECT
+       r.id,
+       r.reference_code,
+       r.buyer_id,
+       buyer.full_name AS buyer_name,
+       r.property_id,
+       p.title AS property_title,
+       r.assigned_to,
+       assignee.full_name AS assignee_name,
+       r.message,
+       r.status,
+       r.status_reason,
+       r.assigned_at,
+       r.accepted_at,
+       r.created_at,
+       r.updated_at
+     FROM referrals r
+     JOIN users buyer ON buyer.id = r.buyer_id
+     JOIN properties p ON p.id = r.property_id
+     JOIN users assignee ON assignee.id = r.assigned_to
+     ${whereClause}
+     ORDER BY r.created_at DESC`,
+    values,
+  );
+
+  return result.rows;
 }
 
 //admin view of a specific referral with details

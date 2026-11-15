@@ -20,6 +20,8 @@ import {
   getAdminReferralIssuesService,
   getAdminReferralIssueByIdService,
   updateReferralIssueService,
+  exportAllReferralsService,
+  exportMyReferrals
 } from "../services/referralService";
 import {
   createReferralSchema,
@@ -87,6 +89,31 @@ export const getMyReferralsController: RequestHandler = async (req, res) => {
     res.status(500).json({
       message: "An unexpected error occurred.",
       code: "INTERNAL SERVER ERROR",
+    });
+  }
+};
+
+//export referral for agent or developer 
+export const exportMyReferralsController: RequestHandler = async (
+  req,
+  res,
+) => {
+  try {
+    const csv = await exportMyReferrals(req.currentUser!.id);
+
+    res
+      .status(200)
+      .setHeader("Content-Type", "text/csv; charset=utf-8")
+      .setHeader(
+        "Content-Disposition",
+        'attachment; filename="sola-my-referrals.csv"',
+      )
+      .setHeader("Cache-Control", "no-store")
+      .send(csv);
+  } catch {
+    res.status(500).json({
+      message: "An unexpected error occurred.",
+      code: "INTERNAL_SERVER_ERROR",
     });
   }
 };
@@ -212,20 +239,52 @@ export const getAllReferralsController: RequestHandler = async (req, res) => {
 
   if (!parsed.success) {
     res.status(400).json({
-      message: "Invalid referral status filter.",
-      code: "INVALID_REFERRAL_FILTER",
+      message: "Invalid referral filters.",
+      code: "VALIDATION_ERROR",
+      errors: parsed.error.flatten(),
     });
     return;
   }
 
   try {
-    const referrals = await getAllReferralsService({
-      status: parsed.data.status,
-      page: parsed.data.page,
-      limit: parsed.data.limit,
-    });
-
+    const referrals = await getAllReferralsService(parsed.data);
     res.status(200).json(referrals);
+  } catch {
+    res.status(500).json({
+      message: "An unexpected error occurred.",
+      code: "INTERNAL_SERVER_ERROR",
+    });
+  }
+};
+
+//export referrals for admin
+export const exportAllReferralsController: RequestHandler = async (
+  req,
+  res,
+) => {
+  const parsed = adminReferralFilterSchema.safeParse(req.query);
+
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Invalid referral filters.",
+      code: "VALIDATION_ERROR",
+      errors: parsed.error.flatten(),
+    });
+    return;
+  }
+
+  try {
+    const csv = await exportAllReferralsService(parsed.data);
+
+    res
+      .status(200)
+      .setHeader("Content-Type", "text/csv; charset=utf-8")
+      .setHeader(
+        "Content-Disposition",
+        'attachment; filename="sola-referrals.csv"',
+      )
+      .setHeader("Cache-Control", "no-store")
+      .send(csv);
   } catch {
     res.status(500).json({
       message: "An unexpected error occurred.",

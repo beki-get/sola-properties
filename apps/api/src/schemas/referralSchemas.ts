@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import { paginationSchema } from "../utils/pagination";
 
@@ -33,24 +32,38 @@ export const referralStatusSchema = z.discriminatedUnion("status", [
   }),
 ]);
 
-
 export const reassignReferralSchema = z.object({
   newAssigneeId: z.string().uuid(),
   reason: z.string().trim().min(1).max(1000).optional(),
 });
 
-export const adminReferralFilterSchema = z.object({
-  status: z.enum([
-    "assigned",
-    "accepted",
-    "rejected",
-    "in_progress",
-    "agreement",
-    "closed_won",
-    "closed_lost",
-  ]).optional(),
-})
-.extend(paginationSchema.shape);;
+export const adminReferralFilterSchema = z
+  .object({
+    q: z.string().trim().max(100).optional(),
+    status: z
+      .enum([
+        "assigned",
+        "accepted",
+        "rejected",
+        "in_progress",
+        "agreement",
+        "closed_won",
+        "closed_lost",
+      ])
+      .optional(),
+    dateFrom: z.iso.date().optional(),
+    dateTo: z.iso.date().optional(),
+  })
+  .extend(paginationSchema.shape)
+  .refine(
+    (data) => !data.dateFrom || !data.dateTo || data.dateFrom <= data.dateTo,
+    {
+      message: "dateFrom must be before or equal to dateTo",
+      path: ["dateTo"],
+    },
+  );
+
+export type AdminReferralFilter = z.infer<typeof adminReferralFilterSchema>;
 
 export const createFollowUpSchema = z.object({
   body: z.string().trim().min(1).max(2000),
