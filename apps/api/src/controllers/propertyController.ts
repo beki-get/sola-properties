@@ -10,6 +10,7 @@ import {
   adminPendingPropertyListQuerySchema,
   adminPropertyDecisionSchema,
   updatePropertyPricingSchema,
+  adminPropertyListQuerySchema,
 } from "../schemas/propertySchemas";
 import {
   createProperty,
@@ -29,6 +30,8 @@ import {
   decideAdminProperty,
   getMyPropertyHistoryService,
   updatePropertyPricing,
+  listAdminProperties,
+  exportAdminProperties,
 } from "../services/propertyService";
 import { PropertyQueryError } from "../queries/propertyQueries";
 
@@ -424,6 +427,7 @@ export const getAdminPendingPropertiesController: RequestHandler = async (
   }
 };
 
+//one property
 export const getAdminPendingPropertyController: RequestHandler = async (
   req,
   res,
@@ -435,6 +439,65 @@ export const getAdminPendingPropertyController: RequestHandler = async (
 
     const property = await getAdminPendingProperty(propertyId);
     res.status(200).json({ property });
+  } catch (error) {
+    handleError(error, res, next);
+  }
+};
+
+//all properties
+export const listAdminPropertiesController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const parsed = adminPropertyListQuerySchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      res.status(400).json({
+        message: "Invalid property filters",
+        code: "VALIDATION_ERROR",
+        errors: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const result = await listAdminProperties(parsed.data);
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(error, res, next);
+  }
+};
+
+//csv export 
+export const exportAdminPropertiesController: RequestHandler = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const parsed = adminPropertyListQuerySchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      res.status(400).json({
+        message: "Invalid property filters",
+        code: "VALIDATION_ERROR",
+        errors: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const csv = await exportAdminProperties(parsed.data);
+
+    res
+      .status(200)
+      .setHeader("Content-Type", "text/csv; charset=utf-8")
+      .setHeader(
+        "Content-Disposition",
+        'attachment; filename="sola-properties.csv"',
+      )
+      .setHeader("Cache-Control", "no-store")
+      .send(csv);
   } catch (error) {
     handleError(error, res, next);
   }

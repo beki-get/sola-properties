@@ -12,7 +12,9 @@ import {
   getAdminPendingProperty as queryAdminPendingProperty,
   decideAdminProperty as queryDecideAdminProperty,
   getMyPropertyHistory as queryGetMyPropertyHistory,
-  updateMyPropertyPricing
+  updateMyPropertyPricing,
+  getAdminProperties,
+  getAdminPropertiesForExport,
 } from "../queries/propertyQueries";
 import type {
   CreatePropertyInput,
@@ -21,11 +23,13 @@ import type {
   PublicPropertyListQuery,
   AdminPendingPropertyListQuery,
   AdminPropertyDecisionInput,
+  AdminPropertyListQuery,
 } from "../schemas/propertySchemas";
 
 import { notifyMany } from "./notificationService";
 import { logger } from "../utils/logger";
 import { getPropertyFavoriteBuyerIds } from "../queries/favoriteQueries";
+import { generateCsv } from "../utils/csv";
 
 import {
   DeleteObjectCommand,
@@ -263,6 +267,56 @@ export async function getAdminPendingProperties(
   return queryAdminPendingProperties(query);
 }
 
+//get all properties for admin
+export async function listAdminProperties(query: AdminPropertyListQuery) {
+  return getAdminProperties(query);
+}
+
+//export property data for admin
+export async function exportAdminProperties(query: AdminPropertyListQuery) {
+  const properties = await getAdminPropertiesForExport(query);
+
+  const headers = [
+    "Property ID",
+    "Owner ID",
+    "Project ID",
+    "Title",
+    "Description",
+    "Category",
+    "Location",
+    "Size (sqm)",
+    "Bedrooms",
+    "Bathrooms",
+    "Features",
+    "Price",
+    "Payment Plan",
+    "Status",
+    "Created At",
+    "Updated At",
+  ];
+
+  const rows = properties.map((property) => [
+    property.id,
+    property.owner_id,
+    property.project_id,
+    property.title,
+    property.description,
+    property.category_name,
+    property.location_name,
+    property.size_sqm,
+    property.bedrooms,
+    property.bathrooms,
+    property.features?.join("; "),
+    property.price,
+    property.payment_plan,
+    property.status,
+    property.created_at.toISOString(),
+    property.updated_at.toISOString(),
+  ]);
+
+  return generateCsv(headers, rows);
+}
+
 export async function getAdminPendingProperty(propertyId: string) {
   return queryAdminPendingProperty(propertyId);
 }
@@ -296,8 +350,7 @@ export async function updatePropertyPricing(
   );
 
   const priceDecreased =
-    previousPrice !== null &&
-    Number(property.price) < Number(previousPrice);
+    previousPrice !== null && Number(property.price) < Number(previousPrice);
 
   if (priceDecreased) {
     try {

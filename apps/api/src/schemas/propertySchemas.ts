@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
- 
   PAYMENT_PREFERENCES,
   PROPERTY_FEATURES,
 } from "@repo/shared-types/propertyConstants";
@@ -162,3 +161,34 @@ export const updatePropertyPricingSchema = z
     price: z.number().positive(),
   })
   .strict();
+
+export const adminPropertyListQuerySchema = z
+  .object({
+    q: z.string().trim().max(100).optional(),
+    status: z
+      .enum([
+        "draft",
+        "pending_approval",
+        "active",
+        "inactive",
+        "sold",
+        "rejected",
+      ])
+      .optional(),
+    dateFrom: z.iso.date().optional(),
+    dateTo: z.iso.date().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict()
+  .refine(
+    (data) => !data.dateFrom || !data.dateTo || data.dateFrom <= data.dateTo,
+    {
+      message: "dateFrom must be before or equal to dateTo",
+      path: ["dateTo"],
+    },
+  );
+
+export type AdminPropertyListQuery = z.infer<
+  typeof adminPropertyListQuerySchema
+>;

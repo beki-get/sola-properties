@@ -7,6 +7,7 @@ import type {
   PublicPropertyListQuery,
   AdminPendingPropertyListQuery,
   AdminPropertyDecisionInput,
+  AdminPropertyListQuery,
 } from "../schemas/propertySchemas";
 import { writeAuditLog } from "../utils/auditLog";
 
@@ -1176,6 +1177,104 @@ LIMIT $2 OFFSET $3`,
     total,
     totalPages: Math.ceil(total / query.limit),
   };
+}
+
+function buildAdminPropertyFilters(query: AdminPropertyListQuery) {
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+
+  if (query.q) {
+    const escapedQuery = query.q.replace(/[\\%_]/g, "\\$&");
+
+    values.push(`%${escapedQuery}%`);
+    conditions.push(
+      `(p.title ILIKE $${values.length}
+        OR p.description ILIKE $${values.length}
+        OR c.name ILIKE $${values.length}
+        OR l.name ILIKE $${values.length})`,
+    );
+  }
+
+  if (query.status) {
+    values.push(query.status);
+    conditions.push(`p.status = $${values.length}::property_status`);
+  }
+
+  if (query.dateFrom) {
+    values.push(query.dateFrom);
+    conditions.push(`p.created_at >= $${values.length}::date`);
+  }
+
+  if (query.dateTo) {
+    values.push(query.dateTo);
+    conditions.push(
+      `p.created_at < ($${values.length}::date + INTERVAL '1 day')`,
+    );
+  }
+
+  return {
+    whereClause: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
+    values,
+  };
+}
+
+//get all properties for admin
+export async function getAdminProperties(query: AdminPropertyListQuery) {
+  const { whereClause, values } = buildAdminPropertyFilters(query);
+  const offset = (query.page - 1) * query.limit;
+
+  const result = await pool.query<Property>(
+    `SELECT
+       p.*,
+       c.name AS category_name,
+       l.name AS location_name
+     FROM properties p
+     JOIN property_categories c ON c.id = p.category_id
+     JOIN property_locations l ON l.id = p.location_id
+     ${whereClause}
+     ORDER BY p.created_at DESC, p.id DESC
+     LIMIT $${values.length + 1}
+     OFFSET $${values.length + 2}`,
+    [...values, query.limit, offset],
+  );
+
+  const count = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) AS count
+     FROM properties p
+     JOIN property_categories c ON c.id = p.category_id
+     JOIN property_locations l ON l.id = p.location_id
+     ${whereClause}`,
+    values,
+  );
+
+  return {
+    items: result.rows,
+    page: query.page,
+    limit: query.limit,
+    total: Number(count.rows[0]?.count ?? 0),
+  };
+}
+
+//export properties data for admin only
+export async function getAdminPropertiesForExport(
+  query: AdminPropertyListQuery,
+): Promise<Property[]> {
+  const { whereClause, values } = buildAdminPropertyFilters(query);
+
+  const result = await pool.query<Property>(
+    `SELECT
+       p.*,
+       c.name AS category_name,
+       l.name AS location_name
+     FROM properties p
+     JOIN property_categories c ON c.id = p.category_id
+     JOIN property_locations l ON l.id = p.location_id
+     ${whereClause}
+     ORDER BY p.created_at DESC, p.id DESC`,
+    values,
+  );
+
+  return result.rows;
 }
 
 // Update property pricing for a property owner.
