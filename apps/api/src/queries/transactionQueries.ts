@@ -43,6 +43,68 @@ export class TransactionError extends Error {
   }
 }
 
+type TransactionExportRole =
+  | "agent"
+  | "developer"
+  | "admin"
+  | "finance_admin";
+
+export type TransactionFilters = {
+  userId: string;
+  userRole: TransactionExportRole;
+  status?: TransactionStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  q?: string;
+};
+
+function buildTransactionFilters(input: TransactionFilters) {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (input.userRole === "agent" || input.userRole === "developer") {
+    conditions.push(`t.seller_id = $${params.length + 1}`);
+    params.push(input.userId);
+  }
+
+  if (input.status) {
+    conditions.push(`t.status = $${params.length + 1}`);
+    params.push(input.status);
+  }
+
+  if (input.dateFrom) {
+    conditions.push(`t.created_at >= $${params.length + 1}::date`);
+    params.push(input.dateFrom);
+  }
+
+  if (input.dateTo) {
+    conditions.push(
+      `t.created_at < ($${params.length + 1}::date + INTERVAL '1 day')`,
+    );
+    params.push(input.dateTo);
+  }
+
+  if (input.q) {
+    const parameter = `$${params.length + 1}`;
+    conditions.push(`(
+      t.id::text ILIKE ${parameter}
+      OR r.reference_code ILIKE ${parameter}
+      OR buyer.full_name ILIKE ${parameter}
+      OR seller.full_name ILIKE ${parameter}
+      OR p.title ILIKE ${parameter}
+    )`);
+    params.push(`%${input.q}%`);
+  }
+
+  return {
+    whereClause:
+      conditions.length > 0
+        ? `WHERE ${conditions.join(" AND ")}`
+        : "",
+    params,
+  };
+}
+
 export async function createTransaction(input: {
   sellerId: string;
   referralId: string;
@@ -241,6 +303,39 @@ export async function listTransactions(input: {
     total: Number(totalResult.rows[0]?.count ?? 0),
   };
 }
+
+//export transaction
+export async function exportTransactions(input: TransactionFilters) {
+  const { whereClause, params } = buildTransactionFilters(input);
+
+  const result = await pool.query(
+    `SELECT
+       t.id,
+       t.referral_id,
+       r.reference_code,
+       buyer.full_name AS buyer_name,
+       seller.full_name AS seller_name,
+       p.title AS property_title,
+       t.sale_amount,
+       t.closing_date,
+       t.status,
+       t.rejection_reason,
+       t.notes,
+       t.created_at,
+       t.updated_at
+     FROM transactions t
+     JOIN referrals r ON r.id = t.referral_id
+     JOIN users buyer ON buyer.id = t.buyer_id
+     JOIN users seller ON seller.id = t.seller_id
+     JOIN properties p ON p.id = t.property_id
+     ${whereClause}
+     ORDER BY t.created_at DESC`,
+    params,
+  );
+
+  return result.rows;
+}
+
 
 export async function getTransactionById(input: {
   transactionId: string;
@@ -516,7 +611,7 @@ export async function createTransactionDocument(input: {
 export async function decideTransaction(input: {
   transactionId: string;
   actorId: string;
-  actorRole: "admin" | "finance_admin";
+  actorRole: "finance_admin";
   decision: "verified" | "rejected";
   reason?: string;
 }) {
@@ -543,7 +638,7 @@ export async function decideTransaction(input: {
       );
     }
 
-    if (input.actorRole !== "admin" && input.actorRole !== "finance_admin") {
+    if (input.actorRole !== "finance_admin") {
       throw new TransactionError(
         403,
         "TRANSACTION_DECISION_NOT_ALLOWED",

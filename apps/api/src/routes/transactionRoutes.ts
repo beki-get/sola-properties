@@ -11,6 +11,7 @@ import {
   listTransactionsController,
   updateTransactionController,
   uploadTransactionDocumentsController,
+  exportTransactionsController,
 } from "../controllers/transactionController";
 
 const router = Router();
@@ -27,6 +28,12 @@ router.get(
   "/",
   authorizeRoles("buyer", "agent", "developer", "admin", "finance_admin"),
   listTransactionsController,
+);
+
+router.get(
+  "/export",
+  authorizeRoles("agent", "developer", "admin", "finance_admin"),
+  exportTransactionsController,
 );
 
 router.get(
@@ -56,7 +63,7 @@ router.post(
 
 router.post(
   "/:transactionId/decision",
-  authorizeRoles("admin", "finance_admin"),
+  authorizeRoles("finance_admin"),
   decideTransactionController,
 );
 

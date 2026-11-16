@@ -15,10 +15,15 @@ import {
   listTransactionDocuments,
   listTransactions as fetchTransactions,
   updateTransaction as editTransaction,
+  exportTransactions,
+  TransactionFilters ,
 } from "../queries/transactionQueries";
 import { logger } from "../utils/logger";
 import { notifyUser } from "./notificationService";
 import { pool } from "../config/database";
+
+
+import { generateCsv } from "../utils/csv";
 
 const transactionDocumentsBucket =
   process.env.NEON_TRANSACTION_DOCUMENTS_BUCKET;
@@ -78,6 +83,45 @@ export async function getTransactions(input: {
   limit: number;
 }) {
   return fetchTransactions(input);
+}
+
+//export transaction
+export async function exportTransactionsService(input: TransactionFilters) {
+  const records = await exportTransactions(input);
+
+  const isFinanceAdmin = input.userRole === "finance_admin";
+
+  const headers = [
+    "Transaction ID",
+    "Referral Reference",
+    "Buyer",
+    "Seller",
+    "Property",
+    "Sale Amount",
+    "Closing Date",
+    "Status",
+    "Rejection Reason",
+    ...(isFinanceAdmin ? ["Notes"] : []),
+    "Created At",
+    "Updated At",
+  ];
+
+  const rows = records.map((record) => [
+    record.id,
+    record.reference_code,
+    record.buyer_name,
+    record.seller_name,
+    record.property_title,
+    record.sale_amount,
+    record.closing_date,
+    record.status,
+    record.rejection_reason,
+    ...(isFinanceAdmin ? [record.notes] : []),
+    record.created_at,
+    record.updated_at,
+  ]);
+
+  return generateCsv(headers, rows);
 }
 
 export async function getTransactionDetail(input: {
@@ -222,7 +266,7 @@ export async function getTransactionDocumentList(transactionId: string) {
 export async function decideTransaction(input: {
   transactionId: string;
   actorId: string;
-  actorRole: "admin" | "finance_admin";
+  actorRole: "finance_admin";
   decision: "verified" | "rejected";
   reason?: string;
 }) {

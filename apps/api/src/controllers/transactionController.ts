@@ -8,6 +8,7 @@ import {
   getTransactions,
   updateTransaction,
   uploadTransactionDocuments,
+  exportTransactionsService
 } from "../services/transactionService";
 import {
   transactionDecisionSchema,
@@ -63,6 +64,7 @@ export const createTransactionController: RequestHandler = async (req, res) => {
   }
 };
 
+
 export const listTransactionsController: RequestHandler = async (req, res) => {
   const parsed = transactionListQuerySchema.safeParse(req.query);
 
@@ -84,6 +86,49 @@ export const listTransactionsController: RequestHandler = async (req, res) => {
     });
 
     res.status(200).json(transactions);
+  } catch (error) {
+    handleTransactionError(error, res);
+  }
+};
+
+//export transactioncontroller 
+export const exportTransactionsController: RequestHandler = async (
+  req,
+  res,
+) => {
+  const parsed = transactionListQuerySchema.safeParse(req.query);
+
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Invalid transaction export filters.",
+      code: "INVALID_TRANSACTION_QUERY",
+    });
+    return;
+  }
+
+  try {
+    const csv = await exportTransactionsService({
+      userId: req.currentUser!.id,
+      userRole: req.currentUser!.role as
+        | "agent"
+        | "developer"
+        | "admin"
+        | "finance_admin",
+      status: parsed.data.status,
+      dateFrom: parsed.data.dateFrom,
+      dateTo: parsed.data.dateTo,
+      q: parsed.data.q,
+    });
+
+    res
+      .status(200)
+      .set({
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition":
+          'attachment; filename="sola-transactions.csv"',
+        "Cache-Control": "no-store",
+      })
+      .send(csv);
   } catch (error) {
     handleTransactionError(error, res);
   }
@@ -247,9 +292,9 @@ export const decideTransactionController: RequestHandler = async (req, res) => {
     return;
   }
 
-  if (req.currentUser!.role !== "admin" && req.currentUser!.role !== "finance_admin") {
+  if (req.currentUser!.role !== "finance_admin") {
     res.status(403).json({
-      message: "Only admin or finance users can verify or reject a transaction.",
+      message: "Only finance users can verify or reject a transaction.",
       code: "TRANSACTION_DECISION_NOT_ALLOWED",
     });
     return;
