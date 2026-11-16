@@ -33,7 +33,7 @@ if (new URL(databaseUrl).hostname !== expectedTestHost) {
 const app = express();
 
 app.use(express.json());
-app.use("/api/v1/commission-agreements", commissionAgreementRoutes);
+app.use("/api/v1/", commissionAgreementRoutes);
 app.use(errorHandler);
 
 const createdUserIds: string[] = [];
@@ -567,7 +567,7 @@ describe("Commission agreements integration", () => {
       reason = "Integration test adjustment",
     ) {
       return request(app)
-        .post(`/api/v1/commission-agreements/${commissionId}/adjustments`)
+        .post(`/api/v1/commissions/${commissionId}/adjustments`)
         .set("Authorization", `Bearer ${actor.accessToken}`)
         .send({ amount, reason });
     }
@@ -575,7 +575,7 @@ describe("Commission agreements integration", () => {
     async function recordPayment(commissionId: string, amount: string) {
       return request(app)
         .post(
-          `/api/v1/commission-agreements/commissions/${commissionId}/payments`,
+          `/api/v1/commissions/${commissionId}/payments`,
         )
         .set("Authorization", `Bearer ${financeAdmin.accessToken}`)
         .send({
@@ -601,7 +601,7 @@ describe("Commission agreements integration", () => {
 
       const statement = await request(app)
         .get(
-          `/api/v1/commission-agreements/commissions/${fixture.commissionId}`,
+          `/api/v1/commissions/${fixture.commissionId}`,
         )
         .set("Authorization", `Bearer ${financeAdmin.accessToken}`);
 
@@ -624,7 +624,7 @@ describe("Commission agreements integration", () => {
 
       const statement = await request(app)
         .get(
-          `/api/v1/commission-agreements/commissions/${fixture.commissionId}`,
+          `/api/v1/commissions/${fixture.commissionId}`,
         )
         .set("Authorization", `Bearer ${financeAdmin.accessToken}`);
 
@@ -725,7 +725,7 @@ describe("Commission agreements integration", () => {
 
       const response = await request(app)
         .post(
-          `/api/v1/commission-agreements/${fixture.commissionId}/adjustments`,
+          `/api/v1/commissions/${fixture.commissionId}/adjustments`,
         )
         .set("Authorization", `Bearer ${financeAdmin.accessToken}`)
         .send({ amount: "100.00" });
@@ -775,7 +775,7 @@ describe("Commission endpoints integration", () => {
 
   async function approveCommission(commissionId: string) {
     return request(app)
-      .post(`/api/v1/commission-agreements/commissions/${commissionId}/approve`)
+      .post(`/api/v1/commissions/${commissionId}/approve`)
       .set("Authorization", `Bearer ${admin.accessToken}`);
   }
 
@@ -787,7 +787,7 @@ describe("Commission endpoints integration", () => {
     await createCommissionFixture(anotherSeller, buyer);
 
     const response = await request(app)
-      .get("/api/v1/commission-agreements/commissions")
+      .get("/api/v1/commissions")
       .set("Authorization", `Bearer ${seller.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -809,7 +809,7 @@ describe("Commission endpoints integration", () => {
 
   it("allows staff to retrieve commissions across sellers", async () => {
     const response = await request(app)
-      .get("/api/v1/commission-agreements/commissions")
+      .get("/api/v1//commissions")
       .set("Authorization", `Bearer ${admin.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -819,7 +819,7 @@ describe("Commission endpoints integration", () => {
   it("rejects a seller-supplied sellerId filter", async () => {
     const response = await request(app)
       .get(
-        `/api/v1/commission-agreements/commissions?sellerId=${anotherSeller.id}`,
+        `/api/v1/commissions?sellerId=${anotherSeller.id}`,
       )
       .set("Authorization", `Bearer ${seller.accessToken}`);
 
@@ -831,7 +831,7 @@ describe("Commission endpoints integration", () => {
     const fixture = await createCommissionFixture(seller, buyer);
 
     const response = await request(app)
-      .get("/api/v1/commission-agreements/commissions?status=pending")
+      .get("/api/v1/commissions?status=pending")
       .set("Authorization", `Bearer ${admin.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -852,7 +852,7 @@ describe("Commission endpoints integration", () => {
     });
 
     const response = await request(app)
-      .get("/api/v1/commission-agreements/commissions?status=pending")
+      .get("/api/v1/commissions?status=pending")
       .set("Authorization", `Bearer ${admin.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -866,7 +866,7 @@ describe("Commission endpoints integration", () => {
 
   it("supports pagination", async () => {
     const response = await request(app)
-      .get("/api/v1/commission-agreements/commissions?page=1&limit=1")
+      .get("/api/v1/commissions?page=1&limit=1")
       .set("Authorization", `Bearer ${admin.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -882,7 +882,7 @@ describe("Commission endpoints integration", () => {
     const fixture = await createCommissionFixture(seller, buyer);
 
     const response = await request(app)
-      .get(`/api/v1/commission-agreements/commissions/${fixture.commissionId}`)
+      .get(`/api/v1/commissions/${fixture.commissionId}`)
       .set("Authorization", `Bearer ${seller.accessToken}`);
 
     expect(response.status).toBe(200);
@@ -902,7 +902,7 @@ describe("Commission endpoints integration", () => {
     const fixture = await createCommissionFixture(seller, buyer);
 
     const response = await request(app)
-      .get(`/api/v1/commission-agreements/commissions/${fixture.commissionId}`)
+      .get(`/api/v1/commissions/${fixture.commissionId}`)
       .set("Authorization", `Bearer ${anotherSeller.accessToken}`);
 
     expect(response.status).toBe(404);
@@ -912,7 +912,7 @@ describe("Commission endpoints integration", () => {
     const nonexistentId = crypto.randomUUID();
 
     const response = await request(app)
-      .get(`/api/v1/commission-agreements/commissions/${nonexistentId}`)
+      .get(`/api/v1/commissions/${nonexistentId}`)
       .set("Authorization", `Bearer ${admin.accessToken}`);
 
     expect(response.status).toBe(404);
@@ -980,7 +980,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/approve`,
+        `/api/v1/commissions/${fixture.commissionId}/approve`,
       )
       .set("Authorization", `Bearer ${financeAdmin.accessToken}`);
 
@@ -993,7 +993,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/approve`,
+        `/api/v1/commissions/${fixture.commissionId}/approve`,
       )
       .set("Authorization", `Bearer ${seller.accessToken}`);
 
@@ -1023,7 +1023,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/payments`,
+        `/api/v1/commissions/${fixture.commissionId}/payments`,
       )
       .set("Authorization", `Bearer ${admin.accessToken}`)
       .send({
@@ -1063,7 +1063,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/payments`,
+        `/api/v1/commissions/${fixture.commissionId}/payments`,
       )
       .set("Authorization", `Bearer ${admin.accessToken}`)
       .send({
@@ -1093,7 +1093,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/payments`,
+        `/api/v1/commissions/${fixture.commissionId}/payments`,
       )
       .set("Authorization", `Bearer ${admin.accessToken}`)
       .send({
@@ -1111,7 +1111,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/payments`,
+        `/api/v1/commissions/${fixture.commissionId}/payments`,
       )
       .set("Authorization", `Bearer ${admin.accessToken}`)
       .send({
@@ -1132,7 +1132,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/payments`,
+        `/api/v1/commissions/${fixture.commissionId}/payments`,
       )
       .set("Authorization", `Bearer ${seller.accessToken}`)
       .send({
@@ -1152,7 +1152,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/payments`,
+        `/api/v1/commissions/${fixture.commissionId}/payments`,
       )
       .set("Authorization", `Bearer ${admin.accessToken}`)
       .send({
@@ -1176,7 +1176,7 @@ describe("Commission endpoints integration", () => {
 
     const response = await request(app)
       .post(
-        `/api/v1/commission-agreements/commissions/${fixture.commissionId}/payments`,
+        `/api/v1/commissions/${fixture.commissionId}/payments`,
       )
       .set("Authorization", `Bearer ${admin.accessToken}`)
       .send({
@@ -1195,7 +1195,7 @@ describe("Commission endpoints integration", () => {
       status: "approved",
     });
 
-    const url = `/api/v1/commission-agreements/commissions/${fixture.commissionId}/payments`;
+    const url = `/api/v1/commissions/${fixture.commissionId}/payments`;
 
     const makePayment = () =>
       request(app)
