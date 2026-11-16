@@ -71,7 +71,7 @@ app.use("/api/v1/referral", referralOperationsRoutes);
 app.use("/api/v1/referral-issues", referralIssueRoutes);
 app.use("/api/v1/transactions", transactionRoutes);
 app.use("/api/v1/disputes", disputeRoutes);
-app.use("/api/v1/commission-agreements", commissionAgreementRoutes);
+
 app.use("/api/v1", commissionAgreementRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/notifications/preferences", notificationPreferenceRoutes);
