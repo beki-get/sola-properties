@@ -15,6 +15,7 @@ import {
   approveCommissionService,
   recordCommissionPaymentService,
   createCommissionAdjustment as createAdjustment,
+  exportCommissionsService,
 } from "../services/commissionAgreementService";
 import { paginationSchema } from "../utils/pagination";
 export async function createCommissionAgreementController(
@@ -134,6 +135,44 @@ export async function getCommissionsController(
     });
   } catch (error) {
     return next(error);
+  }
+}
+
+//export commission data
+export async function exportCommissionsController(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const parsed = getCommissionsSchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      res.status(400).json({
+        message: "Invalid commission query parameters.",
+        code: "VALIDATION_ERROR",
+      });
+      return;
+    }
+
+    const csv = await exportCommissionsService({
+      status: parsed.data.status,
+      dateFrom: parsed.data.dateFrom,
+      dateTo: parsed.data.dateTo,
+      sellerId: parsed.data.sellerId,
+    });
+
+    res
+      .status(200)
+      .setHeader("Content-Type", "text/csv; charset=utf-8")
+      .setHeader(
+        "Content-Disposition",
+        'attachment; filename="sola-commissions.csv"',
+      )
+      .setHeader("Cache-Control", "no-store")
+      .send(csv);
+  } catch (error) {
+    next(error);
   }
 }
 

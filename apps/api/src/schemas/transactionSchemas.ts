@@ -47,10 +47,24 @@ export const transactionListQuerySchema = z
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     status: z.enum(["submitted", "verified", "rejected"]).optional(),
+    dateFrom: z.iso.date().optional(),
+    dateTo: z.iso.date().optional(),
+    q: z.string().trim().min(1).max(100).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) => !data.dateFrom || !data.dateTo || data.dateFrom <= data.dateTo,
+    {
+      message: "dateFrom cannot be later than dateTo.",
+      path: ["dateTo"],
+    },
+  );
 
-export type TransactionSubmissionInput = z.infer<typeof transactionSubmissionSchema>;
+export type TransactionSubmissionInput = z.infer<
+  typeof transactionSubmissionSchema
+>;
 export type TransactionUpdateInput = z.infer<typeof transactionUpdateSchema>;
-export type TransactionDecisionInput = z.infer<typeof transactionDecisionSchema>;
+export type TransactionDecisionInput = z.infer<
+  typeof transactionDecisionSchema
+>;
 export type TransactionListQuery = z.infer<typeof transactionListQuerySchema>;

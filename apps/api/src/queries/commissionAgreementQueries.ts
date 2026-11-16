@@ -14,6 +14,106 @@ export class CommissionAgreementError extends Error {
   }
 }
 
+type CommissionExportFilters = {
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sellerId?: string;
+};
+
+//export commission data
+export async function getCommissionsForExport(
+  filters: CommissionExportFilters,
+) {
+  const values: unknown[] = [];
+  const conditions: string[] = [];
+
+  if (filters.sellerId) {
+    values.push(filters.sellerId);
+    conditions.push(`c.seller_id = $${values.length}`);
+  }
+
+  if (filters.status) {
+    values.push(filters.status);
+    conditions.push(`c.status = $${values.length}`);
+  }
+
+  if (filters.dateFrom) {
+    values.push(filters.dateFrom);
+    conditions.push(`c.created_at >= $${values.length}::date`);
+  }
+
+  if (filters.dateTo) {
+    values.push(filters.dateTo);
+    conditions.push(
+      `c.created_at < ($${values.length}::date + INTERVAL '1 day')`,
+    );
+  }
+
+  const whereClause = conditions.length
+    ? `WHERE ${conditions.join(" AND ")}`
+    : "";
+
+  const result = await pool.query(
+    `
+      WITH filtered AS (
+        SELECT c.*
+        FROM commissions c
+        ${whereClause}
+      ),
+      payment_totals AS (
+        SELECT
+          commission_id,
+          SUM(amount) AS paid_total
+        FROM commission_payments
+        GROUP BY commission_id
+      ),
+      adjustment_totals AS (
+        SELECT
+          commission_id,
+          SUM(amount) AS adjustment_total
+        FROM commission_adjustments
+        GROUP BY commission_id
+      )
+      SELECT
+        c.id,
+        c.transaction_id,
+        r.reference_code,
+        buyer.full_name AS buyer_name,
+        seller.full_name AS seller_name,
+        p.title AS property_title,
+        c.sale_amount,
+        c.commission_rate_pct,
+        c.platform_share_pct,
+        c.total_commission,
+        c.platform_amount,
+        c.seller_amount,
+        COALESCE(a.adjustment_total, 0) AS adjustment_total,
+        c.platform_amount + COALESCE(a.adjustment_total, 0)
+          AS amount_owed,
+        COALESCE(pt.paid_total, 0) AS paid_total,
+        c.platform_amount
+          + COALESCE(a.adjustment_total, 0)
+          - COALESCE(pt.paid_total, 0) AS outstanding,
+        c.status,
+        c.created_at
+      FROM filtered c
+      JOIN transactions t ON t.id = c.transaction_id
+      JOIN referrals r ON r.id = t.referral_id
+      JOIN users buyer ON buyer.id = t.buyer_id
+      JOIN users seller ON seller.id = c.seller_id
+      JOIN properties p ON p.id = t.property_id
+      LEFT JOIN payment_totals pt ON pt.commission_id = c.id
+      LEFT JOIN adjustment_totals a ON a.commission_id = c.id
+      ORDER BY c.created_at DESC, c.id DESC
+    `,
+
+    values,
+  );
+
+  return result.rows;
+}
+
 export async function createCommissionAgreement(input: {
   sellerId?: string;
   commissionRatePct: number;

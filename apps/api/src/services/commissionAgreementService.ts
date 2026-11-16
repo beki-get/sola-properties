@@ -6,10 +6,12 @@ import {
   approveCommission,
   recordCommissionPayment,
   createCommissionAdjustment as insertCommissionAdjustment,
+  getCommissionsForExport,
 } from "../queries/commissionAgreementQueries";
 
 import { notifyUser } from "./notificationService";
 import { logger } from "../utils/logger";
+import { generateCsv } from "../utils/csv";
 
 export async function createCommissionAgreementService(input: {
   sellerId?: string;
@@ -37,6 +39,64 @@ export async function getCommissionsService(input: {
   limit: number;
 }) {
   return getCommissions(input);
+}
+
+type ExportCommissionsInput = {
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sellerId?: string;
+};
+
+//export commission data
+export async function exportCommissionsService(
+  input: ExportCommissionsInput,
+): Promise<string> {
+  const commissions = await getCommissionsForExport(input);
+
+  const headers = [
+    "Commission ID",
+    "Transaction ID",
+    "Referral Reference",
+    "Buyer",
+    "Seller",
+    "Property",
+    "Sale Amount",
+    "Commission Rate (%)",
+    "Platform Share (%)",
+    "Total Commission",
+    "Platform Amount",
+    "Seller Amount",
+    "Adjustment Total",
+    "Amount Owed",
+    "Paid Total",
+    "Outstanding",
+    "Status",
+    "Created At",
+  ];
+
+  const rows = commissions.map((commission) => [
+    commission.id,
+    commission.transaction_id,
+    commission.reference_code,
+    commission.buyer_name,
+    commission.seller_name,
+    commission.property_title,
+    commission.sale_amount,
+    commission.commission_rate_pct,
+    commission.platform_share_pct,
+    commission.total_commission,
+    commission.platform_amount,
+    commission.seller_amount,
+    commission.adjustment_total,
+    commission.amount_owed,
+    commission.paid_total,
+    commission.outstanding,
+    commission.status,
+    commission.created_at,
+  ]);
+
+  return generateCsv(headers, rows);
 }
 
 export async function getCommissionStatementService(

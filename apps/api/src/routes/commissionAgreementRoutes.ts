@@ -9,7 +9,8 @@ import {
   getCommissionStatementController,
   approveCommissionController,
   recordCommissionPaymentController,
-   createCommissionAdjustmentController
+  createCommissionAdjustmentController,
+  exportCommissionsController,
 } from "../controllers/commissionAgreementController";
 
 const router = Router();
@@ -18,15 +19,15 @@ router.use(authenticate, requireApprovedAccount);
 
 // Commission agreement retrieval
 router.get(
-  "/",
+  "/commission-agreements",
   authorizeRoles("admin", "finance_admin", "agent", "developer"),
   getCommissionAgreementsController,
 );
 
 // Commission agreement creation
 router.post(
-  "/",
-  authorizeRoles("admin", "finance_admin"),
+  "/commission-agreements",
+  authorizeRoles("finance_admin"),
   createCommissionAgreementController,
 );
 
@@ -39,6 +40,13 @@ router.get(
   getCommissionsController,
 );
 
+//export commission
+router.get(
+  "/commissions/export",
+  authorizeRoles("finance_admin"),
+  exportCommissionsController,
+);
+
 // Commission statement
 router.get(
   "/commissions/:id",
@@ -49,22 +57,22 @@ router.get(
 // approving commissions
 router.post(
   "/commissions/:id/approve",
-  authorizeRoles("admin", "finance_admin"),
+  authorizeRoles("finance_admin"),
   approveCommissionController,
 );
 
 // Commission adjustments
 router.post(
-  "/:id/adjustments",
- 
-  authorizeRoles("admin", "finance_admin"),
+  "/commissions/:id/adjustments",
+
+  authorizeRoles("finance_admin"),
   createCommissionAdjustmentController,
 );
 
 //recording payments.
 router.post(
   "/commissions/:id/payments",
-  authorizeRoles("admin", "finance_admin"),
+  authorizeRoles("finance_admin"),
   recordCommissionPaymentController,
 );
 
