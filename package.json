@@ -2,7 +2,7 @@
   "name": "sola-properties",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev",
+     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
