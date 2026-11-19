@@ -1,0 +1,289 @@
+"use client";
+
+import React, { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowLeft,
+  Building,
+  X,
+  ArrowRight,
+  Check,
+  AlertCircle,
+  Columns2,
+} from "lucide-react";
+import { Property, propertyApi } from "../../../lib/api";
+import styles from "./compare.module.css";
+
+function CompareContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const idsParam = searchParams.get("ids") || "";
+
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const idList = idsParam
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (idList.length === 0) {
+      setProperties([]);
+      setLoading(false);
+      return;
+    }
+
+    let mounted = true;
+    async function fetchComparison() {
+      setLoading(true);
+      setErrorMsg(null);
+      try {
+        const res = await propertyApi.compare(idList);
+        if (mounted) {
+          if (res.ok && res.data) {
+            const list = res.data.properties || res.data.data || [];
+            setProperties(list);
+          } else {
+            setErrorMsg(res.message || "Failed to load properties for comparison.");
+          }
+        }
+      } catch (err: any) {
+        if (mounted) {
+          setErrorMsg(err.message || "Network error loading comparison.");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    fetchComparison();
+    return () => {
+      mounted = false;
+    };
+  }, [idsParam]);
+
+  const handleRemoveProperty = (removeId: string) => {
+    const updated = properties.filter((p) => p.id !== removeId);
+    setProperties(updated);
+    const newIds = updated.map((p) => p.id).join(",");
+    if (newIds) {
+      router.push(`/properties/compare?ids=${newIds}`);
+    } else {
+      router.push("/properties/compare");
+    }
+  };
+
+  return (
+    <div className={styles.compareWrapper}>
+      <header className={styles.header}>
+        <Link href="/" className={styles.brandLink}>
+          <div className={styles.brandIcon}>
+            <Building size={18} color="#ffffff" />
+          </div>
+          <span>Sola Properties</span>
+        </Link>
+
+        <Link
+          href="/properties"
+          className={styles.actionBtn}
+          style={{ width: "auto", height: 38, padding: "0 18px", fontSize: "0.78rem" }}
+        >
+          <ArrowLeft size={14} />
+          <span>Return to Catalog</span>
+        </Link>
+      </header>
+
+      <main className={styles.mainContent}>
+        <div className={styles.topBar}>
+          <div>
+            <h1 className={styles.pageTitle}>Architectural Comparison Matrix</h1>
+            <p className={styles.pageSubtitle}>
+              Side-by-side technical evaluation across verified assets. Compare square meterage, structural specifications, and pricing terms.
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className={styles.emptyState}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 800 }}>
+              COMPILING COMPARISON DATA...
+            </h3>
+            <p style={{ color: "#6b7280" }}>
+              Evaluating structural configurations and cadastral valuations.
+            </p>
+          </div>
+        ) : errorMsg ? (
+          <div className={styles.emptyState}>
+            <AlertCircle size={32} color="#dc2626" style={{ marginBottom: 12 }} />
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 800 }}>
+              Comparison Query Error
+            </h3>
+            <p style={{ color: "#6b7280" }}>{errorMsg}</p>
+          </div>
+        ) : properties.length === 0 ? (
+          <div className={styles.emptyState}>
+            <Columns2 size={40} color="#9ca3af" style={{ marginBottom: 16 }} />
+            <h3 style={{ fontSize: "1.3rem", fontWeight: 800, margin: "0 0 8px" }}>
+              No Properties Selected for Comparison
+            </h3>
+            <p style={{ color: "#6b7280", marginBottom: 24, maxWidth: 500, margin: "0 auto 24px" }}>
+              Browse our architectural catalog and select the "Compare" checkbox on multiple properties to evaluate them side-by-side.
+            </p>
+            <Link
+              href="/properties"
+              className={styles.actionBtn}
+              style={{ display: "inline-flex", width: "auto", padding: "0 28px" }}
+            >
+              <span>Explore Listings</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        ) : (
+          <div className={styles.compareTableCard}>
+            <table className={styles.compareTable}>
+              <thead>
+                <tr>
+                  <th className={styles.specRowHeader}>Architectural Spec</th>
+                  {properties.map((prop) => (
+                    <th key={prop.id} className={styles.propTopCell}>
+                      <button
+                        type="button"
+                        className={styles.removeColBtn}
+                        onClick={() => handleRemoveProperty(prop.id)}
+                        title="Remove from comparison"
+                      >
+                        <X size={14} />
+                      </button>
+                      <img
+                        src={
+                          prop.images?.[0]?.image_url ||
+                          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop"
+                        }
+                        alt={prop.title}
+                        className={styles.propThumb}
+                      />
+                      <h4 className={styles.propColTitle}>{prop.title}</h4>
+                      <div className={styles.propColPrice}>
+                        ${Number(prop.price).toLocaleString()}
+                      </div>
+                      <Link
+                        href={`/properties/${prop.id}`}
+                        className={styles.actionBtn}
+                      >
+                        <span>Inspect Dossier</span>
+                      </Link>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className={styles.specRowHeader}>Category</td>
+                  {properties.map((p) => (
+                    <td key={p.id} className={styles.specCell}>
+                      {p.category_name || "—"}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={styles.specRowHeader}>Location / District</td>
+                  {properties.map((p) => (
+                    <td key={p.id} className={styles.specCell}>
+                      {p.location_name || p.address || "Addis Ababa"}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={styles.specRowHeader}>Total Area</td>
+                  {properties.map((p) => (
+                    <td key={p.id} className={styles.specCell}>
+                      <strong>{p.size_sqm ? `${p.size_sqm} m²` : "—"}</strong>
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={styles.specRowHeader}>Price per m²</td>
+                  {properties.map((p) => {
+                    const pricePerSqm =
+                      p.size_sqm && p.size_sqm > 0
+                        ? Math.round(Number(p.price) / Number(p.size_sqm))
+                        : null;
+                    return (
+                      <td key={p.id} className={styles.specCell}>
+                        {pricePerSqm ? `$${pricePerSqm.toLocaleString()} / m²` : "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
+                <tr>
+                  <td className={styles.specRowHeader}>Bedrooms</td>
+                  {properties.map((p) => (
+                    <td key={p.id} className={styles.specCell}>
+                      {p.bedrooms ?? "—"}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={styles.specRowHeader}>Bathrooms</td>
+                  {properties.map((p) => (
+                    <td key={p.id} className={styles.specCell}>
+                      {p.bathrooms ?? "—"}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={styles.specRowHeader}>Payment Terms</td>
+                  {properties.map((p) => (
+                    <td
+                      key={p.id}
+                      className={styles.specCell}
+                      style={{ textTransform: "capitalize" }}
+                    >
+                      {p.payment_plan || "Cash"}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <td className={styles.specRowHeader}>Amenities</td>
+                  {properties.map((p) => (
+                    <td key={p.id} className={styles.specCell}>
+                      {p.features && p.features.length > 0 ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {p.features.map((feat, i) => (
+                            <span key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.82rem" }}>
+                              <Check size={12} color="#10b981" />
+                              {feat}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ color: "#9ca3af" }}>Standard Finishes</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default function ComparePage() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ padding: 48, textAlign: "center", fontFamily: "Syne" }}>
+          INITIALIZING COMPARISON VIEWPORT...
+        </div>
+      }
+    >
+      <CompareContent />
+    </Suspense>
+  );
+}
