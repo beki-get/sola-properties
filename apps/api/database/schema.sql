@@ -238,8 +238,7 @@ CREATE TABLE preferences (
     budget_min NUMERIC(14, 2),
     budget_max NUMERIC(14, 2),
 
-    property_types TEXT[] NOT NULL DEFAULT '{}',
-    locations TEXT[] NOT NULL DEFAULT '{}',
+    
     features TEXT[] NOT NULL DEFAULT '{}',
 
     min_size_sqm NUMERIC(12, 2),
@@ -302,6 +301,32 @@ CREATE UNIQUE INDEX projects_developer_name_unique_idx
     ON projects (developer_id, LOWER(name));
 
 
+  -- Property categories
+CREATE TABLE property_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT property_categories_name_not_blank
+        CHECK (LENGTH(BTRIM(name)) > 0)
+);
+
+-- Property locations
+CREATE TABLE property_locations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT property_locations_name_not_blank
+        CHECK (LENGTH(BTRIM(name)) > 0)
+);
+
+
+
 CREATE TYPE property_status AS ENUM (
     'draft',
     'pending_approval',
@@ -321,9 +346,7 @@ CREATE TABLE properties (
         REFERENCES projects(id) ON DELETE RESTRICT,
     title TEXT NOT NULL,
     description TEXT,
-    property_type TEXT NOT NULL,
-    location TEXT NOT NULL,
-
+  
     -- New relational columns
     category_id UUID NOT NULL
         REFERENCES property_categories(id) ON DELETE RESTRICT,
@@ -344,9 +367,6 @@ CREATE TABLE properties (
 
     CONSTRAINT properties_title_not_blank
         CHECK (LENGTH(BTRIM(title)) > 0),
-
-    CONSTRAINT properties_location_not_blank
-        CHECK (LENGTH(BTRIM(location)) > 0),
 
     CONSTRAINT properties_size_positive
         CHECK (size_sqm IS NULL OR size_sqm > 0),
@@ -1020,29 +1040,7 @@ CREATE INDEX commission_payments_idx
 CREATE INDEX commission_adjustments_commission_idx
   ON commission_adjustments(commission_id, created_at DESC);
 
-  -- Property categories
-CREATE TABLE property_categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT property_categories_name_not_blank
-        CHECK (LENGTH(BTRIM(name)) > 0)
-);
-
--- Property locations
-CREATE TABLE property_locations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT property_locations_name_not_blank
-        CHECK (LENGTH(BTRIM(name)) > 0)
-);
 
 CREATE UNIQUE INDEX property_categories_name_lower_idx
     ON property_categories (LOWER(name));
