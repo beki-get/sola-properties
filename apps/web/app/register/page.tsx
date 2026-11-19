@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { authApi } from "../../lib/api";
 import styles from "../auth.module.css";
 
 export default function RegisterPage() {
@@ -49,7 +48,7 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      const result = await authApi.register({
+      const result = await register({
         fullName: fullName.trim(),
         email: email.trim(),
         password,
