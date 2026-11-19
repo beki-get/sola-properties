@@ -1,0 +1,1541 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  Building,
+  Users,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Plus,
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Upload,
+  Download,
+  MessageSquare,
+  ShieldCheck,
+  FileText,
+} from "lucide-react";
+import {
+  Property,
+  PropertyCategory,
+  PropertyLocation,
+  Referral,
+  ReferralMessage,
+  ReferralFollowUp,
+  PropertyVisit,
+  Transaction,
+  Commission,
+  AgentReport,
+  DeveloperReport,
+  propertyApi,
+  propertyAuthApi,
+  referralApi,
+  visitApi,
+  transactionApi,
+  commissionApi,
+  reportApi,
+} from "../../../lib/api";
+import styles from "./workstations.module.css";
+
+interface AgentDeveloperWorkstationProps {
+  role: "agent" | "developer";
+  activeTab:
+    | "inventory"
+    | "authorizations"
+    | "leads"
+    | "visits"
+    | "transactions"
+    | "commissions"
+    | "analytics";
+}
+
+export function AgentDeveloperWorkstation({
+  role,
+  activeTab,
+}: AgentDeveloperWorkstationProps) {
+  // Inventory State
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [categories, setCategories] = useState<PropertyCategory[]>([]);
+  const [locations, setLocations] = useState<PropertyLocation[]>([]);
+  const [propLoading, setPropLoading] = useState(false);
+  const [createPropModal, setCreatePropModal] = useState(false);
+  const [newProp, setNewProp] = useState({
+    title: "",
+    description: "",
+    category_id: "",
+    location_id: "",
+    price: 250000,
+    size_sqm: 120,
+    bedrooms: 2,
+    bathrooms: 2,
+    payment_plan: "cash" as "cash" | "installment" | "mortgage",
+    features: "parking,security,balcony",
+  });
+  const [createPropSubmitting, setCreatePropSubmitting] = useState(false);
+
+  // Authorizations State
+  const [authorizations, setAuthorizations] = useState<any[]>([]);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [grantAgentEmail, setGrantAgentEmail] = useState("");
+  const [grantPropId, setGrantPropId] = useState("");
+  const [grantSubmitting, setGrantSubmitting] = useState(false);
+
+  // Leads & Pipeline State
+  const [referrals, setReferrals] = useState<Referral[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [activeLead, setActiveLead] = useState<Referral | null>(null);
+  const [leadMessages, setLeadMessages] = useState<ReferralMessage[]>([]);
+  const [leadFollowUps, setLeadFollowUps] = useState<ReferralFollowUp[]>([]);
+  const [newLeadMsg, setNewLeadMsg] = useState("");
+  const [newFollowUpNote, setNewFollowUpNote] = useState("");
+
+  // Visits State
+  const [visits, setVisits] = useState<PropertyVisit[]>([]);
+  const [visitLoading, setVisitLoading] = useState(false);
+  const [outcomeModalVisit, setOutcomeModalVisit] = useState<PropertyVisit | null>(null);
+  const [outcomeVal, setOutcomeVal] = useState<"interested" | "not_interested" | "requested_another_visit">("interested");
+  const [outcomeNotes, setOutcomeNotes] = useState("");
+
+  // Transactions State
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [createTxModal, setCreateTxModal] = useState(false);
+  const [newTx, setNewTx] = useState({
+    referralId: "",
+    sale_amount: 300000,
+    closing_date: new Date().toISOString().slice(0, 10),
+    notes: "",
+  });
+
+  // Commissions State
+  const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [commLoading, setCommLoading] = useState(false);
+
+  // Analytics State
+  const [analytics, setAnalytics] = useState<AgentReport | DeveloperReport | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // Feedback State
+  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Load Categories & Locations for selectors
+  useEffect(() => {
+    propertyApi.getCategories().then((res) => {
+      if (res.ok && res.data) {
+        setCategories(res.data.categories || res.data.data || []);
+      }
+    });
+    propertyApi.getLocations().then((res) => {
+      if (res.ok && res.data) {
+        setLocations(res.data.locations || res.data.data || []);
+      }
+    });
+  }, []);
+
+  // Tab Data Loader
+  useEffect(() => {
+    setFeedback(null);
+    if (activeTab === "inventory") {
+      setPropLoading(true);
+      propertyApi
+        .getMyProperties()
+        .then((res) => {
+          if (res.ok && res.data) {
+            setProperties(res.data.properties || res.data.data || []);
+          }
+        })
+        .finally(() => setPropLoading(false));
+    } else if (activeTab === "authorizations") {
+      setAuthLoading(true);
+      const call =
+        role === "developer"
+          ? propertyAuthApi.listApprovedAgents()
+          : propertyAuthApi.listAgentAuthorizedProperties();
+      call
+        .then((res: any) => {
+          if (res.ok && res.data) {
+            setAuthorizations(res.data.agents || res.data.properties || res.data.data || []);
+          }
+        })
+        .finally(() => setAuthLoading(false));
+    } else if (activeTab === "leads") {
+      setLeadsLoading(true);
+      referralApi
+        .getMyReferrals()
+        .then((res) => {
+          if (res.ok && res.data) {
+            setReferrals(res.data.referrals || res.data.data || []);
+          }
+        })
+        .finally(() => setLeadsLoading(false));
+    } else if (activeTab === "visits") {
+      setVisitLoading(true);
+      referralApi.getMyReferrals().then(async (refRes) => {
+        const refList = refRes.data?.referrals || refRes.data?.data || [];
+        if (refList.length > 0) {
+          const allVisits: PropertyVisit[] = [];
+          for (const r of refList.slice(0, 5)) {
+            const vRes = await visitApi.getSellerVisits(r.id);
+            if (vRes.ok && vRes.data) {
+              const vList = vRes.data.visits || vRes.data.data || [];
+              allVisits.push(...vList);
+            }
+          }
+          setVisits(allVisits);
+        } else {
+          setVisits([]);
+        }
+        setVisitLoading(false);
+      });
+    } else if (activeTab === "transactions") {
+      setTxLoading(true);
+      transactionApi
+        .list()
+        .then((res) => {
+          if (res.ok && res.data) {
+            setTransactions(res.data.transactions || res.data.data || []);
+          }
+        })
+        .finally(() => setTxLoading(false));
+    } else if (activeTab === "commissions") {
+      setCommLoading(true);
+      commissionApi
+        .listCommissions()
+        .then((res) => {
+          if (res.ok && res.data) {
+            setCommissions(res.data.commissions || res.data.data || []);
+          }
+        })
+        .finally(() => setCommLoading(false));
+    } else if (activeTab === "analytics") {
+      setAnalyticsLoading(true);
+      const call =
+        role === "agent"
+          ? reportApi.getAgentReport()
+          : reportApi.getDeveloperReport();
+      call
+        .then((res) => {
+          if (res.ok && res.data) {
+            setAnalytics(res.data.report || res.data.data || null);
+          }
+        })
+        .finally(() => setAnalyticsLoading(false));
+    }
+  }, [activeTab, role]);
+
+  // Create Property
+  const handleCreateProperty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProp.category_id || !newProp.location_id) {
+      alert("Please select both a property category and location.");
+      return;
+    }
+    setCreatePropSubmitting(true);
+    try {
+      const res = await propertyApi.createProperty({
+        title: newProp.title.trim(),
+        description: newProp.description.trim() || undefined,
+        category_id: newProp.category_id,
+        location_id: newProp.location_id,
+        price: Number(newProp.price),
+        size_sqm: Number(newProp.size_sqm),
+        bedrooms: Number(newProp.bedrooms),
+        bathrooms: Number(newProp.bathrooms),
+        payment_plan: newProp.payment_plan,
+        features: newProp.features
+          .split(",")
+          .map((f) => f.trim())
+          .filter(Boolean),
+      });
+
+      if (res.ok) {
+        setFeedback({ ok: true, msg: "Property listing created successfully!" });
+        setCreatePropModal(false);
+        // Reload properties
+        const refresh = await propertyApi.getMyProperties();
+        if (refresh.ok && refresh.data) {
+          setProperties(refresh.data.properties || refresh.data.data || []);
+        }
+      } else {
+        setFeedback({ ok: false, msg: res.message || "Failed to create property." });
+      }
+    } catch (err: any) {
+      setFeedback({ ok: false, msg: err.message || "Error creating property." });
+    } finally {
+      setCreatePropSubmitting(false);
+    }
+  };
+
+  // Update Property Status
+  const handleUpdatePropStatus = async (
+    propId: string,
+    status: "inactive" | "sold"
+  ) => {
+    try {
+      await propertyApi.updateStatus(propId, { status });
+      setProperties((prev) =>
+        prev.map((p) => (p.id === propId ? { ...p, status } : p))
+      );
+    } catch {
+      // ignore
+    }
+  };
+
+  // Grant Authorization
+  const handleGrantAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGrantSubmitting(true);
+    try {
+      const res = await propertyAuthApi.authorizeAgent(grantPropId, grantAgentEmail.trim());
+      if (res.ok) {
+        setGrantAgentEmail("");
+        setFeedback({ ok: true, msg: "Agent authorized for property marketing." });
+        const refresh = await propertyAuthApi.listApprovedAgents();
+        if (refresh.ok && refresh.data) {
+          setAuthorizations(refresh.data.agents || refresh.data.data || []);
+        }
+      } else {
+        setFeedback({ ok: false, msg: res.message || "Failed to grant authorization." });
+      }
+    } catch (err: any) {
+      setFeedback({ ok: false, msg: err.message || "Error granting authorization." });
+    } finally {
+      setGrantSubmitting(false);
+    }
+  };
+
+  // Referral Lead Actions
+  const handleLeadDecision = async (
+    referralId: string,
+    decision: "accepted" | "rejected"
+  ) => {
+    try {
+      await referralApi.respondReferral(referralId, { decision });
+      setReferrals((prev) =>
+        prev.map((r) =>
+          r.id === referralId
+            ? { ...r, status: decision === "accepted" ? "accepted" : "rejected" }
+            : r
+        )
+      );
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleLeadStatusChange = async (
+    referralId: string,
+    status: any
+  ) => {
+    try {
+      await referralApi.updateStatus(referralId, { status });
+      setReferrals((prev) =>
+        prev.map((r) => (r.id === referralId ? { ...r, status } : r))
+      );
+    } catch {
+      // ignore
+    }
+  };
+
+  // Open Lead Drawer
+  const handleOpenLead = async (lead: Referral) => {
+    setActiveLead(lead);
+    try {
+      const [msgRes, fuRes] = await Promise.all([
+        referralApi.getMessages(lead.id),
+        referralApi.getFollowUps(lead.id),
+      ]);
+      if (msgRes.ok && msgRes.data) {
+        setLeadMessages(msgRes.data.messages || msgRes.data.data || []);
+      }
+      if (fuRes.ok && fuRes.data) {
+        setLeadFollowUps(fuRes.data.followUps || fuRes.data.data || []);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSendLeadMsg = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeLead || !newLeadMsg.trim()) return;
+    try {
+      await referralApi.sendMessage(activeLead.id, { message: newLeadMsg.trim() });
+      setNewLeadMsg("");
+      const refresh = await referralApi.getMessages(activeLead.id);
+      if (refresh.ok && refresh.data) {
+        setLeadMessages(refresh.data.messages || refresh.data.data || []);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleAddFollowUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeLead || !newFollowUpNote.trim()) return;
+    try {
+      await referralApi.createFollowUp(activeLead.id, { notes: newFollowUpNote.trim() });
+      setNewFollowUpNote("");
+      const refresh = await referralApi.getFollowUps(activeLead.id);
+      if (refresh.ok && refresh.data) {
+        setLeadFollowUps(refresh.data.followUps || refresh.data.data || []);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // Visit Outcome Submission
+  const handleRecordOutcome = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!outcomeModalVisit) return;
+    try {
+      await visitApi.recordOutcome(outcomeModalVisit.id, {
+        outcome: outcomeVal,
+        outcomeNote: outcomeNotes.trim() || undefined,
+      });
+      setVisits((prev) =>
+        prev.map((v) =>
+          v.id === outcomeModalVisit.id
+            ? { ...v, status: "completed", outcome: outcomeVal, outcome_notes: outcomeNotes }
+            : v
+        )
+      );
+      setOutcomeModalVisit(null);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Submit Deal Closing / Transaction
+  const handleCreateTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTx.referralId) {
+      alert("Please provide the associated Referral ID.");
+      return;
+    }
+    try {
+      const res = await transactionApi.create({
+        referralId: newTx.referralId.trim(),
+        sale_amount: Number(newTx.sale_amount),
+        closing_date: newTx.closing_date,
+        notes: newTx.notes.trim() || undefined,
+      });
+      if (res.ok) {
+        setCreateTxModal(false);
+        setFeedback({ ok: true, msg: "Transaction closing submitted for compliance verification!" });
+        const refresh = await transactionApi.list();
+        if (refresh.ok && refresh.data) {
+          setTransactions(refresh.data.transactions || refresh.data.data || []);
+        }
+      } else {
+        setFeedback({ ok: false, msg: res.message || "Failed to submit transaction." });
+      }
+    } catch (err: any) {
+      setFeedback({ ok: false, msg: err.message || "Error submitting transaction." });
+    }
+  };
+
+  return (
+    <div className={styles.workstationWrapper}>
+      {feedback && (
+        <div
+          style={{
+            padding: "12px 16px",
+            backgroundColor: feedback.ok ? "#ecfdf5" : "#fef2f2",
+            border: `1px solid ${feedback.ok ? "#10b981" : "#ef4444"}`,
+            color: feedback.ok ? "#065f46" : "#991b1b",
+            fontSize: "0.85rem",
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {feedback.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          <span>{feedback.msg}</span>
+        </div>
+      )}
+
+      {/* 1. PROPERTY INVENTORY TAB */}
+      {activeTab === "inventory" && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>Asset Portfolio & Listings</h2>
+              <p className={styles.sectionSubtitle}>
+                Manage verified property specifications, floorplates, and pricing structures.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCreatePropModal(true)}
+              className={styles.actionBtnPrimary}
+            >
+              <Plus size={14} />
+              <span>Register New Listing</span>
+            </button>
+          </div>
+
+          {propLoading ? (
+            <div className={styles.emptyBlock}>Loading asset portfolio...</div>
+          ) : properties.length === 0 ? (
+            <div className={styles.emptyBlock}>
+              <Building size={36} color="#9ca3af" />
+              <h4 className={styles.emptyBlockTitle}>No Properties Listed</h4>
+              <p className={styles.emptyBlockDesc}>
+                Register your residential or commercial inventory to expose them to verified buyers.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.tableResponsive}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.tableTh}>Property Title</th>
+                    <th className={styles.tableTh}>Location</th>
+                    <th className={styles.tableTh}>Price</th>
+                    <th className={styles.tableTh}>Area / Specs</th>
+                    <th className={styles.tableTh}>Status</th>
+                    <th className={styles.tableTh}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {properties.map((p) => (
+                    <tr key={p.id} className={styles.tableRow}>
+                      <td className={styles.tableTd}>
+                        <strong>{p.title}</strong>
+                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
+                          ID: {p.id.slice(0, 8)}
+                        </div>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {p.location_name || p.address || "Addis Ababa"}
+                      </td>
+                      <td className={styles.tableTd}>
+                        <strong>${Number(p.price).toLocaleString()}</strong>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {p.size_sqm ? `${p.size_sqm} m²` : "—"} &bull;{" "}
+                        {p.bedrooms ? `${p.bedrooms} Beds` : "—"}
+                      </td>
+                      <td className={styles.tableTd}>
+                        <span
+                          className={`${styles.badge} ${
+                            p.status === "active"
+                              ? styles.badgeActive
+                              : p.status === "pending_approval"
+                              ? styles.badgePending
+                              : p.status === "sold"
+                              ? styles.badgeCompleted
+                              : styles.badgeDraft
+                          }`}
+                        >
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className={styles.tableTd}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <Link
+                            href={`/properties/${p.id}`}
+                            className={styles.actionBtnSecondary}
+                            style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                          >
+                            View
+                          </Link>
+                          {p.status === "active" && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdatePropStatus(p.id, "inactive")}
+                              className={styles.actionBtnSecondary}
+                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                            >
+                              Deactivate
+                            </button>
+                          )}
+                          {p.status === "active" && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdatePropStatus(p.id, "sold")}
+                              className={styles.actionBtnPrimary}
+                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                            >
+                              Mark Sold
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* CREATE PROPERTY MODAL */}
+          {createPropModal && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalBox}>
+                <button
+                  className={styles.modalCloseBtn}
+                  onClick={() => setCreatePropModal(false)}
+                >
+                  <X size={20} />
+                </button>
+                <h3 className={styles.modalTitle}>Register Architectural Asset</h3>
+                <p className={styles.modalDesc}>
+                  Submit complete architectural specs. Postings require Sola compliance review before public display.
+                </p>
+
+                <form onSubmit={handleCreateProperty}>
+                  <div className={styles.formField}>
+                    <label className={styles.formLabel}>Property Title</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Horizon Residences - Penthouse Suite"
+                      className={styles.formInput}
+                      value={newProp.title}
+                      onChange={(e) => setNewProp({ ...newProp, title: e.target.value })}
+                    />
+                  </div>
+
+                  <div className={styles.formGrid}>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Category</label>
+                      <select
+                        required
+                        className={styles.formSelect}
+                        value={newProp.category_id}
+                        onChange={(e) => setNewProp({ ...newProp, category_id: e.target.value })}
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Location / District</label>
+                      <select
+                        required
+                        className={styles.formSelect}
+                        value={newProp.location_id}
+                        onChange={(e) => setNewProp({ ...newProp, location_id: e.target.value })}
+                      >
+                        <option value="">Select Location</option>
+                        {locations.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            {l.name} ({l.city || "Addis Ababa"})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className={styles.formGrid}>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Price (USD)</label>
+                      <input
+                        type="number"
+                        required
+                        min={1000}
+                        className={styles.formInput}
+                        value={newProp.price}
+                        onChange={(e) => setNewProp({ ...newProp, price: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Size (m²)</label>
+                      <input
+                        type="number"
+                        required
+                        min={10}
+                        className={styles.formInput}
+                        value={newProp.size_sqm}
+                        onChange={(e) => setNewProp({ ...newProp, size_sqm: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.formGrid}>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Bedrooms</label>
+                      <input
+                        type="number"
+                        min={0}
+                        className={styles.formInput}
+                        value={newProp.bedrooms}
+                        onChange={(e) => setNewProp({ ...newProp, bedrooms: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Bathrooms</label>
+                      <input
+                        type="number"
+                        min={0}
+                        className={styles.formInput}
+                        value={newProp.bathrooms}
+                        onChange={(e) => setNewProp({ ...newProp, bathrooms: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.formGrid}>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Payment Plan</label>
+                      <select
+                        className={styles.formSelect}
+                        value={newProp.payment_plan}
+                        onChange={(e) =>
+                          setNewProp({
+                            ...newProp,
+                            payment_plan: e.target.value as any,
+                          })
+                        }
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="installment">Installment / Milestone</option>
+                        <option value="mortgage">Mortgage Supported</option>
+                      </select>
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Features (comma separated)</label>
+                      <input
+                        type="text"
+                        placeholder="parking, elevator, balcony"
+                        className={styles.formInput}
+                        value={newProp.features}
+                        onChange={(e) => setNewProp({ ...newProp, features: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.formField}>
+                    <label className={styles.formLabel}>Architectural Description</label>
+                    <textarea
+                      rows={3}
+                      className={styles.formTextarea}
+                      value={newProp.description}
+                      onChange={(e) => setNewProp({ ...newProp, description: e.target.value })}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={createPropSubmitting}
+                    className={styles.actionBtnPrimary}
+                    style={{ width: "100%", height: 46, justifyContent: "center" }}
+                  >
+                    <span>
+                      {createPropSubmitting ? "Creating Asset..." : "Submit Listing"}
+                    </span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 2. AUTHORIZATIONS TAB */}
+      {activeTab === "authorizations" && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>Marketing Authorizations</h2>
+              <p className={styles.sectionSubtitle}>
+                {role === "developer"
+                  ? "Authorize accredited real estate agents to market and close your developments."
+                  : "Listings and developments where you hold active marketing representation authorization."}
+              </p>
+            </div>
+          </div>
+
+          {role === "developer" && (
+            <form onSubmit={handleGrantAuth} style={{ marginBottom: 28, padding: 20, backgroundColor: "#fafbfc", border: "1px solid #e5e7eb" }}>
+              <h4 style={{ margin: "0 0 12px", fontSize: "0.95rem", fontWeight: 800 }}>
+                Authorize Licensed Agent
+              </h4>
+              <div className={styles.formGrid}>
+                <input
+                  type="email"
+                  required
+                  placeholder="Licensed Agent Email"
+                  className={styles.formInput}
+                  value={grantAgentEmail}
+                  onChange={(e) => setGrantAgentEmail(e.target.value)}
+                />
+                <select
+                  required
+                  className={styles.formSelect}
+                  value={grantPropId}
+                  onChange={(e) => setGrantPropId(e.target.value)}
+                >
+                  <option value="">Select Property</option>
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={grantSubmitting}
+                className={styles.actionBtnPrimary}
+                style={{ marginTop: 12 }}
+              >
+                <span>{grantSubmitting ? "Authorizing..." : "Grant Marketing Mandate"}</span>
+              </button>
+            </form>
+          )}
+
+          {authLoading ? (
+            <div className={styles.emptyBlock}>Loading authorization records...</div>
+          ) : authorizations.length === 0 ? (
+            <div className={styles.emptyBlock}>
+              <ShieldCheck size={36} color="#9ca3af" />
+              <h4 className={styles.emptyBlockTitle}>No Active Authorizations</h4>
+              <p className={styles.emptyBlockDesc}>
+                Mandates allow verified representation agreements between developers and brokers.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.tableResponsive}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.tableTh}>Property / Development</th>
+                    <th className={styles.tableTh}>
+                      {role === "developer" ? "Authorized Agent" : "Developer"}
+                    </th>
+                    <th className={styles.tableTh}>Status</th>
+                    <th className={styles.tableTh}>Mandate Granted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {authorizations.map((a: any) => (
+                    <tr key={a.id} className={styles.tableRow}>
+                      <td className={styles.tableTd}>
+                        <strong>{a.property_title || a.property_id}</strong>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {role === "developer" ? a.agent_name || a.agent_email : a.developer_name}
+                      </td>
+                      <td className={styles.tableTd}>
+                        <span className={`${styles.badge} ${styles.badgeActive}`}>
+                          {a.status || "Authorized"}
+                        </span>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {new Date(a.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. LEADS & REFERRALS PIPELINE TAB */}
+      {activeTab === "leads" && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>Client Referral Pipeline</h2>
+              <p className={styles.sectionSubtitle}>
+                Manage active buyer leads from initial inquiry to signed contract and closing.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => referralApi.exportMyReferrals()}
+              className={styles.actionBtnSecondary}
+            >
+              <Download size={14} />
+              <span>Export CSV</span>
+            </button>
+          </div>
+
+          {leadsLoading ? (
+            <div className={styles.emptyBlock}>Loading client referral pipeline...</div>
+          ) : referrals.length === 0 ? (
+            <div className={styles.emptyBlock}>
+              <Users size={36} color="#9ca3af" />
+              <h4 className={styles.emptyBlockTitle}>Pipeline Empty</h4>
+              <p className={styles.emptyBlockDesc}>
+                Inquiries made by buyers for your listed properties will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.tableResponsive}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.tableTh}>Client Name</th>
+                    <th className={styles.tableTh}>Property</th>
+                    <th className={styles.tableTh}>Stage</th>
+                    <th className={styles.tableTh}>Stage Actions</th>
+                    <th className={styles.tableTh}>Follow-up</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {referrals.map((r) => (
+                    <tr key={r.id} className={styles.tableRow}>
+                      <td className={styles.tableTd}>
+                        <strong>{r.buyer_name || "Verified Buyer"}</strong>
+                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
+                          {r.buyer_email || r.buyer_phone || "Confidential Contact"}
+                        </div>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {r.property?.title || r.property_title || r.property_id.slice(0, 8)}
+                      </td>
+                      <td className={styles.tableTd}>
+                        <span
+                          className={`${styles.badge} ${
+                            r.status === "closed_won"
+                              ? styles.badgeCompleted
+                              : r.status === "in_progress"
+                              ? styles.badgeInProgress
+                              : r.status === "rejected"
+                              ? styles.badgeRejected
+                              : styles.badgePending
+                          }`}
+                        >
+                          {r.status.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {r.status === "assigned" ? (
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              type="button"
+                              onClick={() => handleLeadDecision(r.id, "accepted")}
+                              className={styles.actionBtnPrimary}
+                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleLeadDecision(r.id, "rejected")}
+                              className={styles.actionBtnDanger}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        ) : (
+                          <select
+                            className={styles.formSelect}
+                            style={{ padding: "4px 8px", fontSize: "0.78rem" }}
+                            value={r.status}
+                            onChange={(e) => handleLeadStatusChange(r.id, e.target.value)}
+                          >
+                            <option value="accepted">Accepted</option>
+                            <option value="in_progress">In Progress / Tours</option>
+                            <option value="agreement">Drafting Agreement</option>
+                            <option value="closed_won">Closed Won</option>
+                            <option value="closed_lost">Closed Lost</option>
+                          </select>
+                        )}
+                      </td>
+                      <td className={styles.tableTd}>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenLead(r)}
+                          className={styles.actionBtnSecondary}
+                          style={{ padding: "4px 8px", fontSize: "0.72rem" }}
+                        >
+                          <MessageSquare size={12} />
+                          <span>Log & Chat</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* LEAD DRAWER / MODAL */}
+          {activeLead && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalBox}>
+                <button
+                  className={styles.modalCloseBtn}
+                  onClick={() => setActiveLead(null)}
+                >
+                  <X size={20} />
+                </button>
+                <h3 className={styles.modalTitle}>Client Lead Management</h3>
+                <p className={styles.modalDesc}>
+                  Client: <strong>{activeLead.buyer_name || "Verified Buyer"}</strong> &bull; Ref: {activeLead.id.slice(0, 8)}
+                </p>
+
+                {/* Internal Follow-Up Log */}
+                <h4 style={{ fontSize: "0.88rem", fontWeight: 800, margin: "16px 0 8px" }}>
+                  Internal Broker Notes
+                </h4>
+                <div style={{ maxHeight: 140, overflowY: "auto", border: "1px solid #e5e7eb", padding: 10, marginBottom: 12, backgroundColor: "#fafbfc" }}>
+                  {leadFollowUps.length === 0 ? (
+                    <div style={{ color: "#9ca3af", fontSize: "0.8rem" }}>No follow-up notes logged yet.</div>
+                  ) : (
+                    leadFollowUps.map((fu) => (
+                      <div key={fu.id} style={{ fontSize: "0.8rem", marginBottom: 6, borderBottom: "1px solid #edf0f4", paddingBottom: 4 }}>
+                        <span style={{ fontWeight: 700 }}>{fu.author_name || "Advisor"}:</span> {fu.notes}
+                        <div style={{ fontSize: "0.68rem", color: "#8c95a6" }}>
+                          {new Date(fu.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <form onSubmit={handleAddFollowUp} style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Log internal follow-up note..."
+                    className={styles.formInput}
+                    value={newFollowUpNote}
+                    onChange={(e) => setNewFollowUpNote(e.target.value)}
+                  />
+                  <button type="submit" className={styles.actionBtnSecondary}>
+                    Log Note
+                  </button>
+                </form>
+
+                {/* Direct Messages */}
+                <h4 style={{ fontSize: "0.88rem", fontWeight: 800, margin: "0 0 8px" }}>
+                  Direct Messages with Buyer
+                </h4>
+                <div className={styles.chatBox}>
+                  {leadMessages.length === 0 ? (
+                    <div style={{ color: "#9ca3af", fontSize: "0.8rem", textAlign: "center", padding: 12 }}>
+                      No messages yet.
+                    </div>
+                  ) : (
+                    leadMessages.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`${styles.chatMessage} ${
+                          m.sender_role === "agent" || m.sender_role === "developer"
+                            ? styles.chatMessageUser
+                            : styles.chatMessageOther
+                        }`}
+                      >
+                        <div style={{ fontWeight: 800, fontSize: "0.72rem" }}>
+                          {m.sender_name || m.sender_role}
+                        </div>
+                        <div>{m.message}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <form onSubmit={handleSendLeadMsg} className={styles.chatInputRow}>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Message client..."
+                    className={styles.formInput}
+                    value={newLeadMsg}
+                    onChange={(e) => setNewLeadMsg(e.target.value)}
+                  />
+                  <button type="submit" className={styles.actionBtnPrimary}>
+                    Send
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. VISITS & TOURS TAB */}
+      {activeTab === "visits" && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>Tour Scheduling & Outcomes</h2>
+              <p className={styles.sectionSubtitle}>
+                Schedule appointments and log institutional visitor feedback.
+              </p>
+            </div>
+          </div>
+
+          {visitLoading ? (
+            <div className={styles.emptyBlock}>Loading inspection appointments...</div>
+          ) : visits.length === 0 ? (
+            <div className={styles.emptyBlock}>
+              <Calendar size={36} color="#9ca3af" />
+              <h4 className={styles.emptyBlockTitle}>No Scheduled Tours</h4>
+              <p className={styles.emptyBlockDesc}>
+                Appointment requests initiated by prospective buyers will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.tableResponsive}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.tableTh}>Property</th>
+                    <th className={styles.tableTh}>Requested Date</th>
+                    <th className={styles.tableTh}>Location</th>
+                    <th className={styles.tableTh}>Status</th>
+                    <th className={styles.tableTh}>Outcome</th>
+                    <th className={styles.tableTh}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visits.map((v) => (
+                    <tr key={v.id} className={styles.tableRow}>
+                      <td className={styles.tableTd}>
+                        <strong>{v.property_title || v.id.slice(0, 8)}</strong>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {new Date(v.requested_at).toLocaleString()}
+                      </td>
+                      <td className={styles.tableTd}>{v.location || "On-site"}</td>
+                      <td className={styles.tableTd}>
+                        <span
+                          className={`${styles.badge} ${
+                            v.status === "completed"
+                              ? styles.badgeCompleted
+                              : v.status === "scheduled"
+                              ? styles.badgeScheduled
+                              : styles.badgePending
+                          }`}
+                        >
+                          {v.status}
+                        </span>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {v.outcome ? (
+                          <span style={{ fontWeight: 700, textTransform: "capitalize" }}>
+                            {v.outcome.replace(/_/g, " ")}
+                          </span>
+                        ) : (
+                          <span style={{ color: "#9ca3af" }}>Pending Outcome</span>
+                        )}
+                      </td>
+                      <td className={styles.tableTd}>
+                        {v.status !== "completed" && (
+                          <button
+                            type="button"
+                            onClick={() => setOutcomeModalVisit(v)}
+                            className={styles.actionBtnPrimary}
+                            style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                          >
+                            Log Outcome
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* OUTCOME MODAL */}
+          {outcomeModalVisit && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalBox}>
+                <button
+                  className={styles.modalCloseBtn}
+                  onClick={() => setOutcomeModalVisit(null)}
+                >
+                  <X size={20} />
+                </button>
+                <h3 className={styles.modalTitle}>Record Tour Outcome</h3>
+                <p className={styles.modalDesc}>
+                  Property: <strong>{outcomeModalVisit.property_title || outcomeModalVisit.id}</strong>
+                </p>
+
+                <form onSubmit={handleRecordOutcome}>
+                  <div className={styles.formField}>
+                    <label className={styles.formLabel}>Tour Result</label>
+                    <select
+                      className={styles.formSelect}
+                      value={outcomeVal}
+                      onChange={(e) => setOutcomeVal(e.target.value as any)}
+                    >
+                      <option value="interested">Interested / Advancing to Proposal</option>
+                      <option value="requested_another_visit">Requested Secondary Inspection</option>
+                      <option value="not_interested">Not Interested / Spec Mismatch</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.formField}>
+                    <label className={styles.formLabel}>Visitor Notes</label>
+                    <textarea
+                      rows={3}
+                      className={styles.formTextarea}
+                      placeholder="e.g. Buyer loved floorplan, requesting payment milestone adjustment."
+                      value={outcomeNotes}
+                      onChange={(e) => setOutcomeNotes(e.target.value)}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={styles.actionBtnPrimary}
+                    style={{ width: "100%", height: 44, justifyContent: "center" }}
+                  >
+                    Confirm & Complete Tour
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5. TRANSACTIONS & CLOSINGS TAB */}
+      {activeTab === "transactions" && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>Deal Closings & Settlements</h2>
+              <p className={styles.sectionSubtitle}>
+                Submit closed deals and upload binding sales agreements for compliance auditing.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setCreateTxModal(true)}
+                className={styles.actionBtnPrimary}
+              >
+                <Plus size={14} />
+                <span>Submit Closed Deal</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => transactionApi.export()}
+                className={styles.actionBtnSecondary}
+              >
+                <Download size={14} />
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          {txLoading ? (
+            <div className={styles.emptyBlock}>Loading transaction ledger...</div>
+          ) : transactions.length === 0 ? (
+            <div className={styles.emptyBlock}>
+              <DollarSign size={36} color="#9ca3af" />
+              <h4 className={styles.emptyBlockTitle}>No Closings Recorded</h4>
+              <p className={styles.emptyBlockDesc}>
+                When an agreement is finalized, submit the closing details for escrow verification and commission disbursement.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.tableResponsive}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.tableTh}>Property</th>
+                    <th className={styles.tableTh}>Sale Value</th>
+                    <th className={styles.tableTh}>Buyer</th>
+                    <th className={styles.tableTh}>Closing Date</th>
+                    <th className={styles.tableTh}>Verification Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map((t) => (
+                    <tr key={t.id} className={styles.tableRow}>
+                      <td className={styles.tableTd}>
+                        <strong>{t.property_title || t.property_id}</strong>
+                      </td>
+                      <td className={styles.tableTd}>
+                        <strong>${Number(t.sale_amount).toLocaleString()}</strong>
+                      </td>
+                      <td className={styles.tableTd}>{t.buyer_name || "Verified Buyer"}</td>
+                      <td className={styles.tableTd}>
+                        {new Date(t.closing_date).toLocaleDateString()}
+                      </td>
+                      <td className={styles.tableTd}>
+                        <span
+                          className={`${styles.badge} ${
+                            t.status === "verified"
+                              ? styles.badgeActive
+                              : t.status === "rejected"
+                              ? styles.badgeRejected
+                              : styles.badgePending
+                          }`}
+                        >
+                          {t.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* CREATE TRANSACTION MODAL */}
+          {createTxModal && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalBox}>
+                <button
+                  className={styles.modalCloseBtn}
+                  onClick={() => setCreateTxModal(false)}
+                >
+                  <X size={20} />
+                </button>
+                <h3 className={styles.modalTitle}>Submit Deal Closing</h3>
+                <p className={styles.modalDesc}>
+                  Record an executed sales agreement for administrative verification.
+                </p>
+
+                <form onSubmit={handleCreateTransaction}>
+                  <div className={styles.formField}>
+                    <label className={styles.formLabel}>Associated Referral ID</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Paste referral UUID from Pipeline tab"
+                      className={styles.formInput}
+                      value={newTx.referralId}
+                      onChange={(e) => setNewTx({ ...newTx, referralId: e.target.value })}
+                    />
+                  </div>
+
+                  <div className={styles.formGrid}>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Final Sale Amount (USD)</label>
+                      <input
+                        type="number"
+                        required
+                        min={1000}
+                        className={styles.formInput}
+                        value={newTx.sale_amount}
+                        onChange={(e) => setNewTx({ ...newTx, sale_amount: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className={styles.formField}>
+                      <label className={styles.formLabel}>Closing Date</label>
+                      <input
+                        type="date"
+                        required
+                        className={styles.formInput}
+                        value={newTx.closing_date}
+                        onChange={(e) => setNewTx({ ...newTx, closing_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.formField}>
+                    <label className={styles.formLabel}>Notes / Contract Reference</label>
+                    <textarea
+                      rows={3}
+                      className={styles.formTextarea}
+                      value={newTx.notes}
+                      onChange={(e) => setNewTx({ ...newTx, notes: e.target.value })}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={styles.actionBtnPrimary}
+                    style={{ width: "100%", height: 44, justifyContent: "center" }}
+                  >
+                    Submit for Settlement Verification
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 6. COMMISSIONS TAB */}
+      {activeTab === "commissions" && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>Commission Statements & Disbursements</h2>
+              <p className={styles.sectionSubtitle}>
+                Institutional fee ledger, payment disbursements, and escrow disbursements.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => commissionApi.exportCommissions()}
+              className={styles.actionBtnSecondary}
+            >
+              <Download size={14} />
+              <span>Export Statement</span>
+            </button>
+          </div>
+
+          {commLoading ? (
+            <div className={styles.emptyBlock}>Loading commission ledger...</div>
+          ) : commissions.length === 0 ? (
+            <div className={styles.emptyBlock}>
+              <DollarSign size={36} color="#9ca3af" />
+              <h4 className={styles.emptyBlockTitle}>No Commission Records</h4>
+              <p className={styles.emptyBlockDesc}>
+                Approved transactions will automatically generate itemized commission allocations here.
+              </p>
+            </div>
+          ) : (
+            <div className={styles.tableResponsive}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.tableTh}>Transaction Ref</th>
+                    <th className={styles.tableTh}>Base Amount</th>
+                    <th className={styles.tableTh}>Net Payable</th>
+                    <th className={styles.tableTh}>Status</th>
+                    <th className={styles.tableTh}>Calculation Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {commissions.map((c) => (
+                    <tr key={c.id} className={styles.tableRow}>
+                      <td className={styles.tableTd}>
+                        <strong>{c.transaction_id ? c.transaction_id.slice(0, 8) : c.id.slice(0, 8)}</strong>
+                      </td>
+                      <td className={styles.tableTd}>
+                        ${Number(c.sale_amount).toLocaleString()}
+                      </td>
+                      <td className={styles.tableTd}>
+                        <strong>${Number(c.total_commission).toLocaleString()}</strong>
+                      </td>
+                      <td className={styles.tableTd}>
+                        <span
+                          className={`${styles.badge} ${
+                            c.status === "paid"
+                              ? styles.badgeCompleted
+                              : c.status === "approved"
+                              ? styles.badgeActive
+                              : styles.badgePending
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className={styles.tableTd}>
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 7. ANALYTICS & REPORTS TAB */}
+      {activeTab === "analytics" && (
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>Institutional Performance Analytics</h2>
+              <p className={styles.sectionSubtitle}>
+                Key operational metrics: lead velocities, conversion ratios, and volume closed.
+              </p>
+            </div>
+          </div>
+
+          {analyticsLoading ? (
+            <div className={styles.emptyBlock}>Compiling analytics...</div>
+          ) : !analytics ? (
+            <div className={styles.emptyBlock}>
+              <TrendingUp size={36} color="#9ca3af" />
+              <h4 className={styles.emptyBlockTitle}>Analytics Initializing</h4>
+              <p className={styles.emptyBlockDesc}>
+                Data metrics will populate dynamically as referrals and property views accrue.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <div className={styles.kpiGrid}>
+                {role === "agent" ? (
+                  <>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Total Referrals Handled</span>
+                      <span className={styles.kpiValue}>
+                        {(analytics as AgentReport)?.total_referrals ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Direct client inquiries</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Active Listings</span>
+                      <span className={styles.kpiValue}>
+                        {(analytics as AgentReport)?.active_listings ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Properties currently marketed</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Closed Won Deals</span>
+                      <span className={styles.kpiValue}>
+                        {(analytics as AgentReport)?.closed_deals ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Audited closings</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Commission Accrued</span>
+                      <span className={styles.kpiValue}>
+                        ${Number((analytics as AgentReport)?.total_commission ?? 0).toLocaleString()}
+                      </span>
+                      <span className={styles.kpiSubtext}>Net earned broker fees</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Total Properties Listed</span>
+                      <span className={styles.kpiValue}>
+                        {(analytics as DeveloperReport)?.total_properties ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Active portfolio assets</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Active Projects</span>
+                      <span className={styles.kpiValue}>
+                        {(analytics as DeveloperReport)?.active_projects ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Developments underway</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Authorized Brokers</span>
+                      <span className={styles.kpiValue}>
+                        {(analytics as DeveloperReport)?.authorized_agents ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Marketing representation mandates</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Total Inquiries</span>
+                      <span className={styles.kpiValue}>
+                        {(analytics as DeveloperReport)?.total_inquiries ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Platform client demand</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

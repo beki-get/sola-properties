@@ -40,6 +40,10 @@ import {
   VerificationSubmission,
 } from "../../lib/api";
 import styles from "./dashboard.module.css";
+import { NotificationDrawer } from "./components/NotificationDrawer";
+import { BuyerWorkstation } from "./components/BuyerWorkstation";
+import { AgentDeveloperWorkstation } from "./components/AgentDeveloperWorkstation";
+import { AdminWorkstation } from "./components/AdminWorkstation";
 
 const PROPERTY_TYPES = [
   "apartment",
@@ -548,6 +552,16 @@ function DashboardContent() {
             </div>
           </div>
 
+          <Link
+            href="/properties"
+            className={styles.tabBtn}
+            style={{ fontSize: "0.82rem", textDecoration: "none", padding: "8px 12px", border: "1px solid #000" }}
+          >
+            Catalog
+          </Link>
+
+          <NotificationDrawer />
+
           <button type="button" className={styles.logoutBtn} onClick={() => logout()}>
             <LogOut size={15} />
             <span>Sign Out</span>
@@ -615,17 +629,96 @@ function DashboardContent() {
           </button>
 
           {role === "buyer" && (
-            <button
-              type="button"
-              className={`${styles.tabBtn} ${activeTab === "profile" ? styles.tabBtnActive : ""}`}
-              onClick={() => setActiveTab("profile")}
-            >
-              Preferences & Profile
-            </button>
+            <>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "favorites" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("favorites")}
+              >
+                Shortlist
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "tours" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("tours")}
+              >
+                Tours & Visits
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "inquiries" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("inquiries")}
+              >
+                Inquiries & Chat
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "recommendations" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("recommendations")}
+              >
+                Recommendations
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "profile" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("profile")}
+              >
+                Preferences & Profile
+              </button>
+            </>
           )}
 
           {role === "agent" && (
             <>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "inventory" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("inventory")}
+              >
+                Listings
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "authorizations" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("authorizations")}
+              >
+                Authorizations
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "leads" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("leads")}
+              >
+                Leads Pipeline
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "visits" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("visits")}
+              >
+                Visits & Tours
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "transactions" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("transactions")}
+              >
+                Closings & Deals
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "commissions" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("commissions")}
+              >
+                Commissions
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "analytics" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("analytics")}
+              >
+                Performance
+              </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === "profile" ? styles.tabBtnActive : ""}`}
@@ -654,7 +747,56 @@ function DashboardContent() {
                 }`}
                 onClick={() => setActiveTab("developments")}
               >
-                Developments & Projects
+                Projects
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "inventory" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("inventory")}
+              >
+                Listings
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "authorizations" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("authorizations")}
+              >
+                Authorizations
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "leads" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("leads")}
+              >
+                Referrals
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "visits" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("visits")}
+              >
+                Tours
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "transactions" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("transactions")}
+              >
+                Closings
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "commissions" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("commissions")}
+              >
+                Commission Ledger
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "analytics" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("analytics")}
+              >
+                Performance
               </button>
               <button
                 type="button"
@@ -677,6 +819,62 @@ function DashboardContent() {
 
           {(role === "admin" || role === "finance_admin") && (
             <>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "admin-properties" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("admin-properties")}
+              >
+                Pending Listings
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "admin-referrals" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("admin-referrals")}
+              >
+                Master Referrals
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "admin-transactions" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("admin-transactions")}
+              >
+                Settlements
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "admin-commissions" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("admin-commissions")}
+              >
+                Commissions
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "admin-users" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("admin-users")}
+              >
+                User Governance
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "admin-taxonomy" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("admin-taxonomy")}
+              >
+                Taxonomy
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "admin-audit" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("admin-audit")}
+              >
+                Audit Logs
+              </button>
+              <button
+                type="button"
+                className={`${styles.tabBtn} ${activeTab === "admin-reports" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("admin-reports")}
+              >
+                Platform Reports
+              </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === "admin" ? styles.tabBtnActive : ""}`}
@@ -790,6 +988,41 @@ function DashboardContent() {
             </div>
           </div>
         )}
+
+        {/* BUYER WORKSTATION TABS */}
+        {role === "buyer" &&
+          ["favorites", "tours", "inquiries", "recommendations"].includes(activeTab) && (
+            <BuyerWorkstation activeTab={activeTab as any} />
+          )}
+
+        {/* AGENT & DEVELOPER WORKSTATION TABS */}
+        {(role === "agent" || role === "developer") &&
+          [
+            "inventory",
+            "authorizations",
+            "leads",
+            "visits",
+            "transactions",
+            "commissions",
+            "analytics",
+          ].includes(activeTab) && (
+            <AgentDeveloperWorkstation role={role} activeTab={activeTab as any} />
+          )}
+
+        {/* ADMIN & FINANCE ADMIN WORKSTATION TABS */}
+        {(role === "admin" || role === "finance_admin") &&
+          [
+            "admin-properties",
+            "admin-referrals",
+            "admin-transactions",
+            "admin-commissions",
+            "admin-users",
+            "admin-taxonomy",
+            "admin-audit",
+            "admin-reports",
+          ].includes(activeTab) && (
+            <AdminWorkstation role={role} activeTab={activeTab as any} />
+          )}
 
         {/* TAB: DEVELOPER PROJECTS (Task 3) */}
         {role === "developer" && activeTab === "developments" && (
