@@ -8,7 +8,7 @@ import {
   getTransactions,
   updateTransaction,
   uploadTransactionDocuments,
-  exportTransactionsService
+  exportTransactionsService,
 } from "../services/transactionService";
 import {
   transactionDecisionSchema,
@@ -40,7 +40,8 @@ export const createTransactionController: RequestHandler = async (req, res) => {
 
   if (!parsed.success) {
     res.status(400).json({
-      message: "A valid referralId, sale_amount, and closing_date are required.",
+      message:
+        "A valid referralId, sale_amount, and closing_date are required.",
       code: "INVALID_TRANSACTION_INPUT",
     });
     return;
@@ -64,7 +65,6 @@ export const createTransactionController: RequestHandler = async (req, res) => {
   }
 };
 
-
 export const listTransactionsController: RequestHandler = async (req, res) => {
   const parsed = transactionListQuerySchema.safeParse(req.query);
 
@@ -83,6 +83,9 @@ export const listTransactionsController: RequestHandler = async (req, res) => {
       status: parsed.data.status,
       page: parsed.data.page,
       limit: parsed.data.limit,
+      dateFrom: parsed.data.dateFrom,
+      dateTo: parsed.data.dateTo,
+      q: parsed.data.q,
     });
 
     res.status(200).json(transactions);
@@ -91,7 +94,7 @@ export const listTransactionsController: RequestHandler = async (req, res) => {
   }
 };
 
-//export transactioncontroller 
+//export transactioncontroller
 export const exportTransactionsController: RequestHandler = async (
   req,
   res,
@@ -110,10 +113,7 @@ export const exportTransactionsController: RequestHandler = async (
     const csv = await exportTransactionsService({
       userId: req.currentUser!.id,
       userRole: req.currentUser!.role as
-        | "agent"
-        | "developer"
-        | "admin"
-        | "finance_admin",
+        "agent" | "developer" | "admin" | "finance_admin",
       status: parsed.data.status,
       dateFrom: parsed.data.dateFrom,
       dateTo: parsed.data.dateTo,
@@ -124,8 +124,7 @@ export const exportTransactionsController: RequestHandler = async (
       .status(200)
       .set({
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition":
-          'attachment; filename="sola-transactions.csv"',
+        "Content-Disposition": 'attachment; filename="sola-transactions.csv"',
         "Cache-Control": "no-store",
       })
       .send(csv);
