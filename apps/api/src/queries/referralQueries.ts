@@ -1221,7 +1221,7 @@ const referralIssueAdminSelect = `
 
     p.id AS property_id,
     p.title AS property_title,
-    p.location AS property_location,
+   property_location.name AS property_location
     p.status AS property_status,
 
     reporter.full_name AS reporter_name,
@@ -1259,6 +1259,8 @@ const referralIssueAdminSelect = `
 
   JOIN users buyer ON buyer.id = r.buyer_id
   JOIN users assigned ON assigned.id = r.assigned_to
+  JOIN property_locations property_location
+  ON property_location.id = p.location_id
 `;
 
 // Retrieve referral issues reported by a specific user with pagination
