@@ -780,15 +780,17 @@ export async function listPublicProperties(query: PublicPropertyListQuery) {
   const countValues = [...values];
 
   const orderBy = {
-    newest: "p.created_at DESC",
-    price_asc: "p.price ASC NULLS LAST, p.created_at DESC",
-    price_desc: "p.price DESC NULLS LAST, p.created_at DESC",
-    location: "l.name ASC, p.created_at DESC",
+    newest: "created_at DESC",
+    price_asc: "price ASC NULLS LAST, created_at DESC",
+    price_desc: "price DESC NULLS LAST, created_at DESC",
+    location: "location_name ASC, created_at DESC",
     relevance: query.q
-      ? `CASE WHEN p.title ILIKE ${add(`${query.q}%`)} THEN 0
-              WHEN l.name ILIKE ${add(`%${query.q}%`)} THEN 1
-              ELSE 2 END, p.created_at DESC`
-      : "p.created_at DESC",
+      ? `CASE
+         WHEN title ILIKE ${add(`${query.q}%`)} THEN 0
+         WHEN location_name ILIKE ${add(`%${query.q}%`)} THEN 1
+         ELSE 2
+       END, created_at DESC`
+      : "created_at DESC",
   }[query.sort];
 
   const limitParam = add(query.limit);
