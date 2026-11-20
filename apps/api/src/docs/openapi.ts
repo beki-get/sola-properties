@@ -483,7 +483,7 @@ export const openApiDocument = {
         summary: "Replace my buyer preferences",
         operationId: "putMyBuyerPreferences",
         description:
-          "Requires an authenticated buyer. Omitted values reset to their defaults. budget_min must not exceed budget_max.",
+          "Requires an authenticated buyer. Omitted values reset to their defaults. category_ids and location_ids must contain active UUIDs. budget_min must not exceed budget_max.",
         security: [{ AccessToken: [] }],
         requestBody: jsonBody("BuyerPreferencesInput"),
         responses: {
@@ -501,7 +501,7 @@ export const openApiDocument = {
         summary: "Update selected buyer preferences",
         operationId: "patchMyBuyerPreferences",
         description:
-          "Requires an authenticated buyer. Omitted values remain unchanged. budget_min must not exceed budget_max.",
+          "Requires an authenticated buyer. Omitted values remain unchanged; supplied category_ids and location_ids replace the corresponding lists. Both ID lists must contain active UUIDs. budget_min must not exceed budget_max.",
         security: [{ AccessToken: [] }],
         requestBody: jsonBody("BuyerPreferencesInput"),
         responses: {
@@ -1953,32 +1953,18 @@ export const openApiDocument = {
         properties: {
           budget_min: { type: "number", minimum: 0, nullable: true },
           budget_max: { type: "number", minimum: 0, nullable: true },
-          property_types: {
+          category_ids: {
             type: "array",
-            maxItems: 10,
+            maxItems: 50,
             uniqueItems: true,
-            items: {
-              type: "string",
-              enum: [
-                "apartment",
-                "house",
-                "villa",
-                "land",
-                "commercial",
-                "townhouse",
-                "condominium",
-                "office",
-                "retail",
-                "industrial",
-              ],
-            },
+            items: { type: "string", format: "uuid" },
             nullable: true,
           },
-          locations: {
+          location_ids: {
             type: "array",
-            maxItems: 10,
+            maxItems: 50,
             uniqueItems: true,
-            items: { type: "string", minLength: 1, maxLength: 100 },
+            items: { type: "string", format: "uuid" },
             nullable: true,
           },
           features: {
@@ -2022,8 +2008,14 @@ export const openApiDocument = {
           user_id: { type: "string", format: "uuid" },
           budget_min: { type: "string", nullable: true },
           budget_max: { type: "string", nullable: true },
-          property_types: { type: "array", items: { type: "string" } },
-          locations: { type: "array", items: { type: "string" } },
+          category_ids: {
+            type: "array",
+            items: { type: "string", format: "uuid" },
+          },
+          location_ids: {
+            type: "array",
+            items: { type: "string", format: "uuid" },
+          },
           features: { type: "array", items: { type: "string" } },
           min_size_sqm: { type: "string", nullable: true },
           min_bedrooms: { type: "integer", nullable: true },
