@@ -176,7 +176,6 @@ export async function createAdminUser(
         email: input.email,
         passwordHash,
         role: input.role,
-        phone: input.phone,
       },
       client,
     );
@@ -194,7 +193,6 @@ export async function createAdminUser(
         role: createdUser.role,
         status: createdUser.status,
         emailVerifiedAt: createdUser.email_verified_at,
-        phone: input.phone,
       },
     });
 
@@ -202,7 +200,7 @@ export async function createAdminUser(
       id: createdUser.id,
       fullName: createdUser.full_name,
       email: createdUser.email,
-      phone: input.phone,
+
       role: createdUser.role,
       status: createdUser.status,
       emailVerifiedAt: createdUser.email_verified_at,
