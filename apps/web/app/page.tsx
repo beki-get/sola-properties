@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   ChevronDown,
@@ -23,18 +24,35 @@ import {
   Send,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { authApi } from "../lib/api";
+import { authApi, propertyApi, Property } from "../lib/api";
 import styles from "./page.module.css";
 
 export default function SolaPropertiesPage() {
+  const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<"buy" | "rent">("rent");
+  const [activeTab, setActiveTab] = useState<"buy" | "rent">("buy");
   const [locationText, setLocationText] = useState("Bole, Addis Ababa");
   const [startText, setStartText] = useState("Dec 16, 10:00 AM");
   const [endText, setEndText] = useState("Dec 16, 11:30 AM");
 
-  // Property Filter
+  // Property Filter & Live Catalog State
   const [propCategory, setPropCategory] = useState<"all" | "penthouse" | "villa" | "apartment">("all");
+  const [liveProperties, setLiveProperties] = useState<Property[]>([]);
+
+  useEffect(() => {
+    propertyApi.listPublic({ limit: 6, status: "active" }).then((res) => {
+      const list = res.data?.properties || (res.data as any)?.data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        setLiveProperties(list);
+      }
+    });
+  }, []);
+
+  const handleHeroSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const query = locationText.trim();
+    router.push(`/properties?q=${encodeURIComponent(query)}`);
+  };
 
   // Property Consultation & Direct Match State
   const [consultLocation, setConsultLocation] = useState("Bole");
@@ -120,14 +138,20 @@ export default function SolaPropertiesPage() {
           <a href="#home" className={styles.navItem}>
             Home
           </a>
+          <Link href="/properties" className={styles.navItem}>
+            Properties
+          </Link>
+          <Link href="/projects" className={styles.navItem}>
+            Developments
+          </Link>
+          <Link href="/properties/compare" className={styles.navItem}>
+            Compare
+          </Link>
           <a href="#residences" className={styles.navItem}>
             Residences
           </a>
           <a href="#services" className={styles.navItem}>
             Services
-          </a>
-          <a href="#system" className={styles.navItem}>
-            Our System
           </a>
         </nav>
 
@@ -141,13 +165,20 @@ export default function SolaPropertiesPage() {
           </div>
 
           {isAuthenticated && user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Link
                 href="/dashboard"
                 className={styles.contactBtn}
                 style={{ textDecoration: "none", display: "inline-block" }}
               >
                 Dashboard ({user.role})
+              </Link>
+              <Link
+                href="/profile"
+                className={styles.navItem}
+                style={{ fontWeight: 700, color: "#000000" }}
+              >
+                Profile
               </Link>
               <button
                 type="button"
@@ -238,24 +269,26 @@ export default function SolaPropertiesPage() {
               <div className={styles.divider} />
 
               <div className={styles.searchItem}>
-                <label className={styles.searchItemLabel}>Start</label>
+                <label className={styles.searchItemLabel}>Type</label>
                 <input
                   type="text"
                   className={styles.searchItemValue}
                   value={startText}
                   onChange={(e) => setStartText(e.target.value)}
+                  placeholder="Penthouse, Villa, Apartment"
                 />
               </div>
 
               <div className={styles.divider} />
 
               <div className={styles.searchItem}>
-                <label className={styles.searchItemLabel}>End</label>
+                <label className={styles.searchItemLabel}>Budget</label>
                 <input
                   type="text"
                   className={styles.searchItemValue}
                   value={endText}
                   onChange={(e) => setEndText(e.target.value)}
+                  placeholder="e.g. $250k - $750k"
                 />
               </div>
 
@@ -263,10 +296,7 @@ export default function SolaPropertiesPage() {
                 type="button"
                 className={styles.searchIconBtn}
                 aria-label="Search properties"
-                onClick={() => {
-                  const target = document.getElementById("residences");
-                  target?.scrollIntoView({ behavior: "smooth" });
-                }}
+                onClick={handleHeroSearch}
               >
                 <Search size={20} strokeWidth={2.4} />
               </button>
@@ -546,17 +576,35 @@ export default function SolaPropertiesPage() {
                   >
                     Schedule Visit
                   </button>
-                  <button
-                    type="button"
+                  <Link
+                    href="/properties"
                     className={styles.btnCardOutline}
-                    onClick={() => alert("Details: Modern Loft in financial center.")}
+                    style={{ textDecoration: "none", textAlign: "center" }}
                   >
                     Specs
-                  </button>
+                  </Link>
                 </div>
               </div>
             </article>
           )}
+        </div>
+
+        <div style={{ textAlign: "center", marginTop: 40, borderTop: "1px solid #e2e6ec", paddingTop: 32 }}>
+          <Link
+            href="/properties"
+            className={styles.contactBtn}
+            style={{
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "14px 32px",
+              fontSize: "0.92rem",
+            }}
+          >
+            <span>Browse Full Architectural Property Catalog & Comparison Matrix</span>
+            <ArrowRight size={18} />
+          </Link>
         </div>
       </section>
 

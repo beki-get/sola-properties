@@ -196,9 +196,12 @@ function PropertiesCatalogContent() {
             Home
           </Link>
           <Link href="/properties" className={`${styles.navLink} ${styles.navLinkActive}`}>
-            Residences
+            Properties
           </Link>
-          {comparedIds.length > 0 && (
+          <Link href="/projects" className={styles.navLink}>
+            Developments
+          </Link>
+          {comparedIds.length > 0 ? (
             <Link
               href={`/properties/compare?ids=${comparedIds.join(",")}`}
               className={styles.navLink}
@@ -206,9 +209,13 @@ function PropertiesCatalogContent() {
             >
               Compare ({comparedIds.length})
             </Link>
+          ) : (
+            <Link href="/properties/compare" className={styles.navLink}>
+              Compare
+            </Link>
           )}
           <Link href="/dashboard" className={styles.navLink}>
-            Workstation
+            Dashboard
           </Link>
         </nav>
 
