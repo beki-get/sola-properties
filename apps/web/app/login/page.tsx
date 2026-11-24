@@ -118,7 +118,7 @@ function LoginForm() {
         <span className={styles.authBadge}>Authentication</span>
         <h1 className={styles.authTitle}>Sign In</h1>
         <p className={styles.authSubtitle}>
-          Access verified residential properties, manage developments, and view municipal documents.
+          Access verified residential properties, manage developments, and connect with advisors.
         </p>
 
         {errorMsg && (
@@ -127,24 +127,29 @@ function LoginForm() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
               <span>{errorMsg}</span>
               {errorMsg.toLowerCase().includes("verify your email") && (
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#000000",
-                    fontWeight: 700,
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    padding: 0,
-                    fontFamily: "inherit",
-                    fontSize: 13,
-                  }}
-                >
-                  Click here to resend verification email →
-                </button>
+                <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#000000",
+                      fontWeight: 700,
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      padding: 0,
+                      fontFamily: "inherit",
+                      fontSize: 13,
+                    }}
+                  >
+                    Click here to resend verification email →
+                  </button>
+                  <span style={{ fontSize: "0.78rem", color: "#6b7280", lineHeight: 1.4 }}>
+                    Note: Staging backend uses developer sandbox for outbound emails. To test without email delivery, use the pre-verified demo account below.
+                  </span>
+                </div>
               )}
             </div>
           </div>
@@ -156,6 +161,42 @@ function LoginForm() {
             <span>{successMsg}</span>
           </div>
         )}
+
+        <div
+          style={{
+            backgroundColor: "#f8f9fa",
+            border: "1px solid #e5e7eb",
+            padding: "10px 14px",
+            marginBottom: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: "0.78rem", color: "#4b5563" }}>
+            <span style={{ fontWeight: 700, color: "#111827" }}>Demo Agent Account:</span> agent@example.com (pw: 12345678)
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail("agent@example.com");
+              setPassword("12345678");
+            }}
+            style={{
+              padding: "5px 10px",
+              backgroundColor: "#000000",
+              color: "#ffffff",
+              fontSize: "0.74rem",
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Auto-Fill
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>

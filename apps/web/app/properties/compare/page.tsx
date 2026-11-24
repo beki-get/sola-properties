@@ -108,11 +108,11 @@ function CompareContent() {
 
         {loading ? (
           <div className={styles.emptyState}>
-            <h3 style={{ fontSize: "1.2rem", fontWeight: 800 }}>
-              COMPILING COMPARISON DATA...
+            <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+              Loading comparison data...
             </h3>
             <p style={{ color: "#6b7280" }}>
-              Evaluating structural configurations and cadastral valuations.
+              Comparing property specifications and features.
             </p>
           </div>
         ) : errorMsg ? (

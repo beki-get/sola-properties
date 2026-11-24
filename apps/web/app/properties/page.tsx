@@ -367,8 +367,8 @@ function PropertiesCatalogContent() {
                 margin: "0 auto 16px",
               }}
             />
-            <p style={{ fontWeight: 800, fontSize: "0.9rem", letterSpacing: "0.04em" }}>
-              QUERYING VERIFIED MUNICIPAL RESIDENCES...
+            <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "#4b5563" }}>
+              Loading properties...
             </p>
           </div>
         ) : properties.length === 0 ? (

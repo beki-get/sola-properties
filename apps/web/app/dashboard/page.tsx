@@ -532,25 +532,28 @@ function DashboardContent() {
         </Link>
 
         <div className={styles.userNavRight}>
-          <div className={styles.userInfoBadge}>
-            <span className={styles.userName}>{user?.fullName || "Authenticated User"}</span>
-            <div className={styles.userRoleStatus}>
-              <span className={styles.roleTag}>{role.replace("_", " ")}</span>
-              <span
-                className={`${styles.statusPill} ${
-                  status === "approved"
-                    ? styles.statusApproved
-                    : status === "rejected"
-                    ? styles.statusRejected
-                    : status === "suspended"
-                    ? styles.statusSuspended
-                    : styles.statusPending
-                }`}
-              >
-                {status}
-              </span>
+          <Link href="/profile" className={styles.userInfoBadge} title="Account Profile">
+            <div className={styles.userAvatar}>
+              {user?.fullName
+                ? user.fullName
+                    .split(" ")
+                    .filter(Boolean)
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()
+                : "U"}
             </div>
-          </div>
+            <div className={styles.userTextWrap}>
+              <span className={styles.userName}>{user?.fullName || "My Account"}</span>
+              <div className={styles.userRoleStatus}>
+                <span className={styles.roleTag}>{role.replace("_", " ")}</span>
+                {status !== "approved" && (
+                  <span className={styles.statusPillAlert}>{status}</span>
+                )}
+              </div>
+            </div>
+          </Link>
 
           <Link
             href="/properties"
@@ -571,52 +574,46 @@ function DashboardContent() {
 
       {/* Main Content */}
       <main className={styles.dashMain}>
-        {/* FE-007: Account Status Screen / Banner */}
-        <section
-          className={`${styles.statusBanner} ${
-            status === "approved"
-              ? styles.statusBannerApproved
-              : status === "rejected"
-              ? styles.statusBannerRejected
-              : status === "suspended"
-              ? styles.statusBannerSuspended
-              : styles.statusBannerPending
-          }`}
-        >
-          <div className={styles.statusBannerContent}>
-            <div className={styles.statusBannerIcon}>
-              {status === "approved" ? (
-                <ShieldCheck size={32} color="#10b981" />
-              ) : status === "rejected" ? (
-                <ShieldAlert size={32} color="#ef4444" />
-              ) : status === "suspended" ? (
-                <Ban size={32} color="#111827" />
-              ) : (
-                <Clock size={32} color="#f59e0b" />
-              )}
+        {/* Account Status Notice (shown only when action is needed or under review) */}
+        {status !== "approved" && (
+          <section
+            className={`${styles.statusBanner} ${
+              status === "rejected"
+                ? styles.statusBannerRejected
+                : status === "suspended"
+                ? styles.statusBannerSuspended
+                : styles.statusBannerPending
+            }`}
+          >
+            <div className={styles.statusBannerContent}>
+              <div className={styles.statusBannerIcon}>
+                {status === "rejected" ? (
+                  <ShieldAlert size={28} color="#ef4444" />
+                ) : status === "suspended" ? (
+                  <Ban size={28} color="#111827" />
+                ) : (
+                  <Clock size={28} color="#f59e0b" />
+                )}
+              </div>
+              <div>
+                <h2 className={styles.statusBannerTitle}>
+                  {status === "rejected"
+                    ? "Verification Requires Attention"
+                    : status === "suspended"
+                    ? "Account Temporarily Suspended"
+                    : "Account Under Review"}
+                </h2>
+                <p className={styles.statusBannerDesc}>
+                  {status === "rejected"
+                    ? "Your submitted verification documents require updates. Please review the reviewer remarks and upload updated credentials."
+                    : status === "suspended"
+                    ? "Your account access has been paused pending compliance review. Please contact support."
+                    : "Your account registration has been submitted and is currently being reviewed by our administration team. Typical review time is 24 hours."}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className={styles.statusBannerTitle}>
-                {status === "approved"
-                  ? "Account Verified & Approved"
-                  : status === "rejected"
-                  ? "Verification Requires Attention"
-                  : status === "suspended"
-                  ? "Account Temporarily Suspended"
-                  : "Account Verification Under Review"}
-              </h2>
-              <p className={styles.statusBannerDesc}>
-                {status === "approved"
-                  ? "Your credentials and municipal registry clearance are active. You have full access to publish listings, manage buyer walkthroughs, and close transactions."
-                  : status === "rejected"
-                  ? "Your submitted documents did not meet municipal verification criteria. Please review reviewer remarks and upload updated credentials."
-                  : status === "suspended"
-                  ? "Your account access has been paused pending administrative compliance review. Please contact Sola support."
-                  : "Your professional registration is being audited against municipal land records and trade registry documents. Typical review time is 24 hours."}
-              </p>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* FE-006: Role-Based Tab Navigation */}
         <nav className={styles.tabNav}>
@@ -789,7 +786,7 @@ function DashboardContent() {
                 className={`${styles.tabBtn} ${activeTab === "commissions" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("commissions")}
               >
-                Commission Ledger
+                Commissions
               </button>
               <button
                 type="button"
@@ -921,7 +918,7 @@ function DashboardContent() {
               <span className={styles.cardPretitle}>Account Summary</span>
               <h3 className={styles.cardTitle}>Welcome back, {user?.fullName}</h3>
               <p className={styles.cardDesc}>
-                Manage your credentials, projects, and municipal interactions across Addis Ababa.
+                Manage your properties, inquiries, and account settings.
               </p>
             </div>
 
@@ -930,8 +927,8 @@ function DashboardContent() {
                 <span
                   style={{
                     fontSize: "0.75rem",
-                    fontWeight: 800,
-                    color: "#8c95a6",
+                    fontWeight: 700,
+                    color: "#6b7280",
                     textTransform: "uppercase",
                   }}
                 >
@@ -940,21 +937,21 @@ function DashboardContent() {
                 <div
                   style={{
                     fontSize: "1.2rem",
-                    fontWeight: 850,
+                    fontWeight: 700,
                     marginTop: 4,
                     textTransform: "capitalize",
                   }}
                 >
-                  {role}
+                  {role.replace("_", " ")}
                 </div>
                 <p style={{ fontSize: "0.86rem", color: "#6a717e", marginTop: 6 }}>
                   {role === "buyer"
-                    ? "Verified property seeker with custom residential filters."
+                    ? "Search verified residences, track inquiries, and manage your scheduled tours."
                     : role === "agent"
-                    ? "Accredited broker managing verified luxury listings."
+                    ? "Manage your active listings, inbound leads, and client tours."
                     : role === "developer"
-                    ? "Residential construction developer managing multi-unit projects."
-                    : "Platform administrator with compliance review authority."}
+                    ? "Manage development projects, property units, and authorized agents."
+                    : "System governance, compliance reviews, and transaction management."}
                 </p>
               </div>
 
@@ -962,8 +959,8 @@ function DashboardContent() {
                 <span
                   style={{
                     fontSize: "0.75rem",
-                    fontWeight: 800,
-                    color: "#8c95a6",
+                    fontWeight: 700,
+                    color: "#6b7280",
                     textTransform: "uppercase",
                   }}
                 >
@@ -972,7 +969,7 @@ function DashboardContent() {
                 <div
                   style={{
                     fontSize: "1.2rem",
-                    fontWeight: 850,
+                    fontWeight: 700,
                     marginTop: 4,
                     textTransform: "capitalize",
                   }}
@@ -981,8 +978,10 @@ function DashboardContent() {
                 </div>
                 <p style={{ fontSize: "0.86rem", color: "#6a717e", marginTop: 6 }}>
                   {status === "approved"
-                    ? "Clearance active. All capabilities and listing tools unlocked."
-                    : "Under examination by municipal legal team."}
+                    ? "Your account is verified and in good standing with full access to all platform features."
+                    : status === "rejected"
+                    ? "Your submission requires updates. Please check reviewer remarks and resubmit documents."
+                    : "Your verification request is currently under review by our administration team."}
                 </p>
               </div>
             </div>
@@ -1281,62 +1280,6 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Live Backend Synchronization Banner */}
-            {isProfileLoading ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "12px 16px",
-                  backgroundColor: "#f3f4f6",
-                  borderLeft: "3px solid #000000",
-                  marginBottom: 24,
-                  fontSize: "0.84rem",
-                  color: "#374151",
-                }}
-              >
-                <Clock size={16} />
-                <span>Fetching buyer profile and criteria from backend (<code>GET /api/v1/buyer/me</code>)...</span>
-              </div>
-            ) : profileSynced ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  padding: "12px 16px",
-                  backgroundColor: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
-                  borderLeft: "3px solid #059669",
-                  marginBottom: 24,
-                  fontSize: "0.84rem",
-                  color: "#065f46",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <CheckCircle2 size={16} color="#059669" />
-                  <span>
-                    <strong>Live Backend Connected:</strong> Preferences loaded from <code>/api/v1/buyer/me</code>.
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: "0.72rem",
-                    backgroundColor: "#d1fae5",
-                    padding: "2px 8px",
-                    fontWeight: 800,
-                    letterSpacing: "0.05em",
-                    color: "#065f46",
-                  }}
-                >
-                  VERIFIED SERVER RECORD
-                </span>
-              </div>
-            ) : null}
-
             <form onSubmit={handleSaveBuyer}>
               <div className={styles.formGrid2}>
                 <div className={styles.formField}>
@@ -1551,62 +1494,6 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Live Backend Synchronization Banner */}
-            {isProfileLoading ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "12px 16px",
-                  backgroundColor: "#f3f4f6",
-                  borderLeft: "3px solid #000000",
-                  marginBottom: 24,
-                  fontSize: "0.84rem",
-                  color: "#374151",
-                }}
-              >
-                <Clock size={16} />
-                <span>Fetching broker profile data from backend (<code>GET /api/v1/agent/me</code>)...</span>
-              </div>
-            ) : profileSynced ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  padding: "12px 16px",
-                  backgroundColor: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
-                  borderLeft: "3px solid #059669",
-                  marginBottom: 24,
-                  fontSize: "0.84rem",
-                  color: "#065f46",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <CheckCircle2 size={16} color="#059669" />
-                  <span>
-                    <strong>Live Backend Connected:</strong> Broker profile loaded from <code>/api/v1/agent/me</code>.
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: "0.72rem",
-                    backgroundColor: "#d1fae5",
-                    padding: "2px 8px",
-                    fontWeight: 800,
-                    letterSpacing: "0.05em",
-                    color: "#065f46",
-                  }}
-                >
-                  VERIFIED SERVER RECORD
-                </span>
-              </div>
-            ) : null}
-
             <form onSubmit={handleSaveAgent}>
               <div className={styles.formGrid2}>
                 <div className={styles.formField}>
@@ -1714,92 +1601,10 @@ function DashboardContent() {
                       animation: isProfileLoading ? "spin 1s linear infinite" : "none",
                     }}
                   />
-                  <span>{isProfileLoading ? "Syncing API..." : "Sync from Backend"}</span>
+                  <span>{isProfileLoading ? "Syncing..." : "Refresh"}</span>
                 </button>
               </div>
             </div>
-
-            {/* Live Backend Synchronization Banner */}
-            {isProfileLoading ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "12px 16px",
-                  backgroundColor: "#f3f4f6",
-                  borderLeft: "3px solid #000000",
-                  marginBottom: 24,
-                  fontSize: "0.84rem",
-                  color: "#374151",
-                }}
-              >
-                <Clock size={16} />
-                <span>
-                  Fetching latest corporate profile data from backend (<code>GET /api/v1/developer/me</code>)...
-                </span>
-              </div>
-            ) : profileSynced ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  padding: "12px 16px",
-                  backgroundColor: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
-                  borderLeft: "3px solid #059669",
-                  marginBottom: 24,
-                  fontSize: "0.84rem",
-                  color: "#065f46",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <CheckCircle2 size={16} color="#059669" />
-                  <span>
-                    <strong>Live Backend Connected:</strong> Corporate profile loaded from <code>/api/v1/developer/me</code>.
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: "0.72rem",
-                    backgroundColor: "#d1fae5",
-                    padding: "2px 8px",
-                    fontWeight: 800,
-                    letterSpacing: "0.05em",
-                    color: "#065f46",
-                  }}
-                >
-                  VERIFIED SERVER RECORD
-                </span>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 8,
-                  padding: "12px 16px",
-                  backgroundColor: "#fffbeb",
-                  border: "1px solid #fde68a",
-                  borderLeft: "3px solid #d97706",
-                  marginBottom: 24,
-                  fontSize: "0.84rem",
-                  color: "#92400e",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <AlertCircle size={16} color="#d97706" />
-                  <span>
-                    No developer corporate profile on server yet. Fill in your details below and click <strong>Update Developer Profile</strong> to save to the database.
-                  </span>
-                </div>
-              </div>
-            )}
 
             <form onSubmit={handleSaveDeveloper}>
               <div className={styles.formGrid2}>
@@ -1888,7 +1693,7 @@ function DashboardContent() {
         {(role === "agent" || role === "developer") && activeTab === "verification" && (
           <div className={styles.cardBox}>
             <div className={styles.cardHeader}>
-              <span className={styles.cardPretitle}>Municipal Compliance</span>
+              <span className={styles.cardPretitle}>Account Compliance</span>
               <h3 className={styles.cardTitle}>Account Verification Application</h3>
               <p className={styles.cardDesc}>
                 Submit government-issued trade licenses, tax identification, and business registration for audit.

@@ -31,7 +31,7 @@ const CURATED_PROJECT_DETAILS: Record<string, Project> = {
     name: "Addis Skyline Residences",
     location: "Bole Olympia, Addis Ababa",
     description:
-      "Addis Skyline Residences rises 28 stories above the Bole Olympia plateau, representing a bold fusion of geometric brutalism and contemporary residential luxury. Every apartment benefits from floor-to-ceiling double-glazed solar control curtain walling, private cantilevered terrace gardens, and custom acoustic isolation engineered to municipal executive standards.\n\nThe development integrates triple-redundant solar microgrid battery storage, dedicated deep-well water filtration, underground hydraulic parking with EV chargers, a 25-meter heated rooftop infinity lap pool, and 24/7 biometric concierge security.",
+      "Addis Skyline Residences rises 28 stories above Bole Olympia, offering luxury residential living in one of the capital's premier districts. Each residence features floor-to-ceiling panoramic glass windows, private terrace gardens, sound-insulated construction, and premium contemporary finishes.\n\nBuilding amenities include 24/7 security, underground parking with EV chargers, backup generator power, private water filtration, and a rooftop leisure deck with panoramic city views.",
     status: "active",
     created_at: "2026-08-15T09:00:00Z",
     updated_at: "2026-10-20T14:30:00Z",
@@ -42,7 +42,7 @@ const CURATED_PROJECT_DETAILS: Record<string, Project> = {
     name: "The Olive Sanctuary Estate",
     location: "Old Airport Diplomatic Zone, Addis Ababa",
     description:
-      "The Olive Sanctuary Estate is an exclusive enclave of 16 precision-engineered detached residential villas nestled in a tranquil botanical parkland. Designed for consular dignitaries and multi-generational estates, each home incorporates passive geothermal climate moderation, raw monolithic cast-in-place architectural concrete, private courtyard plunge pools, and perimeter smart infrared security matrices.",
+      "The Olive Sanctuary Estate is an exclusive gated community of 16 luxury detached villas set in a quiet, green residential zone. Each home features private courtyard gardens, plunge pools, high ceilings, modern open-plan kitchens, and comprehensive perimeter security.",
     status: "active",
     created_at: "2026-09-01T11:00:00Z",
     updated_at: "2026-10-25T16:00:00Z",
@@ -53,7 +53,7 @@ const CURATED_PROJECT_DETAILS: Record<string, Project> = {
     name: "Kazanchis Central Heights",
     location: "Financial District, Kazanchis, Addis Ababa",
     description:
-      "A dual-core 24-story residential development strategically located minutes from UNECA, Africa Hall, and central banking headquarters. Features executive pied-à-terre residences, full penthouse levels, automated parcel reception lockers, and fiber-optic redundant building infrastructure.",
+      "A modern 24-story residential tower located in the heart of Kazanchis, near international organizations and financial headquarters. Designed for urban professionals and investors, featuring executive suites, top-floor penthouses, concierge reception, and full backup power.",
     status: "active",
     created_at: "2026-09-18T08:30:00Z",
     updated_at: "2026-11-05T10:15:00Z",
@@ -64,7 +64,7 @@ const CURATED_PROJECT_DETAILS: Record<string, Project> = {
     name: "Entoto Hillside Terraces",
     location: "Entoto Foothills, Northern Addis Ababa",
     description:
-      "An alpine architectural sanctuary embracing the eucalyptus-wooded slopes of Entoto. Constructed with natural volcanic stone and local hardwoods, these stepped terrace residences offer uninhibited panoramic vistas of the Addis Ababa skyline under crisp mountain air.",
+      "A peaceful hillside residential community nestled along the forested slopes of Entoto. Built with natural stone and timber details, offering wide terrace views over Addis Ababa in a fresh mountain environment.",
     status: "inactive",
     created_at: "2026-10-02T13:45:00Z",
     updated_at: "2026-11-12T12:00:00Z",
@@ -288,9 +288,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 <div className={styles.featureBox}>
                   <ShieldCheck size={20} className={styles.featureIcon} />
                   <div>
-                    <h4 className={styles.featureTitle}>Clear Municipal Title</h4>
+                    <h4 className={styles.featureTitle}>Verified Title & Deeds</h4>
                     <p className={styles.featureDesc}>
-                      Deed registration and construction permits fully authenticated with the Land Administration Bureau.
+                      Deed registration and construction permits authenticated and audited.
                     </p>
                   </div>
                 </div>
@@ -298,9 +298,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 <div className={styles.featureBox}>
                   <Building2 size={20} className={styles.featureIcon} />
                   <div>
-                    <h4 className={styles.featureTitle}>Monolithic Construction</h4>
+                    <h4 className={styles.featureTitle}>Reinforced Construction</h4>
                     <p className={styles.featureDesc}>
-                      High-grade reinforced concrete core engineered for seismic and thermal performance.
+                      Engineered concrete structure with modern acoustic insulation and premium finishes.
                     </p>
                   </div>
                 </div>
@@ -308,9 +308,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 <div className={styles.featureBox}>
                   <Compass size={20} className={styles.featureIcon} />
                   <div>
-                    <h4 className={styles.featureTitle}>Panoramic Solar Orientation</h4>
+                    <h4 className={styles.featureTitle}>Natural Light & Views</h4>
                     <p className={styles.featureDesc}>
-                      Optimal natural daylight with energy-efficient low-emissivity double glazing.
+                      Spacious balconies and double-glazed windows designed for natural ventilation.
                     </p>
                   </div>
                 </div>
@@ -318,9 +318,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 <div className={styles.featureBox}>
                   <Sparkles size={20} className={styles.featureIcon} />
                   <div>
-                    <h4 className={styles.featureTitle}>Dedicated Backup Microgrid</h4>
+                    <h4 className={styles.featureTitle}>Backup Power & Utilities</h4>
                     <p className={styles.featureDesc}>
-                      Dual diesel generators and solar battery bank ensuring zero interruption to residential services.
+                      Dedicated backup generators and reserve water storage for uninterrupted service.
                     </p>
                   </div>
                 </div>
@@ -329,15 +329,14 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           </div>
 
           <div className={styles.narrativeCard}>
-            <h3 className={styles.sectionHeading}>Architectural Specification & Master Plan</h3>
+            <h3 className={styles.sectionHeading}>Development Overview & Master Plan</h3>
             <p className={styles.narrativeText}>
               {p.description ||
                 "This residential development features verified title clearance, reinforced concrete construction, and private security access."}
             </p>
             <p className={styles.narrativeText}>
               All individual residences within this development comply with Sola Properties’ strict
-              quality standards: guaranteed municipal title validity, transparent escrow settlement
-              verification, and direct accredited builder representation.
+              quality standards: guaranteed title validity, transparent purchase terms, and direct accredited builder representation.
             </p>
           </div>
         </div>

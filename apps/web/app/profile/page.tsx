@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth, ProtectedRoute } from "../../context/AuthContext";
 import {
+  authApi,
   buyerApi,
   agentApi,
   developerApi,
@@ -29,6 +30,10 @@ import styles from "./profile.module.css";
 
 function ProfileContent() {
   const { user, logout, refreshProfile } = useAuth();
+
+  // Name State
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
   // Role Form States
   const [buyerPhone, setBuyerPhone] = useState("");
@@ -60,6 +65,10 @@ function ProfileContent() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
+
+    const nameParts = (user.fullName || "").trim().split(" ");
+    setFirstName(nameParts[0] || "");
+    setLastName(nameParts.slice(1).join(" ") || "");
 
     if (user.role === "buyer") {
       buyerApi.getProfile().then((res) => {
@@ -116,6 +125,17 @@ function ProfileContent() {
     setFeedback(null);
 
     try {
+      // 1. Update personal name if changed
+      const currentFirst = (user?.fullName || "").trim().split(" ")[0] || "";
+      const currentLast = (user?.fullName || "").trim().split(" ").slice(1).join(" ") || "";
+      const newFullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+      if (newFullName && (firstName.trim() !== currentFirst || lastName.trim() !== currentLast)) {
+        await authApi.updateMe({
+          fullName: newFullName,
+        });
+      }
+
+      // 2. Update role-specific profile details
       if (user?.role === "buyer") {
         const res = await buyerApi.updateProfile({
           phoneNumber: buyerPhone.trim(),
@@ -141,7 +161,7 @@ function ProfileContent() {
         if (!res.ok) throw new Error(res.message || "Failed to update developer profile");
       }
 
-      setFeedback({ ok: true, msg: "Profile credentials updated and synchronized with the Sola ledger." });
+      setFeedback({ ok: true, msg: "Profile details updated successfully." });
       refreshProfile?.();
     } catch (err: any) {
       setFeedback({ ok: false, msg: err.message || "Could not save profile updates." });
@@ -244,10 +264,10 @@ function ProfileContent() {
       {/* Main Container */}
       <main className={styles.mainContainer}>
         <div className={styles.pageHeader}>
-          <span className={styles.pagePretitle}>Identity & Security</span>
-          <h1 className={styles.pageTitle}>Account Governance & Profile</h1>
+          <span className={styles.pagePretitle}>Profile & Settings</span>
+          <h1 className={styles.pageTitle}>Account Settings</h1>
           <p className={styles.pageDesc}>
-            Manage your accredited identity credentials, role permissions, and notification dispatch preferences.
+            Manage your personal profile, credentials, and notification preferences.
           </p>
         </div>
 
@@ -266,39 +286,39 @@ function ProfileContent() {
         {/* Identity Overview Card */}
         <section className={styles.identityCard}>
           <div className={styles.identityBlock}>
-            <span className={styles.identityLabel}>Authenticated User</span>
+            <span className={styles.identityLabel}>Account Holder</span>
             <span className={styles.identityValue}>{user?.fullName || "Verified User"}</span>
             <span style={{ fontSize: "0.85rem", color: "#6a717e" }}>{user?.email}</span>
           </div>
 
           <div className={styles.identityBlock}>
-            <span className={styles.identityLabel}>System Role</span>
+            <span className={styles.identityLabel}>Account Role</span>
             <span className={styles.identityValue} style={{ textTransform: "capitalize" }}>
               {user?.role}
             </span>
             <span style={{ fontSize: "0.85rem", color: "#6a717e" }}>
               {user?.role === "buyer"
-                ? "Residential Seeker"
+                ? "Property Buyer"
                 : user?.role === "agent"
-                ? "Accredited Broker"
+                ? "Real Estate Agent"
                 : user?.role === "developer"
-                ? "Real Estate Builder"
-                : "Platform Executive"}
+                ? "Property Developer"
+                : "Platform Administrator"}
             </span>
           </div>
 
           <div className={styles.identityBlock}>
-            <span className={styles.identityLabel}>Accreditation Status</span>
+            <span className={styles.identityLabel}>Verification Status</span>
             <div
               className={`${styles.statusPill} ${
                 user?.status === "approved" ? styles.statusApproved : styles.statusPending
               }`}
             >
               <ShieldCheck size={14} />
-              <span>{user?.status === "approved" ? "Approved Clearance" : "Pending Verification"}</span>
+              <span>{user?.status === "approved" ? "Verified & Active" : "Pending Verification"}</span>
             </div>
             <span style={{ fontSize: "0.82rem", color: "#8c95a6", marginTop: 4 }}>
-              Municipal security audited
+              {user?.status === "approved" ? "Full access active" : "Verification in progress"}
             </span>
           </div>
         </section>
@@ -308,25 +328,51 @@ function ProfileContent() {
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               {user?.role === "buyer"
-                ? "Buyer Contact Credentials"
+                ? "Buyer Profile & Contact Details"
                 : user?.role === "agent"
-                ? "Accredited Brokerage Profile"
+                ? "Agent Profile & Credentials"
                 : user?.role === "developer"
-                ? "Corporate Developer Entity"
+                ? "Developer Company Profile"
                 : "Administrator Credentials"}
             </h2>
             <p className={styles.sectionDesc}>
               {user?.role === "buyer"
-                ? "Configure how verified agents and developers contact you regarding scheduled tours and inquiries."
+                ? "Configure your personal contact preferences for property tours and inquiries."
                 : user?.role === "agent"
-                ? "Public broker credentials displayed on your verified listings and referral activities."
+                ? "Professional details and broker credentials displayed on your listings and client communications."
                 : user?.role === "developer"
-                ? "Corporate credentials and municipal contact info displayed on your master developments."
+                ? "Corporate entity details displayed on your project developments."
                 : "Platform governance controls and security auditing credentials."}
             </p>
           </div>
 
           <form onSubmit={handleSaveProfile}>
+            {/* Personal Name Settings */}
+            <div className={styles.formGrid} style={{ marginBottom: 20 }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>First Name</label>
+                <input
+                  type="text"
+                  placeholder="First name"
+                  className={styles.formInput}
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Last Name</label>
+                <input
+                  type="text"
+                  placeholder="Last name"
+                  className={styles.formInput}
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  disabled={saving}
+                />
+              </div>
+            </div>
             {user?.role === "buyer" && (
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>

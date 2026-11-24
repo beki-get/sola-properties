@@ -33,9 +33,9 @@
   gap: 12px;
   text-decoration: none;
   color: #000000;
-  font-weight: 850;
-  font-size: 1.2rem;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
 }
 
 .brandIcon {
@@ -125,9 +125,9 @@
 
 .pageTitle {
   font-size: 2.2rem;
-  font-weight: 850;
+  font-weight: 700;
   color: #000000;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.01em;
   margin: 0 0 8px 0;
 }
 
@@ -165,7 +165,7 @@
 
 .identityValue {
   font-size: 1.15rem;
-  font-weight: 850;
+  font-weight: 700;
   color: #000000;
 }
 
@@ -217,9 +217,9 @@
 
 .sectionTitle {
   font-size: 1.35rem;
-  font-weight: 850;
+  font-weight: 700;
   color: #000000;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
   margin: 0 0 6px 0;
 }
 

@@ -28,7 +28,7 @@ const CURATED_DEVELOPMENTS: Project[] = [
     name: "Addis Skyline Residences",
     location: "Bole Olympia, Addis Ababa",
     description:
-      "A 28-story brutalist-inspired residential monolith featuring floor-to-ceiling curtain wall glazing, cantilevered sky gardens, and panoramic views across the metropolitan plateau.",
+      "A contemporary 28-story residential high-rise featuring floor-to-ceiling panoramic glass windows, private terrace gardens, and sweeping city views across Bole.",
     status: "active",
     created_at: "2026-08-15T09:00:00Z",
     updated_at: "2026-10-20T14:30:00Z",
@@ -39,7 +39,7 @@ const CURATED_DEVELOPMENTS: Project[] = [
     name: "The Olive Sanctuary Estate",
     location: "Old Airport Diplomatic Zone, Addis Ababa",
     description:
-      "Gated low-density sanctuary of 16 precision-cast concrete villas integrated into mature indigenous acacia and olive landscapes with private security perimeters and geothermal temperature control.",
+      "A gated residential community of 16 luxury detached villas surrounded by landscaped greenery, private courtyard pools, and 24/7 security.",
     status: "active",
     created_at: "2026-09-01T11:00:00Z",
     updated_at: "2026-10-25T16:00:00Z",
@@ -50,7 +50,7 @@ const CURATED_DEVELOPMENTS: Project[] = [
     name: "Kazanchis Central Heights",
     location: "Financial District, Kazanchis, Addis Ababa",
     description:
-      "Modern dual-core residential tower optimized for institutional executives, diplomat suites, and high-yield serviced apartments with triple-redundant solar microgrid integration.",
+      "A modern residential tower in the financial district offering executive suites, serviced penthouses, dedicated parking, and full backup power.",
     status: "active",
     created_at: "2026-09-18T08:30:00Z",
     updated_at: "2026-11-05T10:15:00Z",
@@ -61,7 +61,7 @@ const CURATED_DEVELOPMENTS: Project[] = [
     name: "Entoto Hillside Terraces",
     location: "Entoto Foothills, Northern Addis Ababa",
     description:
-      "Biophilic stepped terrace residences constructed from local volcanic basalt and certified timber, featuring private alpine viewing decks and natural mountain spring filtration.",
+      "A serene hillside community in the Entoto hills, featuring spacious terraces, natural stone finishes, and fresh mountain air.",
     status: "inactive",
     created_at: "2026-10-02T13:45:00Z",
     updated_at: "2026-11-12T12:00:00Z",
@@ -284,14 +284,14 @@ function ProjectsCatalogContent() {
                     <span>{project.location}</span>
                   </div>
 
-                  <p className={styles.projectDesc}>{project.description || "Architectural master-planned residential development featuring verified municipal clearances and luxury residential residences."}</p>
+                  <p className={styles.projectDesc}>{project.description || "Master-planned residential development featuring modern architectural design, integrated amenities, and verified ownership."}</p>
 
                   <div className={styles.specsDivider} />
 
                   <div className={styles.specsRow}>
                     <div className={styles.specCol}>
                       <span className={styles.specLabel}>Registration</span>
-                      <span className={styles.specVal}>Audited Title</span>
+                      <span className={styles.specVal}>Verified Title</span>
                     </div>
                     <div className={styles.specCol}>
                       <span className={styles.specLabel}>Catalog Units</span>
@@ -304,7 +304,7 @@ function ProjectsCatalogContent() {
                       href={`/projects/${project.id}`}
                       className={styles.primaryBtn}
                     >
-                      <span>Master Dossier</span>
+                      <span>View Project</span>
                       <ArrowRight size={14} />
                     </Link>
 

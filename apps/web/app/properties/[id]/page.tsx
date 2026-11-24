@@ -261,15 +261,14 @@ export default function PropertyDetailPage() {
         <div style={{ textAlign: "center", padding: "120px 20px" }}>
           <div
             style={{
-              fontFamily: "var(--font-display, Syne)",
-              fontSize: "1.4rem",
-              fontWeight: 800,
+              fontSize: "1.2rem",
+              fontWeight: 700,
             }}
           >
-            INITIALIZING ARCHITECTURAL SPECIFICATION...
+            Loading property details...
           </div>
           <p style={{ color: "#6b7280", marginTop: 8 }}>
-            Fetching verified floorplans, pricing matrices, and image assets.
+            Please wait a moment.
           </p>
         </div>
       </div>

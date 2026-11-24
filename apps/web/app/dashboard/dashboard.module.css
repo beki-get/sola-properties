@@ -31,9 +31,9 @@
   gap: 12px;
   text-decoration: none;
   color: #000000;
-  font-weight: 850;
-  font-size: 1.2rem;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
 }
 
 .brandIcon {
@@ -53,57 +53,68 @@
 
 .userInfoBadge {
   display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  padding: 4px 8px;
+  transition: opacity 0.15s ease;
+}
+
+.userInfoBadge:hover {
+  opacity: 0.85;
+}
+
+.userAvatar {
+  width: 32px;
+  height: 32px;
+  background-color: #000000;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0px !important;
+  flex-shrink: 0;
+}
+
+.userTextWrap {
+  display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .userName {
-  font-size: 0.92rem;
-  font-weight: 800;
+  font-size: 0.88rem;
+  font-weight: 700;
   color: #000000;
-  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 .userRoleStatus {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: capitalize;
 }
 
 .roleTag {
-  color: #555c69;
+  color: #6b7280;
+  font-weight: 600;
 }
 
-.statusPill {
-  padding: 2px 8px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+.statusPillAlert {
+  padding: 1px 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  border-radius: 0px !important;
-}
-
-.statusPending {
   background-color: #fef3c7;
   color: #92400e;
-}
-
-.statusApproved {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.statusRejected {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
-
-.statusSuspended {
-  background-color: #1f2937;
-  color: #f9fafb;
 }
 
 .logoutBtn {
@@ -259,7 +270,7 @@
 
 .tabBtnActive {
   color: #000000;
-  font-weight: 850;
+  font-weight: 700;
   border-bottom-color: #000000 !important;
 }
 
@@ -284,8 +295,8 @@
 
 .cardPretitle {
   font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8c95a6;
   margin-bottom: 6px;
@@ -294,8 +305,8 @@
 
 .cardTitle {
   font-size: 1.55rem;
-  font-weight: 850;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: #000000;
   margin-bottom: 6px;
 }
@@ -510,10 +521,10 @@
 
 .projectName {
   font-size: 1.15rem;
-  font-weight: 850;
+  font-weight: 700;
   color: #000000;
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .projectLocation {
@@ -616,8 +627,8 @@
 
 .modalTitle {
   font-size: 1.3rem;
-  font-weight: 850;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 0;
 }
 

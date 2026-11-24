@@ -122,8 +122,8 @@ function VerifyEmailContent() {
               color="#000"
               style={{ animation: "spin 1s linear infinite", margin: "0 auto 16px" }}
             />
-            <p style={{ fontWeight: 700, fontSize: "1rem" }}>
-              Auditing verification token against municipal security ledger...
+            <p style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+              Verifying your email address...
             </p>
           </div>
         )}
