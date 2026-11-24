@@ -16,6 +16,7 @@ import {
   ArrowRight,
   LogOut,
   Sliders,
+  X,
 } from "lucide-react";
 import { useAuth, ProtectedRoute } from "../../context/AuthContext";
 import { Navbar } from "../components/Navbar";
@@ -61,6 +62,16 @@ function ProfileContent() {
   const [saving, setSaving] = useState(false);
   const [savingNotifs, setSavingNotifs] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Auto-dismiss feedback banner after 4 seconds
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => {
+        setFeedback(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
   // Load Initial Data
   useEffect(() => {
@@ -217,9 +228,29 @@ function ProfileContent() {
             className={`${styles.feedbackAlert} ${
               feedback.ok ? styles.feedbackSuccess : styles.feedbackError
             }`}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
           >
-            {feedback.ok ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-            <span>{feedback.msg}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {feedback.ok ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              <span>{feedback.msg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFeedback(null)}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px 6px",
+                display: "inline-flex",
+                alignItems: "center",
+                color: "inherit",
+                opacity: 0.75,
+              }}
+              title="Dismiss notification"
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 

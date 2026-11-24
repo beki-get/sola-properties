@@ -90,6 +90,16 @@ function DashboardContent() {
     type: "success" | "error";
     message: string;
   } | null>(null);
+
+  // Auto-dismiss banner after 4 seconds
+  useEffect(() => {
+    if (formFeedback) {
+      const timer = setTimeout(() => {
+        setFormFeedback(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [formFeedback]);
   const [submitting, setSubmitting] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [profileSynced, setProfileSynced] = useState(false);
@@ -942,13 +952,33 @@ function DashboardContent() {
             className={`${styles.alertBox} ${
               formFeedback.type === "success" ? styles.alertSuccess : styles.alertError
             }`}
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
           >
-            {formFeedback.type === "success" ? (
-              <CheckCircle2 size={18} />
-            ) : (
-              <AlertCircle size={18} />
-            )}
-            <span>{formFeedback.message}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {formFeedback.type === "success" ? (
+                <CheckCircle2 size={18} />
+              ) : (
+                <AlertCircle size={18} />
+              )}
+              <span>{formFeedback.message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFormFeedback(null)}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px 6px",
+                display: "inline-flex",
+                alignItems: "center",
+                color: "inherit",
+                opacity: 0.7,
+              }}
+              title="Dismiss notification"
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 

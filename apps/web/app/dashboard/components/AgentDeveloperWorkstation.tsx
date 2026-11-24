@@ -118,6 +118,16 @@ export function AgentDeveloperWorkstation({
 
   // Feedback State
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Auto-dismiss feedback banner after 4 seconds
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => {
+        setFeedback(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
   const [exportingCsv, setExportingCsv] = useState(false);
 
   // Pagination for all workstation tables
@@ -566,11 +576,33 @@ export function AgentDeveloperWorkstation({
             fontWeight: 700,
             display: "flex",
             alignItems: "center",
+            justifyContent: "space-between",
             gap: 8,
+            marginBottom: 20,
+            borderRadius: 4,
           }}
         >
-          {feedback.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          <span>{feedback.msg}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {feedback.ok ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <span>{feedback.msg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "inherit",
+              opacity: 0.75,
+              padding: "2px 6px",
+              display: "inline-flex",
+              alignItems: "center",
+            }}
+            title="Dismiss notification"
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
