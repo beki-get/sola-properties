@@ -397,7 +397,7 @@ function DashboardContent() {
       }
       setFormFeedback({
         type: "success",
-        message: "Developer corporate profile updated successfully and synced with backend!",
+        message: "Developer corporate profile updated successfully!",
       });
     }
   };

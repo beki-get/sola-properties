@@ -16,7 +16,6 @@ import {
   ArrowRight,
   LogOut,
   Sliders,
-  RefreshCw,
 } from "lucide-react";
 import { useAuth, ProtectedRoute } from "../../context/AuthContext";
 import { Navbar } from "../components/Navbar";
@@ -204,52 +203,12 @@ function ProfileContent() {
 
       {/* Main Container */}
       <main className={styles.mainContainer}>
-        <div
-          className={styles.pageHeader}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-            gap: 16,
-          }}
-        >
-          <div>
-            <span className={styles.pagePretitle}>Profile & Settings</span>
-            <h1 className={styles.pageTitle}>Account Settings</h1>
-            <p className={styles.pageDesc}>
-              Manage your personal profile, role credentials, and notification preferences.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => refreshProfile?.()}
-            disabled={loading}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 16px",
-              backgroundColor: "#ffffff",
-              border: "1px solid #000000",
-              color: "#000000",
-              fontSize: "0.78rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              cursor: loading ? "not-allowed" : "pointer",
-              borderRadius: "0px",
-            }}
-          >
-            <RefreshCw
-              size={14}
-              style={{
-                animation: loading ? "spin 1s linear infinite" : "none",
-              }}
-            />
-            <span>{loading ? "Syncing..." : "Sync from Backend"}</span>
-          </button>
+        <div className={styles.pageHeader}>
+          <span className={styles.pagePretitle}>Profile & Settings</span>
+          <h1 className={styles.pageTitle}>Account Settings</h1>
+          <p className={styles.pageDesc}>
+            Manage your personal profile, role credentials, and notification preferences.
+          </p>
         </div>
 
         {/* Global Feedback */}
@@ -502,7 +461,7 @@ function ProfileContent() {
 
             <button type="submit" className={styles.saveBtn} disabled={saving}>
               <Save size={16} />
-              <span>{saving ? "Synchronizing..." : "Save Profile Details"}</span>
+              <span>{saving ? "Saving..." : "Save Profile Details"}</span>
             </button>
           </form>
         </section>
