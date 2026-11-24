@@ -29,6 +29,7 @@ import {
   favoriteApi,
 } from "../../../lib/api";
 import { useAuth } from "../../../context/AuthContext";
+import { Navbar } from "../../components/Navbar";
 import styles from "./property-detail.module.css";
 
 export default function PropertyDetailPage() {
@@ -250,14 +251,7 @@ export default function PropertyDetailPage() {
   if (loading) {
     return (
       <div className={styles.detailWrapper}>
-        <header className={styles.header}>
-          <Link href="/properties" className={styles.brandLink}>
-            <div className={styles.brandIcon}>
-              <Building size={18} color="#ffffff" />
-            </div>
-            <span>Sola Properties</span>
-          </Link>
-        </header>
+        <Navbar />
         <div style={{ textAlign: "center", padding: "120px 20px" }}>
           <div
             style={{
@@ -278,17 +272,10 @@ export default function PropertyDetailPage() {
   if (errorMsg || !property) {
     return (
       <div className={styles.detailWrapper}>
-        <header className={styles.header}>
-          <Link href="/properties" className={styles.brandLink}>
-            <div className={styles.brandIcon}>
-              <Building size={18} color="#ffffff" />
-            </div>
-            <span>Sola Properties</span>
-          </Link>
-        </header>
+        <Navbar />
         <div style={{ maxWidth: 600, margin: "100px auto", padding: 32, backgroundColor: "#fff", border: "2px solid #000" }}>
           <AlertCircle size={32} color="#dc2626" style={{ marginBottom: 16 }} />
-          <h2 style={{ fontSize: "1.4rem", fontWeight: 850, margin: "0 0 12px" }}>
+          <h2 style={{ fontSize: "1.4rem", fontWeight: 700, margin: "0 0 12px" }}>
             Property Unavailable
           </h2>
           <p style={{ color: "#4b5563", marginBottom: 24, lineHeight: 1.6 }}>
@@ -309,53 +296,41 @@ export default function PropertyDetailPage() {
 
   return (
     <div className={styles.detailWrapper}>
-      {/* Top Bar */}
-      <header className={styles.header}>
-        <Link href="/" className={styles.brandLink}>
-          <div className={styles.brandIcon}>
-            <Building size={18} color="#ffffff" />
-          </div>
-          <span>Sola Properties</span>
-        </Link>
+      {/* Top Common Navbar */}
+      <Navbar />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      {/* Breadcrumb Bar */}
+      <div className={styles.breadcrumbBar} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Link href="/" className={styles.breadcrumbLink}>
+            Home
+          </Link>
+          <span>/</span>
+          <Link href="/properties" className={styles.breadcrumbLink}>
+            Properties
+          </Link>
+          <span>/</span>
+          <span className={styles.breadcrumbActive}>{property.title}</span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button
             onClick={handleShare}
             className={styles.secondaryCtaBtn}
-            style={{ height: 38, padding: "0 14px", margin: 0, fontSize: "0.78rem" }}
+            style={{ height: 34, padding: "0 12px", margin: 0, fontSize: "0.78rem" }}
           >
-            <Share2 size={14} />
+            <Share2 size={13} />
             <span>Share</span>
           </button>
           <Link
             href={`/properties/compare?ids=${property.id}`}
             className={styles.secondaryCtaBtn}
-            style={{ height: 38, padding: "0 14px", margin: 0, fontSize: "0.78rem", textDecoration: "none" }}
+            style={{ height: 34, padding: "0 12px", margin: 0, fontSize: "0.78rem", textDecoration: "none" }}
           >
-            <Columns2 size={14} />
+            <Columns2 size={13} />
             <span>Compare</span>
           </Link>
-          <Link
-            href="/dashboard"
-            className={styles.primaryCtaBtn}
-            style={{ height: 38, padding: "0 18px", margin: 0, fontSize: "0.78rem", textDecoration: "none" }}
-          >
-            Dashboard
-          </Link>
         </div>
-      </header>
-
-      {/* Breadcrumb Bar */}
-      <div className={styles.breadcrumbBar}>
-        <Link href="/" className={styles.breadcrumbLink}>
-          Home
-        </Link>
-        <span>/</span>
-        <Link href="/properties" className={styles.breadcrumbLink}>
-          Discovery
-        </Link>
-        <span>/</span>
-        <span className={styles.breadcrumbActive}>{property.title}</span>
       </div>
 
       {/* Main Content Layout */}

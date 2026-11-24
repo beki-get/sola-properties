@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { authApi, propertyApi, Property } from "../lib/api";
+import { Navbar } from "./components/Navbar";
 import styles from "./page.module.css";
 
 export default function SolaPropertiesPage() {
@@ -106,116 +107,8 @@ export default function SolaPropertiesPage() {
 
   return (
     <div className={styles.mainWrapper}>
-      {/* Top Header */}
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <div className={styles.brandIcon}>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#000000"
-              strokeWidth="2.5"
-              strokeLinecap="square"
-              strokeLinejoin="miter"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-          </div>
-          <span>Sola Properties</span>
-        </div>
-
-        <nav className={styles.nav}>
-          <a href="#home" className={styles.navItem}>
-            Home
-          </a>
-          <Link href="/properties" className={styles.navItem}>
-            Properties
-          </Link>
-          <Link href="/projects" className={styles.navItem}>
-            Developments
-          </Link>
-          <Link href="/properties/compare" className={styles.navItem}>
-            Compare
-          </Link>
-          <a href="#residences" className={styles.navItem}>
-            Residences
-          </a>
-          <a href="#services" className={styles.navItem}>
-            Services
-          </a>
-        </nav>
-
-        <div className={styles.headerRight}>
-          <div className={styles.langSelector}>
-            <span role="img" aria-label="UK flag" style={{ fontSize: "1.1rem" }}>
-              🇬🇧
-            </span>
-            <span>En</span>
-            <ChevronDown size={14} />
-          </div>
-
-          {isAuthenticated && user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Link
-                href="/dashboard"
-                className={styles.contactBtn}
-                style={{ textDecoration: "none", display: "inline-block" }}
-              >
-                Dashboard ({user.role})
-              </Link>
-              <Link
-                href="/profile"
-                className={styles.navItem}
-                style={{ fontWeight: 700, color: "#000000" }}
-              >
-                Profile
-              </Link>
-              <button
-                type="button"
-                onClick={() => logout()}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: "0.85rem",
-                  fontWeight: 700,
-                  color: "#6a717e",
-                  cursor: "pointer",
-                }}
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className={styles.navItem}
-                style={{ fontWeight: 700, color: "#000000" }}
-              >
-                Sign In
-              </Link>
-
-              <Link
-                href="/register"
-                className={styles.contactBtn}
-                style={{ textDecoration: "none", display: "inline-block" }}
-              >
-                Register
-              </Link>
-            </>
-          )}
-        </div>
-      </header>
+      {/* Top Common Navbar */}
+      <Navbar />
 
       {/* Hero Section */}
       <main className={styles.hero} id="home">

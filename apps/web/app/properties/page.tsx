@@ -21,6 +21,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { Navbar } from "../components/Navbar";
 import {
   propertyApi,
   favoriteApi,
@@ -169,80 +170,15 @@ function PropertiesCatalogContent() {
 
   return (
     <div className={styles.catalogWrapper}>
-      {/* Top Header */}
-      <header className={styles.header}>
-        <Link href="/" className={styles.brandLink}>
-          <div className={styles.brandIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2.5"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-            </svg>
-          </div>
-          <span>Sola Properties</span>
-        </Link>
+      {/* Top Common Navbar */}
+      <Navbar />
 
-        <nav className={styles.headerNav}>
-          <Link href="/" className={styles.navLink}>
-            Home
-          </Link>
-          <Link href="/properties" className={`${styles.navLink} ${styles.navLinkActive}`}>
-            Properties
-          </Link>
-          <Link href="/projects" className={styles.navLink}>
-            Developments
-          </Link>
-          {comparedIds.length > 0 ? (
-            <Link
-              href={`/properties/compare?ids=${comparedIds.join(",")}`}
-              className={styles.navLink}
-              style={{ color: "#059669" }}
-            >
-              Compare ({comparedIds.length})
-            </Link>
-          ) : (
-            <Link href="/properties/compare" className={styles.navLink}>
-              Compare
-            </Link>
-          )}
-          <Link href="/dashboard" className={styles.navLink}>
-            Dashboard
-          </Link>
-        </nav>
-
-        <div className={styles.headerRight}>
-          {isAuthenticated && user ? (
-            <Link href="/dashboard" className={styles.authBtn}>
-              Dashboard ({user.role})
-            </Link>
-          ) : (
-            <>
-              <Link href="/login" className={styles.authBtnOutline}>
-                Sign In
-              </Link>
-              <Link href="/register" className={styles.authBtn}>
-                Register
-              </Link>
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* Cadastral Filter Ribbon */}
+      {/* Filter Ribbon */}
       <section className={styles.filterRibbon}>
         <div className={styles.filterHeaderRow}>
           <div>
-            <span className={styles.pretitle}>Verified Property Catalog</span>
-            <h1 className={styles.pageTitle}>Architectural Residences in Addis Ababa</h1>
+            <span className={styles.pretitle}>Property Catalog</span>
+            <h1 className={styles.pageTitle}>Properties & Homes in Addis Ababa</h1>
           </div>
           <button type="button" onClick={loadProperties} className={styles.resetBtn}>
             <RefreshCw size={13} style={{ display: "inline", marginRight: 6 }} />
@@ -325,7 +261,7 @@ function PropertiesCatalogContent() {
             }`}
             onClick={() => setSelectedCategory("all")}
           >
-            All Typologies
+            All Property Types
           </button>
           {categories.map((cat) => (
             <button
@@ -497,14 +433,14 @@ function PropertiesCatalogContent() {
       {comparedIds.length > 0 && (
         <div className={styles.compareTray}>
           <div className={styles.trayText}>
-            <strong>{comparedIds.length}</strong> Residences Selected for Architectural Comparison
+            <strong>{comparedIds.length}</strong> Properties Selected for Comparison
           </div>
 
           <Link
             href={`/properties/compare?ids=${comparedIds.join(",")}`}
             className={styles.trayActionBtn}
           >
-            Launch Comparison Matrix →
+            Compare Selected Properties →
           </Link>
 
           <button

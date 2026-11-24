@@ -13,6 +13,7 @@ import {
   Columns2,
 } from "lucide-react";
 import { Property, propertyApi } from "../../../lib/api";
+import { Navbar } from "../../components/Navbar";
 import styles from "./compare.module.css";
 
 function CompareContent() {
@@ -78,30 +79,14 @@ function CompareContent() {
 
   return (
     <div className={styles.compareWrapper}>
-      <header className={styles.header}>
-        <Link href="/" className={styles.brandLink}>
-          <div className={styles.brandIcon}>
-            <Building size={18} color="#ffffff" />
-          </div>
-          <span>Sola Properties</span>
-        </Link>
-
-        <Link
-          href="/properties"
-          className={styles.actionBtn}
-          style={{ width: "auto", height: 38, padding: "0 18px", fontSize: "0.78rem" }}
-        >
-          <ArrowLeft size={14} />
-          <span>Return to Catalog</span>
-        </Link>
-      </header>
+      <Navbar />
 
       <main className={styles.mainContent}>
         <div className={styles.topBar}>
           <div>
-            <h1 className={styles.pageTitle}>Architectural Comparison Matrix</h1>
+            <h1 className={styles.pageTitle}>Property Comparison</h1>
             <p className={styles.pageSubtitle}>
-              Side-by-side technical evaluation across verified assets. Compare square meterage, structural specifications, and pricing terms.
+              Side-by-side comparison of selected properties. Compare prices, bedrooms, area, and key features.
             </p>
           </div>
         </div>

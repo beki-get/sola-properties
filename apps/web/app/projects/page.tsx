@@ -18,9 +18,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { adminApi, Project } from "../../lib/api";
+import { Navbar } from "../components/Navbar";
 import styles from "./projects.module.css";
 
-// Curated Architectural Developments for initial public showcase
+// Curated Residential Developments for initial public showcase
 const CURATED_DEVELOPMENTS: Project[] = [
   {
     id: "proj-skyline-01",
@@ -116,64 +117,16 @@ function ProjectsCatalogContent() {
 
   return (
     <div className={styles.projectsWrapper}>
-      {/* Top Architectural Header */}
-      <header className={styles.header}>
-        <Link href="/" className={styles.brandLink}>
-          <div className={styles.brandIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2.5"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-          </div>
-          <span>Sola Properties</span>
-        </Link>
-
-        <nav className={styles.headerNav}>
-          <Link href="/properties" className={styles.navLink}>
-            Properties
-          </Link>
-          <Link href="/projects" className={`${styles.navLink} ${styles.navLinkActive}`}>
-            Developments
-          </Link>
-          <Link href="/properties/compare" className={styles.navLink}>
-            Compare
-          </Link>
-        </nav>
-
-        <div className={styles.headerRight}>
-          {isAuthenticated ? (
-            <Link href="/dashboard" className={styles.authBtn}>
-              Dashboard ({user?.role})
-            </Link>
-          ) : (
-            <Link href="/login" className={styles.authBtn}>
-              Sign In
-            </Link>
-          )}
-        </div>
-      </header>
+      {/* Top Common Navbar */}
+      <Navbar />
 
       {/* Hero Section */}
       <section className={styles.heroSection}>
-        <span className={styles.heroTag}>Master Developments</span>
-        <h1 className={styles.heroTitle}>Architectural Real Estate Developments</h1>
+        <span className={styles.heroTag}>Featured Projects</span>
+        <h1 className={styles.heroTitle}>New Developments & Residential Projects</h1>
         <p className={styles.heroDesc}>
-          Explore master-planned towers, gated residential sanctuaries, and urban developments
-          built by accredited real estate developers across Ethiopia.
+          Explore modern residential communities, high-rise towers, and quality housing developments
+          built by verified real estate developers across Ethiopia.
         </p>
       </section>
 
@@ -183,7 +136,7 @@ function ProjectsCatalogContent() {
           <Search size={18} className={styles.searchIcon} />
           <input
             type="text"
-            placeholder="Search developments by name, district, or architectural style..."
+            placeholder="Search developments by name, district, or location..."
             className={styles.searchInput}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -284,7 +237,7 @@ function ProjectsCatalogContent() {
                     <span>{project.location}</span>
                   </div>
 
-                  <p className={styles.projectDesc}>{project.description || "Master-planned residential development featuring modern architectural design, integrated amenities, and verified ownership."}</p>
+                  <p className={styles.projectDesc}>{project.description || "Modern residential community featuring quality finishes, integrated amenities, and verified titles."}</p>
 
                   <div className={styles.specsDivider} />
 

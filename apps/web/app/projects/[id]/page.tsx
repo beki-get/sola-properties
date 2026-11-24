@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { adminApi, developerApi, referralApi, Project } from "../../../lib/api";
+import { Navbar } from "../../components/Navbar";
 import styles from "./project-detail.module.css";
 
 const CURATED_PROJECT_DETAILS: Record<string, Project> = {
@@ -158,10 +159,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const p = project || {
     id: projectId,
     developer_id: "dev-solanova",
-    name: "Architectural Residential Development",
+    name: "Residential Development",
     location: "Addis Ababa, Ethiopia",
     description:
-      "A luxury residential master development featuring verified municipal clearances and luxury finishes.",
+      "A modern residential community development featuring verified titles and quality finishes.",
     status: "active",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -169,56 +170,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
   return (
     <div className={styles.pageWrapper}>
-      {/* Header */}
-      <header className={styles.header}>
-        <Link href="/" className={styles.brandLink}>
-          <div className={styles.brandIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2.5"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-          </div>
-          <span>Sola Properties</span>
-        </Link>
-
-        <nav className={styles.headerNav}>
-          <Link href="/properties" className={styles.navLink}>
-            Properties
-          </Link>
-          <Link href="/projects" className={`${styles.navLink} ${styles.navLinkActive}`}>
-            Developments
-          </Link>
-          <Link href="/properties/compare" className={styles.navLink}>
-            Compare
-          </Link>
-        </nav>
-
-        <div className={styles.headerRight}>
-          {isAuthenticated ? (
-            <Link href="/dashboard" className={styles.authBtn}>
-              Dashboard ({user?.role})
-            </Link>
-          ) : (
-            <Link href="/login" className={styles.authBtn}>
-              Sign In
-            </Link>
-          )}
-        </div>
-      </header>
+      {/* Top Common Navbar */}
+      <Navbar />
 
       {/* Breadcrumb Bar */}
       <div className={styles.breadcrumbBar}>

@@ -16,8 +16,10 @@ import {
   ArrowRight,
   LogOut,
   Sliders,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth, ProtectedRoute } from "../../context/AuthContext";
+import { Navbar } from "../components/Navbar";
 import {
   authApi,
   buyerApi,
@@ -197,78 +199,57 @@ function ProfileContent() {
 
   return (
     <div className={styles.profileWrapper}>
-      {/* Header */}
-      <header className={styles.header}>
-        <Link href="/" className={styles.brandLink}>
-          <div className={styles.brandIcon}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2.5"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-              <path d="m6.34 17.66-1.41 1.41" />
-              <path d="m19.07 4.93-1.41 1.41" />
-            </svg>
-          </div>
-          <span>Sola Properties</span>
-        </Link>
-
-        <nav className={styles.headerNav}>
-          <Link href="/properties" className={styles.navLink}>
-            Properties
-          </Link>
-          <Link href="/projects" className={styles.navLink}>
-            Developments
-          </Link>
-          <Link href="/properties/compare" className={styles.navLink}>
-            Compare
-          </Link>
-        </nav>
-
-        <div className={styles.headerRight}>
-          <Link href="/dashboard" className={styles.dashBtn}>
-            Workstation Dashboard
-          </Link>
-          <button
-            type="button"
-            onClick={() => logout()}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "6px 10px",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              color: "#6a717e",
-              fontWeight: 700,
-              fontSize: "0.82rem",
-            }}
-          >
-            <LogOut size={16} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </header>
+      {/* Top Common Navbar */}
+      <Navbar />
 
       {/* Main Container */}
       <main className={styles.mainContainer}>
-        <div className={styles.pageHeader}>
-          <span className={styles.pagePretitle}>Profile & Settings</span>
-          <h1 className={styles.pageTitle}>Account Settings</h1>
-          <p className={styles.pageDesc}>
-            Manage your personal profile, credentials, and notification preferences.
-          </p>
+        <div
+          className={styles.pageHeader}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: 16,
+          }}
+        >
+          <div>
+            <span className={styles.pagePretitle}>Profile & Settings</span>
+            <h1 className={styles.pageTitle}>Account Settings</h1>
+            <p className={styles.pageDesc}>
+              Manage your personal profile, role credentials, and notification preferences.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => refreshProfile?.()}
+            disabled={loading}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 16px",
+              backgroundColor: "#ffffff",
+              border: "1px solid #000000",
+              color: "#000000",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              cursor: loading ? "not-allowed" : "pointer",
+              borderRadius: "0px",
+            }}
+          >
+            <RefreshCw
+              size={14}
+              style={{
+                animation: loading ? "spin 1s linear infinite" : "none",
+              }}
+            />
+            <span>{loading ? "Syncing..." : "Sync from Backend"}</span>
+          </button>
         </div>
 
         {/* Global Feedback */}
@@ -509,7 +490,7 @@ function ProfileContent() {
                 <div className={styles.formGroupFull}>
                   <label className={styles.formLabel}>Corporate Description</label>
                   <textarea
-                    placeholder="Describe building portfolio, construction standards, architectural vision..."
+                    placeholder="Describe building portfolio, construction standards, and company highlights..."
                     className={styles.formTextarea}
                     value={devDesc}
                     onChange={(e) => setDevDesc(e.target.value)}
@@ -570,7 +551,7 @@ function ProfileContent() {
 
             <div className={styles.toggleRow}>
               <div className={styles.toggleInfo}>
-                <span className={styles.toggleLabel}>Architectural Digest & Market Reports</span>
+                <span className={styles.toggleLabel}>Market Reports & Property News</span>
                 <span className={styles.toggleDesc}>
                   Receive periodic curated reports on emerging prime developments and quarterly property market indices.
                 </span>
