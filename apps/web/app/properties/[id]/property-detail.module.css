@@ -287,129 +287,163 @@
   top: 96px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .bookingCard {
   background-color: #ffffff;
-  border: 2px solid #000000;
-  padding: 32px;
-  border-radius: 0px !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.05);
+}
+
+.priceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
 }
 
 .priceDisplay {
-  font-size: 2.2rem;
-  font-weight: 900;
-  color: #000000;
-  letter-spacing: -0.04em;
-  margin-bottom: 4px;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.03em;
+}
+
+.currencyTag {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-left: 6px;
+}
+
+.planBadge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #374151;
+  background-color: #f3f4f6;
+  padding: 3px 8px;
+  border-radius: 4px;
 }
 
 .priceTerms {
-  font-size: 0.82rem;
-  color: #6b7280;
-  font-weight: 600;
-  margin-bottom: 24px;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 0 0 20px;
+  font-weight: 500;
+}
+
+.ctaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .primaryCtaBtn {
   width: 100%;
-  height: 52px;
-  background-color: #000000;
+  height: 44px;
+  background-color: #111827;
   color: #ffffff;
+  border: none;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 0.88rem;
-  font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  border-radius: 0px !important;
-  margin-bottom: 12px;
-  transition: opacity 0.15s;
+  transition: all 0.15s ease;
 }
 
 .primaryCtaBtn:hover {
-  opacity: 0.85;
+  background-color: #000000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .secondaryCtaBtn {
   width: 100%;
-  height: 52px;
-  background-color: transparent;
-  border: 1px solid #000000;
-  color: #000000;
+  height: 42px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #1f2937;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 0.88rem;
-  font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  border-radius: 0px !important;
-  margin-bottom: 12px;
-  transition: background-color 0.15s;
+  transition: all 0.15s ease;
 }
 
 .secondaryCtaBtn:hover {
-  background-color: #f3f4f6;
+  background-color: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .favoriteActionBtn {
   width: 100%;
-  height: 44px;
-  background-color: #f9fafb;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  height: 38px;
+  background-color: #fafafa;
+  border: 1px solid #f3f4f6;
+  color: #4b5563;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  font-weight: 750;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
-  border-radius: 0px !important;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
+}
+
+.favoriteActionBtn:hover {
+  background-color: #f3f4f6;
+  color: #111827;
 }
 
 .favoriteActionBtnActive {
-  background-color: #fee2e2;
-  border-color: #f87171;
+  background-color: #fef2f2;
+  border-color: #fecaca;
   color: #dc2626;
 }
 
-/* Seller / Broker Card */
-.sellerCard {
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  padding: 24px;
-  border-radius: 0px !important;
+.trustDivider {
+  height: 1px;
+  background-color: #f3f4f6;
+  margin: 18px 0 14px;
 }
 
-.sellerTitle {
+.trustBadge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trustTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.trustSubtitle {
   font-size: 0.72rem;
-  font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #8c95a6;
-  margin-bottom: 12px;
-}
-
-.sellerName {
-  font-size: 1.1rem;
-  font-weight: 850;
-  color: #000000;
-  margin: 0 0 4px;
-}
-
-.sellerMeta {
-  font-size: 0.82rem;
   color: #6b7280;
+  margin-top: 1px;
+}
+
+/* Seller / Broker Card (deprecated - retained for backwards compatibility) */
+.sellerCard {
+  display: none;
 }
 
 /* Modal Overlay */

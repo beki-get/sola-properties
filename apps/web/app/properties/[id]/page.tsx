@@ -466,65 +466,70 @@ export default function PropertyDetailPage() {
           {/* Right Column: Sticky Action Sidebar */}
           <aside className={styles.actionSidebar}>
             <div className={styles.bookingCard}>
-              <div className={styles.priceDisplay}>
-                {Number(property.price).toLocaleString()}{" "}
-                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#64748b" }}>ETB</span>
+              <div className={styles.priceHeader}>
+                <div className={styles.priceDisplay}>
+                  {Number(property.price).toLocaleString()}
+                  <span className={styles.currencyTag}>ETB</span>
+                </div>
+                {property.payment_plan && (
+                  <span className={styles.planBadge}>{property.payment_plan}</span>
+                )}
               </div>
-              <div className={styles.priceTerms}>
-                Listed price &bull; Escrow settlement supported &bull; Verified Title
+              <p className={styles.priceTerms}>
+                Escrow settlement &bull; Verified title
+              </p>
+
+              <div className={styles.ctaGroup}>
+                <button
+                  type="button"
+                  className={styles.primaryCtaBtn}
+                  onClick={() => setInquireOpen(true)}
+                >
+                  <MessageSquare size={15} />
+                  <span>Inquire & Request Documents</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.secondaryCtaBtn}
+                  onClick={() => setTourOpen(true)}
+                >
+                  <Calendar size={15} />
+                  <span>Schedule Private Tour</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.favoriteActionBtn} ${
+                    isFavorite ? styles.favoriteActionBtnActive : ""
+                  }`}
+                  onClick={handleToggleFavorite}
+                  disabled={favLoading}
+                >
+                  <Heart
+                    size={14}
+                    fill={isFavorite ? "#dc2626" : "none"}
+                    color={isFavorite ? "#dc2626" : "currentColor"}
+                  />
+                  <span>
+                    {favLoading
+                      ? "Updating..."
+                      : isFavorite
+                      ? "Saved to Shortlist"
+                      : "Save to Shortlist"}
+                  </span>
+                </button>
               </div>
 
-              <button
-                type="button"
-                className={styles.primaryCtaBtn}
-                onClick={() => setInquireOpen(true)}
-              >
-                <MessageSquare size={16} />
-                <span>Inquire & Request Documents</span>
-              </button>
+              <div className={styles.trustDivider} />
 
-              <button
-                type="button"
-                className={styles.secondaryCtaBtn}
-                onClick={() => setTourOpen(true)}
-              >
-                <Calendar size={16} />
-                <span>Schedule Private Tour</span>
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.favoriteActionBtn} ${
-                  isFavorite ? styles.favoriteActionBtnActive : ""
-                }`}
-                onClick={handleToggleFavorite}
-                disabled={favLoading}
-              >
-                <Heart
-                  size={16}
-                  fill={isFavorite ? "#dc2626" : "none"}
-                  color={isFavorite ? "#dc2626" : "currentColor"}
-                />
-                <span>
-                  {favLoading
-                    ? "Updating..."
-                    : isFavorite
-                    ? "Saved to Shortlist"
-                    : "Save to Shortlist"}
-                </span>
-              </button>
-            </div>
-
-            {/* Verification Seal Card */}
-            <div className={styles.sellerCard}>
-              <div className={styles.sellerTitle}>Verified Property</div>
-              <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
-                <ShieldCheck size={28} color="#000000" />
+              <div className={styles.trustBadge}>
+                <ShieldCheck size={16} color="#059669" />
                 <div>
-                  <h4 className={styles.sellerName}>Verified Sola Property</h4>
-                  <p className={styles.sellerMeta}>
-                    Property ownership documents, title deeds, and developer registration verified by Sola Team.
-                  </p>
+                  <div className={styles.trustTitle}>Verified Sola Property</div>
+                  <div className={styles.trustSubtitle}>
+                    Ownership & developer registration verified
+                  </div>
                 </div>
               </div>
             </div>
