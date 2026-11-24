@@ -19,6 +19,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { adminApi, developerApi, Project } from "../../lib/api";
 import { Navbar } from "../components/Navbar";
+import { Pagination, usePagination } from "../components/Pagination";
 import styles from "./projects.module.css";
 
 function ProjectsCatalogContent() {
@@ -72,6 +73,8 @@ function ProjectsCatalogContent() {
       return matchStatus && matchQuery;
     });
   }, [projects, selectedStatus, searchQuery]);
+
+  const projectsPagination = usePagination(filteredProjects, 9);
 
   return (
     <div className={styles.projectsWrapper}>
@@ -156,7 +159,7 @@ function ProjectsCatalogContent() {
           </div>
         ) : (
           <div className={styles.projectsGrid}>
-            {filteredProjects.map((project, idx) => (
+            {projectsPagination.pagedItems.map((project, idx) => (
               <article key={project.id} className={styles.projectCard}>
                 <div className={styles.cardBanner}>
                   {(project as any).image_url || (project as any).cover_image ? (
@@ -245,6 +248,17 @@ function ProjectsCatalogContent() {
             ))}
           </div>
         )}
+
+        <Pagination
+          currentPage={projectsPagination.page}
+          totalItems={projectsPagination.totalItems}
+          pageSize={projectsPagination.pageSize}
+          onPageChange={(p) => {
+            projectsPagination.setPage(p);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          itemName="developments"
+        />
       </main>
     </div>
   );

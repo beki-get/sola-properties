@@ -40,6 +40,7 @@ import {
   propertyApi,
 } from "../../../lib/api";
 import { useToast } from "../../../context/ToastContext";
+import { Pagination, usePagination } from "../../components/Pagination";
 import styles from "./workstations.module.css";
 
 interface AdminWorkstationProps {
@@ -110,6 +111,16 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
 
   // General Feedback
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Pagination for all workstation tables
+  const pendingPropsPagination = usePagination(pendingProps, 10);
+  const adminReferralsPagination = usePagination(adminReferrals, 10);
+  const adminIssuesPagination = usePagination(adminIssues, 10);
+  const adminTxsPagination = usePagination(adminTxs, 10);
+  const agreementsPagination = usePagination(agreements, 10);
+  const commissionsPagination = usePagination(commissions, 10);
+  const usersPagination = usePagination(users, 10);
+  const auditLogsPagination = usePagination(auditLogs, 15);
 
   // Tab Data Loader
   useEffect(() => {
@@ -440,59 +451,68 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Title / Reference</th>
-                    <th className={styles.tableTh}>Price</th>
-                    <th className={styles.tableTh}>District</th>
-                    <th className={styles.tableTh}>Submitted</th>
-                    <th className={styles.tableTh}>Compliance Audit Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingProps.map((p) => (
-                    <tr key={p.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{p.title}</strong>
-                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
-                          ID: {p.id.slice(0, 8)} &bull; {p.size_sqm ? `${p.size_sqm} m²` : ""}
-                        </div>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <strong>{Number(p.price).toLocaleString()} ETB</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {p.location_name || p.address || "Addis Ababa"}
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(p.created_at).toLocaleDateString()}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <button
-                            type="button"
-                            onClick={() => handleDecideProperty(p.id, "approved")}
-                            className={styles.actionBtnPrimary}
-                            style={{ padding: "4px 8px", fontSize: "0.7rem" }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDecideProperty(p.id, "rejected")}
-                            className={styles.actionBtnDanger}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Title / Reference</th>
+                      <th className={styles.tableTh}>Price</th>
+                      <th className={styles.tableTh}>District</th>
+                      <th className={styles.tableTh}>Submitted</th>
+                      <th className={styles.tableTh}>Compliance Audit Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {pendingPropsPagination.pagedItems.map((p) => (
+                      <tr key={p.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{p.title}</strong>
+                          <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
+                            ID: {p.id.slice(0, 8)} &bull; {p.size_sqm ? `${p.size_sqm} m²` : ""}
+                          </div>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <strong>{Number(p.price).toLocaleString()} ETB</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {p.location_name || p.address || "Addis Ababa"}
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              type="button"
+                              onClick={() => handleDecideProperty(p.id, "approved")}
+                              className={styles.actionBtnPrimary}
+                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDecideProperty(p.id, "rejected")}
+                              className={styles.actionBtnDanger}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={pendingPropsPagination.page}
+                totalItems={pendingPropsPagination.totalItems}
+                pageSize={pendingPropsPagination.pageSize}
+                onPageChange={pendingPropsPagination.setPage}
+                itemName="pending properties"
+              />
+            </>
           )}
         </div>
       )}
@@ -517,41 +537,51 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
           ) : adminReferrals.length === 0 ? (
             <div className={styles.emptyBlock}>No referrals on platform currently.</div>
           ) : (
-            <div className={styles.tableResponsive} style={{ marginBottom: 32 }}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Buyer</th>
-                    <th className={styles.tableTh}>Assigned Agent</th>
-                    <th className={styles.tableTh}>Property</th>
-                    <th className={styles.tableTh}>Stage</th>
-                    <th className={styles.tableTh}>Initiated</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminReferrals.map((r) => (
-                    <tr key={r.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{r.buyer_name || "Buyer"}</strong>
-                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{r.buyer_email}</div>
-                      </td>
-                      <td className={styles.tableTd}>{r.seller_name || "Assigned Broker"}</td>
-                      <td className={styles.tableTd}>
-                        {r.property?.title || r.property_title || r.property_id.slice(0, 8)}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span className={`${styles.badge} ${styles.badgePending}`}>
-                          {r.status.replace(/_/g, " ")}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(r.created_at).toLocaleDateString()}
-                      </td>
+            <>
+              <div className={styles.tableResponsive} style={{ marginBottom: 12 }}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Buyer</th>
+                      <th className={styles.tableTh}>Assigned Agent</th>
+                      <th className={styles.tableTh}>Property</th>
+                      <th className={styles.tableTh}>Stage</th>
+                      <th className={styles.tableTh}>Initiated</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {adminReferralsPagination.pagedItems.map((r) => (
+                      <tr key={r.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{r.buyer_name || "Buyer"}</strong>
+                          <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{r.buyer_email}</div>
+                        </td>
+                        <td className={styles.tableTd}>{r.seller_name || "Assigned Broker"}</td>
+                        <td className={styles.tableTd}>
+                          {r.property?.title || r.property_title || r.property_id.slice(0, 8)}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span className={`${styles.badge} ${styles.badgePending}`}>
+                            {r.status.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(r.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={adminReferralsPagination.page}
+                totalItems={adminReferralsPagination.totalItems}
+                pageSize={adminReferralsPagination.pageSize}
+                onPageChange={adminReferralsPagination.setPage}
+                itemName="master referrals"
+                style={{ marginBottom: 32 }}
+              />
+            </>
           )}
 
           <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: "0 0 12px" }}>
@@ -560,57 +590,66 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
           {adminIssues.length === 0 ? (
             <div className={styles.emptyBlock}>No pipeline disputes or issues reported.</div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Issue Type</th>
-                    <th className={styles.tableTh}>Description</th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminIssues.map((iss) => (
-                    <tr key={iss.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{iss.issue_type || "Referral Conflict"}</strong>
-                      </td>
-                      <td className={styles.tableTd}>{iss.description}</td>
-                      <td className={styles.tableTd}>
-                        <span className={`${styles.badge} ${styles.badgeInvestigating}`}>
-                          {iss.status}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {iss.status !== "resolved" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              referralApi
-                                .resolveIssue(iss.id, {
-                                  resolution_note: "Arbitrated by platform compliance officer.",
-                                })
-                                .then(() => {
-                                  setAdminIssues((prev) =>
-                                    prev.map((i) =>
-                                      i.id === iss.id ? { ...i, status: "resolved" } : i
-                                    )
-                                  );
-                                })
-                            }
-                            className={styles.actionBtnPrimary}
-                            style={{ padding: "4px 8px", fontSize: "0.7rem" }}
-                          >
-                            Resolve
-                          </button>
-                        )}
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Issue Type</th>
+                      <th className={styles.tableTh}>Description</th>
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {adminIssuesPagination.pagedItems.map((iss) => (
+                      <tr key={iss.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{iss.issue_type || "Referral Conflict"}</strong>
+                        </td>
+                        <td className={styles.tableTd}>{iss.description}</td>
+                        <td className={styles.tableTd}>
+                          <span className={`${styles.badge} ${styles.badgeInvestigating}`}>
+                            {iss.status}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {iss.status !== "resolved" && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                referralApi
+                                  .resolveIssue(iss.id, {
+                                    resolution_note: "Arbitrated by platform compliance officer.",
+                                  })
+                                  .then(() => {
+                                    setAdminIssues((prev) =>
+                                      prev.map((i) =>
+                                        i.id === iss.id ? { ...i, status: "resolved" } : i
+                                      )
+                                    );
+                                  })
+                              }
+                              className={styles.actionBtnPrimary}
+                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                            >
+                              Resolve
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={adminIssuesPagination.page}
+                totalItems={adminIssuesPagination.totalItems}
+                pageSize={adminIssuesPagination.pageSize}
+                onPageChange={adminIssuesPagination.setPage}
+                itemName="pipeline issues"
+              />
+            </>
           )}
         </div>
       )}
@@ -632,68 +671,77 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
           ) : adminTxs.length === 0 ? (
             <div className={styles.emptyBlock}>No sales submitted for review yet.</div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Property Ref</th>
-                    <th className={styles.tableTh}>Sale Value</th>
-                    <th className={styles.tableTh}>Closing Date</th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Verification Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminTxs.map((t) => (
-                    <tr key={t.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{t.property_title || t.property_id}</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <strong>{Number(t.sale_amount).toLocaleString()} ETB</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(t.closing_date).toLocaleDateString()}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            t.status === "verified"
-                              ? styles.badgeActive
-                              : t.status === "rejected"
-                              ? styles.badgeRejected
-                              : styles.badgePending
-                          }`}
-                        >
-                          {t.status}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {t.status === "submitted" && (
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button
-                              type="button"
-                              onClick={() => handleDecideTx(t.id, "verified")}
-                              className={styles.actionBtnPrimary}
-                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
-                            >
-                              Verify & Settle
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDecideTx(t.id, "rejected")}
-                              className={styles.actionBtnDanger}
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Property Ref</th>
+                      <th className={styles.tableTh}>Sale Value</th>
+                      <th className={styles.tableTh}>Closing Date</th>
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Verification Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {adminTxsPagination.pagedItems.map((t) => (
+                      <tr key={t.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{t.property_title || t.property_id}</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <strong>{Number(t.sale_amount).toLocaleString()} ETB</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(t.closing_date).toLocaleDateString()}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              t.status === "verified"
+                                ? styles.badgeActive
+                                : t.status === "rejected"
+                                ? styles.badgeRejected
+                                : styles.badgePending
+                            }`}
+                          >
+                            {t.status}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {t.status === "submitted" && (
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button
+                                type="button"
+                                onClick={() => handleDecideTx(t.id, "verified")}
+                                className={styles.actionBtnPrimary}
+                                style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                              >
+                                Verify & Settle
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDecideTx(t.id, "rejected")}
+                                className={styles.actionBtnDanger}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={adminTxsPagination.page}
+                totalItems={adminTxsPagination.totalItems}
+                pageSize={adminTxsPagination.pageSize}
+                onPageChange={adminTxsPagination.setPage}
+                itemName="transactions"
+              />
+            </>
           )}
         </div>
       )}
@@ -726,34 +774,44 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
           ) : agreements.length === 0 ? (
             <div className={styles.emptyBlock}>No commission agreements registered.</div>
           ) : (
-            <div className={styles.tableResponsive} style={{ marginBottom: 32 }}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Schedule ID</th>
-                    <th className={styles.tableTh}>Seller / Partner</th>
-                    <th className={styles.tableTh}>Commission Rate</th>
-                    <th className={styles.tableTh}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {agreements.map((a) => (
-                    <tr key={a.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{a.id.slice(0, 8)}</strong>
-                      </td>
-                      <td className={styles.tableTd}>{a.seller_name || "Platform Standard"}</td>
-                      <td className={styles.tableTd}>
-                        <strong>{(Number(a.commission_rate_pct) * 100).toFixed(1)}%</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span className={`${styles.badge} ${styles.badgeActive}`}>Active</span>
-                      </td>
+            <>
+              <div className={styles.tableResponsive} style={{ marginBottom: 12 }}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Schedule ID</th>
+                      <th className={styles.tableTh}>Seller / Partner</th>
+                      <th className={styles.tableTh}>Commission Rate</th>
+                      <th className={styles.tableTh}>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {agreementsPagination.pagedItems.map((a) => (
+                      <tr key={a.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{a.id.slice(0, 8)}</strong>
+                        </td>
+                        <td className={styles.tableTd}>{a.seller_name || "Platform Standard"}</td>
+                        <td className={styles.tableTd}>
+                          <strong>{(Number(a.commission_rate_pct) * 100).toFixed(1)}%</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span className={`${styles.badge} ${styles.badgeActive}`}>Active</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={agreementsPagination.page}
+                totalItems={agreementsPagination.totalItems}
+                pageSize={agreementsPagination.pageSize}
+                onPageChange={agreementsPagination.setPage}
+                itemName="commission agreements"
+                style={{ marginBottom: 32 }}
+              />
+            </>
           )}
 
           <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: "0 0 12px" }}>
@@ -762,63 +820,72 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
           {commissions.length === 0 ? (
             <div className={styles.emptyBlock}>No commission records generated yet.</div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Ref</th>
-                    <th className={styles.tableTh}>Base Amount</th>
-                    <th className={styles.tableTh}>Net Payable</th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {commissions.map((c) => (
-                    <tr key={c.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>{c.id.slice(0, 8)}</td>
-                      <td className={styles.tableTd}>{Number(c.sale_amount).toLocaleString()} ETB</td>
-                      <td className={styles.tableTd}>
-                        <strong>{Number(c.total_commission).toLocaleString()} ETB</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            c.status === "paid"
-                              ? styles.badgeCompleted
-                              : c.status === "approved"
-                              ? styles.badgeActive
-                              : styles.badgePending
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {c.status === "pending" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              commissionApi.approveCommission(c.id).then(() => {
-                                setCommissions((prev) =>
-                                  prev.map((item) =>
-                                    item.id === c.id ? { ...item, status: "approved" } : item
-                                  )
-                                );
-                              })
-                            }
-                            className={styles.actionBtnPrimary}
-                            style={{ padding: "4px 8px", fontSize: "0.7rem" }}
-                          >
-                            Approve
-                          </button>
-                        )}
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Ref</th>
+                      <th className={styles.tableTh}>Base Amount</th>
+                      <th className={styles.tableTh}>Net Payable</th>
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {commissionsPagination.pagedItems.map((c) => (
+                      <tr key={c.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>{c.id.slice(0, 8)}</td>
+                        <td className={styles.tableTd}>{Number(c.sale_amount).toLocaleString()} ETB</td>
+                        <td className={styles.tableTd}>
+                          <strong>{Number(c.total_commission).toLocaleString()} ETB</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              c.status === "paid"
+                                ? styles.badgeCompleted
+                                : c.status === "approved"
+                                ? styles.badgeActive
+                                : styles.badgePending
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {c.status === "pending" && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                commissionApi.approveCommission(c.id).then(() => {
+                                  setCommissions((prev) =>
+                                    prev.map((item) =>
+                                      item.id === c.id ? { ...item, status: "approved" } : item
+                                    )
+                                  );
+                                })
+                              }
+                              className={styles.actionBtnPrimary}
+                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                            >
+                              Approve
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={commissionsPagination.page}
+                totalItems={commissionsPagination.totalItems}
+                pageSize={commissionsPagination.pageSize}
+                onPageChange={commissionsPagination.setPage}
+                itemName="commissions"
+              />
+            </>
           )}
 
           {/* CREATE COMMISSION AGREEMENT MODAL */}
@@ -912,73 +979,82 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
           ) : users.length === 0 ? (
             <div className={styles.emptyBlock}>No user records returned.</div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Full Name / Email</th>
-                    <th className={styles.tableTh}>Platform Role</th>
-                    <th className={styles.tableTh}>Account Status</th>
-                    <th className={styles.tableTh}>Created</th>
-                    <th className={styles.tableTh}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{u.fullName}</strong>
-                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{u.email}</div>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span style={{ textTransform: "uppercase", fontWeight: 750, fontSize: "0.75rem" }}>
-                          {u.role.replace(/_/g, " ")}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            u.status === "approved"
-                              ? styles.badgeActive
-                              : u.status === "suspended"
-                              ? styles.badgeRejected
-                              : styles.badgePending
-                          }`}
-                        >
-                          {u.status}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(u.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <div style={{ display: "flex", gap: 6 }}>
-                          {u.status !== "approved" && (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateUserStatus(u.id, "approved")}
-                              className={styles.actionBtnPrimary}
-                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
-                            >
-                              Approve
-                            </button>
-                          )}
-                          {u.status !== "suspended" && (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateUserStatus(u.id, "suspended")}
-                              className={styles.actionBtnDanger}
-                            >
-                              Suspend
-                            </button>
-                          )}
-                        </div>
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Full Name / Email</th>
+                      <th className={styles.tableTh}>Platform Role</th>
+                      <th className={styles.tableTh}>Account Status</th>
+                      <th className={styles.tableTh}>Created</th>
+                      <th className={styles.tableTh}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {usersPagination.pagedItems.map((u) => (
+                      <tr key={u.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{u.fullName}</strong>
+                          <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{u.email}</div>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span style={{ textTransform: "uppercase", fontWeight: 750, fontSize: "0.75rem" }}>
+                            {u.role.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              u.status === "approved"
+                                ? styles.badgeActive
+                                : u.status === "suspended"
+                                ? styles.badgeRejected
+                                : styles.badgePending
+                            }`}
+                          >
+                            {u.status}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(u.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {u.status !== "approved" && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateUserStatus(u.id, "approved")}
+                                className={styles.actionBtnPrimary}
+                                style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                              >
+                                Approve
+                              </button>
+                            )}
+                            {u.status !== "suspended" && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateUserStatus(u.id, "suspended")}
+                                className={styles.actionBtnDanger}
+                              >
+                                Suspend
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={usersPagination.page}
+                totalItems={usersPagination.totalItems}
+                pageSize={usersPagination.pageSize}
+                onPageChange={usersPagination.setPage}
+                itemName="users"
+              />
+            </>
           )}
 
           {/* CREATE STAFF MODAL */}
@@ -1158,38 +1234,47 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
           ) : auditLogs.length === 0 ? (
             <div className={styles.emptyBlock}>No audit records captured yet.</div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Timestamp</th>
-                    <th className={styles.tableTh}>Actor</th>
-                    <th className={styles.tableTh}>Action</th>
-                    <th className={styles.tableTh}>Entity / Ref</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {auditLogs.map((log) => (
-                    <tr key={log.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        {new Date(log.created_at).toLocaleString()}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <strong>{log.actor_name || log.actor_id?.slice(0, 8) || "System"}</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {log.entity_type}: {log.entity_id?.slice(0, 8)}
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Timestamp</th>
+                      <th className={styles.tableTh}>Actor</th>
+                      <th className={styles.tableTh}>Action</th>
+                      <th className={styles.tableTh}>Entity / Ref</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {auditLogsPagination.pagedItems.map((log) => (
+                      <tr key={log.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          {new Date(log.created_at).toLocaleString()}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <strong>{log.actor_name || log.actor_id?.slice(0, 8) || "System"}</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {log.entity_type}: {log.entity_id?.slice(0, 8)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={auditLogsPagination.page}
+                totalItems={auditLogsPagination.totalItems}
+                pageSize={auditLogsPagination.pageSize}
+                onPageChange={auditLogsPagination.setPage}
+                itemName="audit records"
+              />
+            </>
           )}
         </div>
       )}

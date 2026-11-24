@@ -25,6 +25,7 @@ import {
   referralApi,
   propertyApi,
 } from "../../../lib/api";
+import { Pagination, usePagination } from "../../components/Pagination";
 import styles from "./workstations.module.css";
 
 interface BuyerWorkstationProps {
@@ -51,6 +52,12 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
   // State for Recommendations
   const [recommendations, setRecommendations] = useState<Property[]>([]);
   const [recLoading, setRecLoading] = useState(false);
+
+  // Pagination for buyer tables
+  const favPagination = usePagination(favorites, 10);
+  const toursPagination = usePagination(tours, 10);
+  const refPagination = usePagination(referrals, 10);
+  const recPagination = usePagination(recommendations, 10);
 
   // Load active tab data
   useEffect(() => {
@@ -190,63 +197,72 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
               </Link>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Property</th>
-                    <th className={styles.tableTh}>Location</th>
-                    <th className={styles.tableTh}>Price</th>
-                    <th className={styles.tableTh}>Area / Beds</th>
-                    <th className={styles.tableTh}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {favorites.map((fav) => {
-                    const prop = fav.property;
-                    return (
-                      <tr key={fav.id} className={styles.tableRow}>
-                        <td className={styles.tableTd}>
-                          <strong>{prop?.title || fav.property_id}</strong>
-                        </td>
-                        <td className={styles.tableTd}>
-                          {prop?.location_name || prop?.address || "Addis Ababa"}
-                        </td>
-                        <td className={styles.tableTd}>
-                          <strong>
-                            {prop?.price ? `${Number(prop.price).toLocaleString()} ETB` : "—"}
-                          </strong>
-                        </td>
-                        <td className={styles.tableTd}>
-                          {prop?.size_sqm ? `${prop.size_sqm} m²` : "—"} &bull;{" "}
-                          {prop?.bedrooms ? `${prop.bedrooms} Bed` : "—"}
-                        </td>
-                        <td className={styles.tableTd}>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <Link
-                              href={`/properties/${fav.property_id}`}
-                              className={styles.actionBtnSecondary}
-                              style={{ padding: "4px 8px", fontSize: "0.72rem" }}
-                            >
-                              <ExternalLink size={12} />
-                              <span>View</span>
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveFavorite(fav.property_id)}
-                              className={styles.actionBtnDanger}
-                            >
-                              <Trash2 size={12} />
-                              <span>Remove</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Property</th>
+                      <th className={styles.tableTh}>Location</th>
+                      <th className={styles.tableTh}>Price</th>
+                      <th className={styles.tableTh}>Area / Beds</th>
+                      <th className={styles.tableTh}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {favPagination.pagedItems.map((fav) => {
+                      const prop = fav.property;
+                      return (
+                        <tr key={fav.id} className={styles.tableRow}>
+                          <td className={styles.tableTd}>
+                            <strong>{prop?.title || fav.property_id}</strong>
+                          </td>
+                          <td className={styles.tableTd}>
+                            {prop?.location_name || prop?.address || "Addis Ababa"}
+                          </td>
+                          <td className={styles.tableTd}>
+                            <strong>
+                              {prop?.price ? `${Number(prop.price).toLocaleString()} ETB` : "—"}
+                            </strong>
+                          </td>
+                          <td className={styles.tableTd}>
+                            {prop?.size_sqm ? `${prop.size_sqm} m²` : "—"} &bull;{" "}
+                            {prop?.bedrooms ? `${prop.bedrooms} Bed` : "—"}
+                          </td>
+                          <td className={styles.tableTd}>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <Link
+                                href={`/properties/${fav.property_id}`}
+                                className={styles.actionBtnSecondary}
+                                style={{ padding: "4px 8px", fontSize: "0.72rem" }}
+                              >
+                                <ExternalLink size={12} />
+                                <span>View</span>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFavorite(fav.property_id)}
+                                className={styles.actionBtnDanger}
+                              >
+                                <Trash2 size={12} />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={favPagination.page}
+                totalItems={favPagination.totalItems}
+                pageSize={favPagination.pageSize}
+                onPageChange={favPagination.setPage}
+                itemName="saved properties"
+              />
+            </>
           )}
         </div>
       )}
@@ -274,68 +290,77 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Property / Ref</th>
-                    <th className={styles.tableTh}>Requested Date</th>
-                    <th className={styles.tableTh}>Meeting Location</th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Outcome</th>
-                    <th className={styles.tableTh}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tours.map((t) => (
-                    <tr key={t.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{t.property_title || t.referral_id || t.id.slice(0, 8)}</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(t.requested_at).toLocaleString()}
-                      </td>
-                      <td className={styles.tableTd}>{t.location || "On-site"}</td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            t.status === "scheduled"
-                              ? styles.badgeScheduled
-                              : t.status === "completed"
-                              ? styles.badgeCompleted
-                              : t.status === "cancelled"
-                              ? styles.badgeCancelled
-                              : styles.badgePending
-                          }`}
-                        >
-                          {t.status}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {t.outcome ? (
-                          <span style={{ textTransform: "capitalize", fontWeight: 700 }}>
-                            {t.outcome.replace(/_/g, " ")}
-                          </span>
-                        ) : (
-                          <span style={{ color: "#9ca3af" }}>Pending Tour</span>
-                        )}
-                      </td>
-                      <td className={styles.tableTd}>
-                        {t.status !== "completed" && t.status !== "cancelled" && (
-                          <button
-                            type="button"
-                            onClick={() => handleCancelTour(t.id)}
-                            className={styles.actionBtnDanger}
-                          >
-                            <span>Cancel</span>
-                          </button>
-                        )}
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Property / Ref</th>
+                      <th className={styles.tableTh}>Requested Date</th>
+                      <th className={styles.tableTh}>Meeting Location</th>
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Outcome</th>
+                      <th className={styles.tableTh}>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {toursPagination.pagedItems.map((t) => (
+                      <tr key={t.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{t.property_title || t.referral_id || t.id.slice(0, 8)}</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(t.requested_at).toLocaleString()}
+                        </td>
+                        <td className={styles.tableTd}>{t.location || "On-site"}</td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              t.status === "scheduled"
+                                ? styles.badgeScheduled
+                                : t.status === "completed"
+                                ? styles.badgeCompleted
+                                : t.status === "cancelled"
+                                ? styles.badgeCancelled
+                                : styles.badgePending
+                            }`}
+                          >
+                            {t.status}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {t.outcome ? (
+                            <span style={{ textTransform: "capitalize", fontWeight: 700 }}>
+                              {t.outcome.replace(/_/g, " ")}
+                            </span>
+                          ) : (
+                            <span style={{ color: "#9ca3af" }}>Pending Tour</span>
+                          )}
+                        </td>
+                        <td className={styles.tableTd}>
+                          {t.status !== "completed" && t.status !== "cancelled" && (
+                            <button
+                              type="button"
+                              onClick={() => handleCancelTour(t.id)}
+                              className={styles.actionBtnDanger}
+                            >
+                              <span>Cancel</span>
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={toursPagination.page}
+                totalItems={toursPagination.totalItems}
+                pageSize={toursPagination.pageSize}
+                onPageChange={toursPagination.setPage}
+                itemName="tours"
+              />
+            </>
           )}
         </div>
       )}
@@ -363,56 +388,65 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Property</th>
-                    <th className={styles.tableTh}>Advisor / Developer</th>
-                    <th className={styles.tableTh}>Stage</th>
-                    <th className={styles.tableTh}>Initiated</th>
-                    <th className={styles.tableTh}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {referrals.map((r) => (
-                    <tr key={r.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{r.property?.title || r.property_title || r.property_id}</strong>
-                      </td>
-                      <td className={styles.tableTd}>{r.seller_name || "Assigned Agent"}</td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            r.status === "closed_won"
-                              ? styles.badgeCompleted
-                              : r.status === "in_progress"
-                              ? styles.badgeInProgress
-                              : styles.badgePending
-                          }`}
-                        >
-                          {r.status.replace(/_/g, " ")}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(r.created_at).toLocaleDateString()}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenChat(r)}
-                          className={styles.actionBtnPrimary}
-                          style={{ padding: "4px 10px", fontSize: "0.72rem" }}
-                        >
-                          <MessageSquare size={12} />
-                          <span>Messages</span>
-                        </button>
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Property</th>
+                      <th className={styles.tableTh}>Advisor / Developer</th>
+                      <th className={styles.tableTh}>Stage</th>
+                      <th className={styles.tableTh}>Initiated</th>
+                      <th className={styles.tableTh}>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {refPagination.pagedItems.map((r) => (
+                      <tr key={r.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{r.property?.title || r.property_title || r.property_id}</strong>
+                        </td>
+                        <td className={styles.tableTd}>{r.seller_name || "Assigned Agent"}</td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              r.status === "closed_won"
+                                ? styles.badgeCompleted
+                                : r.status === "in_progress"
+                                ? styles.badgeInProgress
+                                : styles.badgePending
+                            }`}
+                          >
+                            {r.status.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(r.created_at).toLocaleDateString()}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenChat(r)}
+                            className={styles.actionBtnPrimary}
+                            style={{ padding: "4px 10px", fontSize: "0.72rem" }}
+                          >
+                            <MessageSquare size={12} />
+                            <span>Messages</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={refPagination.page}
+                totalItems={refPagination.totalItems}
+                pageSize={refPagination.pageSize}
+                onPageChange={refPagination.setPage}
+                itemName="inquiries"
+              />
+            </>
           )}
 
           {/* CHAT MODAL */}
@@ -510,47 +544,56 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Listing Title</th>
-                    <th className={styles.tableTh}>District</th>
-                    <th className={styles.tableTh}>Price</th>
-                    <th className={styles.tableTh}>Specs</th>
-                    <th className={styles.tableTh}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recommendations.map((p) => (
-                    <tr key={p.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{p.title}</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {p.location_name || p.address || "Addis Ababa"}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <strong>{Number(p.price).toLocaleString()} ETB</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {p.size_sqm ? `${p.size_sqm} m²` : "—"} &bull;{" "}
-                        {p.bedrooms ? `${p.bedrooms} Bed` : "—"}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <Link
-                          href={`/properties/${p.id}`}
-                          className={styles.actionBtnPrimary}
-                          style={{ padding: "4px 10px", fontSize: "0.72rem" }}
-                        >
-                          <span>View Property</span>
-                        </Link>
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Listing Title</th>
+                      <th className={styles.tableTh}>District</th>
+                      <th className={styles.tableTh}>Price</th>
+                      <th className={styles.tableTh}>Specs</th>
+                      <th className={styles.tableTh}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {recPagination.pagedItems.map((p) => (
+                      <tr key={p.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{p.title}</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {p.location_name || p.address || "Addis Ababa"}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <strong>{Number(p.price).toLocaleString()} ETB</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {p.size_sqm ? `${p.size_sqm} m²` : "—"} &bull;{" "}
+                          {p.bedrooms ? `${p.bedrooms} Bed` : "—"}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <Link
+                            href={`/properties/${p.id}`}
+                            className={styles.actionBtnPrimary}
+                            style={{ padding: "4px 10px", fontSize: "0.72rem" }}
+                          >
+                            <span>View Property</span>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={recPagination.page}
+                totalItems={recPagination.totalItems}
+                pageSize={recPagination.pageSize}
+                onPageChange={recPagination.setPage}
+                itemName="recommendations"
+              />
+            </>
           )}
         </div>
       )}

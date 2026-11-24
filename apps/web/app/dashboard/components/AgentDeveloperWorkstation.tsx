@@ -37,6 +37,7 @@ import {
   commissionApi,
 } from "../../../lib/api";
 import { useToast } from "../../../context/ToastContext";
+import { Pagination, usePagination } from "../../components/Pagination";
 import styles from "./workstations.module.css";
 
 interface AgentDeveloperWorkstationProps {
@@ -117,6 +118,14 @@ export function AgentDeveloperWorkstation({
   // Feedback State
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
+
+  // Pagination for all workstation tables
+  const propertiesPagination = usePagination(properties, 10);
+  const authPagination = usePagination(authorizations, 10);
+  const leadsPagination = usePagination(referrals, 10);
+  const visitsPagination = usePagination(visits, 10);
+  const txPagination = usePagination(transactions, 10);
+  const commPagination = usePagination(commissions, 10);
 
   const handleExportLeads = async () => {
     setExportingCsv(true);
@@ -550,88 +559,97 @@ export function AgentDeveloperWorkstation({
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Property Title</th>
-                    <th className={styles.tableTh}>Location</th>
-                    <th className={styles.tableTh}>Price</th>
-                    <th className={styles.tableTh}>Area / Specs</th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {properties.map((p) => (
-                    <tr key={p.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{p.title}</strong>
-                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
-                          ID: {p.id.slice(0, 8)}
-                        </div>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {p.location_name || p.address || "Addis Ababa"}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <strong>{Number(p.price).toLocaleString()} ETB</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {p.size_sqm ? `${p.size_sqm} m²` : "—"} &bull;{" "}
-                        {p.bedrooms ? `${p.bedrooms} Beds` : "—"}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            p.status === "active"
-                              ? styles.badgeActive
-                              : p.status === "pending_approval"
-                              ? styles.badgePending
-                              : p.status === "sold"
-                              ? styles.badgeCompleted
-                              : styles.badgeDraft
-                          }`}
-                        >
-                          {p.status}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          <Link
-                            href={`/properties/${p.id}`}
-                            className={styles.actionBtnSecondary}
-                            style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Property Title</th>
+                      <th className={styles.tableTh}>Location</th>
+                      <th className={styles.tableTh}>Price</th>
+                      <th className={styles.tableTh}>Area / Specs</th>
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {propertiesPagination.pagedItems.map((p) => (
+                      <tr key={p.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{p.title}</strong>
+                          <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
+                            ID: {p.id.slice(0, 8)}
+                          </div>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {p.location_name || p.address || "Addis Ababa"}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <strong>{Number(p.price).toLocaleString()} ETB</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {p.size_sqm ? `${p.size_sqm} m²` : "—"} &bull;{" "}
+                          {p.bedrooms ? `${p.bedrooms} Beds` : "—"}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              p.status === "active"
+                                ? styles.badgeActive
+                                : p.status === "pending_approval"
+                                ? styles.badgePending
+                                : p.status === "sold"
+                                ? styles.badgeCompleted
+                                : styles.badgeDraft
+                            }`}
                           >
-                            View
-                          </Link>
-                          {p.status === "active" && (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdatePropStatus(p.id, "inactive")}
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <Link
+                              href={`/properties/${p.id}`}
                               className={styles.actionBtnSecondary}
                               style={{ padding: "4px 8px", fontSize: "0.7rem" }}
                             >
-                              Deactivate
-                            </button>
-                          )}
-                          {p.status === "active" && (
-                            <button
-                              type="button"
-                              onClick={() => handleUpdatePropStatus(p.id, "sold")}
-                              className={styles.actionBtnPrimary}
-                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
-                            >
-                              Mark Sold
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                              View
+                            </Link>
+                            {p.status === "active" && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdatePropStatus(p.id, "inactive")}
+                                className={styles.actionBtnSecondary}
+                                style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                              >
+                                Deactivate
+                              </button>
+                            )}
+                            {p.status === "active" && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdatePropStatus(p.id, "sold")}
+                                className={styles.actionBtnPrimary}
+                                style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                              >
+                                Mark Sold
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={propertiesPagination.page}
+                totalItems={propertiesPagination.totalItems}
+                pageSize={propertiesPagination.pageSize}
+                onPageChange={propertiesPagination.setPage}
+                itemName="properties"
+              />
+            </>
           )}
 
           {/* CREATE PROPERTY MODAL */}
@@ -867,61 +885,70 @@ export function AgentDeveloperWorkstation({
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Property</th>
-                    <th className={styles.tableTh}>
-                      {role === "developer" ? "Authorized Agent" : "Location"}
-                    </th>
-                    {role === "agent" && <th className={styles.tableTh}>List Price</th>}
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Date Granted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {authorizations.map((a: any) => (
-                    <tr key={a.id || a.property_id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{a.title || a.property_title || a.property_id}</strong>
-                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
-                          ID: {(a.id || a.property_id || "").slice(0, 8)}
-                        </div>
-                      </td>
-                      {role === "developer" ? (
-                        <td className={styles.tableTd}>
-                          <strong>{a.full_name || a.agent_name || a.agent_email}</strong>
-                          {a.agency_name && (
-                            <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{a.agency_name}</div>
-                          )}
-                        </td>
-                      ) : (
-                        <td className={styles.tableTd}>
-                          {a.location_name || a.address || "Addis Ababa"}
-                          {a.category_name && (
-                            <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{a.category_name}</div>
-                          )}
-                        </td>
-                      )}
-                      {role === "agent" && (
-                        <td className={styles.tableTd}>
-                          <strong>{a.price ? `${Number(a.price).toLocaleString()} ETB` : "—"}</strong>
-                        </td>
-                      )}
-                      <td className={styles.tableTd}>
-                        <span className={`${styles.badge} ${styles.badgeActive}`}>
-                          {a.status || "Authorized"}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(a.authorized_at || a.created_at || Date.now()).toLocaleDateString()}
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Property</th>
+                      <th className={styles.tableTh}>
+                        {role === "developer" ? "Authorized Agent" : "Location"}
+                      </th>
+                      {role === "agent" && <th className={styles.tableTh}>List Price</th>}
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Date Granted</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {authPagination.pagedItems.map((a: any) => (
+                      <tr key={a.id || a.property_id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{a.title || a.property_title || a.property_id}</strong>
+                          <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
+                            ID: {(a.id || a.property_id || "").slice(0, 8)}
+                          </div>
+                        </td>
+                        {role === "developer" ? (
+                          <td className={styles.tableTd}>
+                            <strong>{a.full_name || a.agent_name || a.agent_email}</strong>
+                            {a.agency_name && (
+                              <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{a.agency_name}</div>
+                            )}
+                          </td>
+                        ) : (
+                          <td className={styles.tableTd}>
+                            {a.location_name || a.address || "Addis Ababa"}
+                            {a.category_name && (
+                              <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{a.category_name}</div>
+                            )}
+                          </td>
+                        )}
+                        {role === "agent" && (
+                          <td className={styles.tableTd}>
+                            <strong>{a.price ? `${Number(a.price).toLocaleString()} ETB` : "—"}</strong>
+                          </td>
+                        )}
+                        <td className={styles.tableTd}>
+                          <span className={`${styles.badge} ${styles.badgeActive}`}>
+                            {a.status || "Authorized"}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(a.authorized_at || a.created_at || Date.now()).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={authPagination.page}
+                totalItems={authPagination.totalItems}
+                pageSize={authPagination.pageSize}
+                onPageChange={authPagination.setPage}
+                itemName="authorizations"
+              />
+            </>
           )}
         </div>
       )}
@@ -958,94 +985,103 @@ export function AgentDeveloperWorkstation({
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Buyer</th>
-                    <th className={styles.tableTh}>Property</th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Update Status</th>
-                    <th className={styles.tableTh}>Notes & Messages</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {referrals.map((r) => (
-                    <tr key={r.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{r.buyer_name || "Verified Buyer"}</strong>
-                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
-                          {r.buyer_email || r.buyer_phone || "Confidential Contact"}
-                        </div>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {r.property?.title || r.property_title || r.property_id.slice(0, 8)}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            r.status === "closed_won"
-                              ? styles.badgeCompleted
-                              : r.status === "in_progress"
-                              ? styles.badgeInProgress
-                              : r.status === "rejected"
-                              ? styles.badgeRejected
-                              : styles.badgePending
-                          }`}
-                        >
-                          {r.status.replace(/_/g, " ")}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {r.status === "assigned" ? (
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button
-                              type="button"
-                              onClick={() => handleLeadDecision(r.id, "accepted")}
-                              className={styles.actionBtnPrimary}
-                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
-                            >
-                              Accept
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleLeadDecision(r.id, "rejected")}
-                              className={styles.actionBtnDanger}
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        ) : (
-                          <select
-                            className={styles.formSelect}
-                            style={{ padding: "4px 8px", fontSize: "0.78rem" }}
-                            value={r.status}
-                            onChange={(e) => handleLeadStatusChange(r.id, e.target.value)}
-                          >
-                            <option value="accepted">Accepted</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="agreement">Contract Pending</option>
-                            <option value="closed_won">Deal Closed</option>
-                            <option value="closed_lost">Lost / Inactive</option>
-                          </select>
-                        )}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenLead(r)}
-                          className={styles.actionBtnSecondary}
-                          style={{ padding: "4px 8px", fontSize: "0.72rem" }}
-                        >
-                          <MessageSquare size={12} />
-                          <span>Notes & Chat</span>
-                        </button>
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Buyer</th>
+                      <th className={styles.tableTh}>Property</th>
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Update Status</th>
+                      <th className={styles.tableTh}>Notes & Messages</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {leadsPagination.pagedItems.map((r) => (
+                      <tr key={r.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{r.buyer_name || "Verified Buyer"}</strong>
+                          <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
+                            {r.buyer_email || r.buyer_phone || "Confidential Contact"}
+                          </div>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {r.property?.title || r.property_title || r.property_id.slice(0, 8)}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              r.status === "closed_won"
+                                ? styles.badgeCompleted
+                                : r.status === "in_progress"
+                                ? styles.badgeInProgress
+                                : r.status === "rejected"
+                                ? styles.badgeRejected
+                                : styles.badgePending
+                            }`}
+                          >
+                            {r.status.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {r.status === "assigned" ? (
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button
+                                type="button"
+                                onClick={() => handleLeadDecision(r.id, "accepted")}
+                                className={styles.actionBtnPrimary}
+                                style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                              >
+                                Accept
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleLeadDecision(r.id, "rejected")}
+                                className={styles.actionBtnDanger}
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          ) : (
+                            <select
+                              className={styles.formSelect}
+                              style={{ padding: "4px 8px", fontSize: "0.78rem" }}
+                              value={r.status}
+                              onChange={(e) => handleLeadStatusChange(r.id, e.target.value)}
+                            >
+                              <option value="accepted">Accepted</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="agreement">Contract Pending</option>
+                              <option value="closed_won">Deal Closed</option>
+                              <option value="closed_lost">Lost / Inactive</option>
+                            </select>
+                          )}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenLead(r)}
+                            className={styles.actionBtnSecondary}
+                            style={{ padding: "4px 8px", fontSize: "0.72rem" }}
+                          >
+                            <MessageSquare size={12} />
+                            <span>Notes & Chat</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={leadsPagination.page}
+                totalItems={leadsPagination.totalItems}
+                pageSize={leadsPagination.pageSize}
+                onPageChange={leadsPagination.setPage}
+                itemName="inquiries"
+              />
+            </>
           )}
 
           {/* LEAD DRAWER / MODAL */}
@@ -1164,67 +1200,76 @@ export function AgentDeveloperWorkstation({
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Property</th>
-                    <th className={styles.tableTh}>Requested Date</th>
-                    <th className={styles.tableTh}>Location</th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Outcome</th>
-                    <th className={styles.tableTh}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visits.map((v) => (
-                    <tr key={v.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{v.property_title || v.id.slice(0, 8)}</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(v.requested_at).toLocaleString()}
-                      </td>
-                      <td className={styles.tableTd}>{v.location || "On-site"}</td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            v.status === "completed"
-                              ? styles.badgeCompleted
-                              : v.status === "scheduled"
-                              ? styles.badgeScheduled
-                              : styles.badgePending
-                          }`}
-                        >
-                          {v.status}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {v.outcome ? (
-                          <span style={{ fontWeight: 700, textTransform: "capitalize" }}>
-                            {v.outcome.replace(/_/g, " ")}
-                          </span>
-                        ) : (
-                          <span style={{ color: "#9ca3af" }}>Pending Outcome</span>
-                        )}
-                      </td>
-                      <td className={styles.tableTd}>
-                        {v.status !== "completed" && (
-                          <button
-                            type="button"
-                            onClick={() => setOutcomeModalVisit(v)}
-                            className={styles.actionBtnPrimary}
-                            style={{ padding: "4px 8px", fontSize: "0.7rem" }}
-                          >
-                            Log Outcome
-                          </button>
-                        )}
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Property</th>
+                      <th className={styles.tableTh}>Requested Date</th>
+                      <th className={styles.tableTh}>Location</th>
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Outcome</th>
+                      <th className={styles.tableTh}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {visitsPagination.pagedItems.map((v) => (
+                      <tr key={v.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{v.property_title || v.id.slice(0, 8)}</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(v.requested_at).toLocaleString()}
+                        </td>
+                        <td className={styles.tableTd}>{v.location || "On-site"}</td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              v.status === "completed"
+                                ? styles.badgeCompleted
+                                : v.status === "scheduled"
+                                ? styles.badgeScheduled
+                                : styles.badgePending
+                            }`}
+                          >
+                            {v.status}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {v.outcome ? (
+                            <span style={{ fontWeight: 700, textTransform: "capitalize" }}>
+                              {v.outcome.replace(/_/g, " ")}
+                            </span>
+                          ) : (
+                            <span style={{ color: "#9ca3af" }}>Pending Outcome</span>
+                          )}
+                        </td>
+                        <td className={styles.tableTd}>
+                          {v.status !== "completed" && (
+                            <button
+                              type="button"
+                              onClick={() => setOutcomeModalVisit(v)}
+                              className={styles.actionBtnPrimary}
+                              style={{ padding: "4px 8px", fontSize: "0.7rem" }}
+                            >
+                              Log Outcome
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={visitsPagination.page}
+                totalItems={visitsPagination.totalItems}
+                pageSize={visitsPagination.pageSize}
+                onPageChange={visitsPagination.setPage}
+                itemName="visits"
+              />
+            </>
           )}
 
           {/* OUTCOME MODAL */}
@@ -1323,48 +1368,57 @@ export function AgentDeveloperWorkstation({
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Property</th>
-                    <th className={styles.tableTh}>Sale Value</th>
-                    <th className={styles.tableTh}>Buyer</th>
-                    <th className={styles.tableTh}>Closing Date</th>
-                    <th className={styles.tableTh}>Verification Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((t) => (
-                    <tr key={t.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>{t.property_title || t.property_id}</strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <strong>{Number(t.sale_amount).toLocaleString()} ETB</strong>
-                      </td>
-                      <td className={styles.tableTd}>{t.buyer_name || "Verified Buyer"}</td>
-                      <td className={styles.tableTd}>
-                        {new Date(t.closing_date).toLocaleDateString()}
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            t.status === "verified"
-                              ? styles.badgeActive
-                              : t.status === "rejected"
-                              ? styles.badgeRejected
-                              : styles.badgePending
-                          }`}
-                        >
-                          {t.status}
-                        </span>
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Property</th>
+                      <th className={styles.tableTh}>Sale Value</th>
+                      <th className={styles.tableTh}>Buyer</th>
+                      <th className={styles.tableTh}>Closing Date</th>
+                      <th className={styles.tableTh}>Verification Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {txPagination.pagedItems.map((t) => (
+                      <tr key={t.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>{t.property_title || t.property_id}</strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <strong>{Number(t.sale_amount).toLocaleString()} ETB</strong>
+                        </td>
+                        <td className={styles.tableTd}>{t.buyer_name || "Verified Buyer"}</td>
+                        <td className={styles.tableTd}>
+                          {new Date(t.closing_date).toLocaleDateString()}
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              t.status === "verified"
+                                ? styles.badgeActive
+                                : t.status === "rejected"
+                                ? styles.badgeRejected
+                                : styles.badgePending
+                            }`}
+                          >
+                            {t.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={txPagination.page}
+                totalItems={txPagination.totalItems}
+                pageSize={txPagination.pageSize}
+                onPageChange={txPagination.setPage}
+                itemName="sales"
+              />
+            </>
           )}
 
           {/* CREATE TRANSACTION MODAL */}
@@ -1502,64 +1556,73 @@ export function AgentDeveloperWorkstation({
               </p>
             </div>
           ) : (
-            <div className={styles.tableResponsive}>
-              <table className={styles.dataTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableTh}>Deal Ref</th>
-                    <th className={styles.tableTh}>Sale Amount</th>
-                    <th className={styles.tableTh}>Commission</th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {commissions.map((c: any) => (
-                    <tr key={c.id} className={styles.tableRow}>
-                      <td className={styles.tableTd}>
-                        <strong>
-                          {c.transactionId
-                            ? c.transactionId.slice(0, 8)
-                            : c.transaction_id
-                            ? c.transaction_id.slice(0, 8)
-                            : c.id.slice(0, 8)}
-                        </strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {Number(c.saleAmount ?? c.sale_amount ?? 0).toLocaleString()} ETB
-                      </td>
-                      <td className={styles.tableTd}>
-                        <strong>
-                          {Number(
-                            c.totalCommission ??
-                              c.total_commission ??
-                              c.sellerAmount ??
-                              c.seller_amount ??
-                              0
-                          ).toLocaleString()} ETB
-                        </strong>
-                      </td>
-                      <td className={styles.tableTd}>
-                        <span
-                          className={`${styles.badge} ${
-                            c.status === "paid"
-                              ? styles.badgeCompleted
-                              : c.status === "approved"
-                              ? styles.badgeActive
-                              : styles.badgePending
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className={styles.tableTd}>
-                        {new Date(c.createdAt || c.created_at || Date.now()).toLocaleDateString()}
-                      </td>
+            <>
+              <div className={styles.tableResponsive}>
+                <table className={styles.dataTable}>
+                  <thead>
+                    <tr>
+                      <th className={styles.tableTh}>Deal Ref</th>
+                      <th className={styles.tableTh}>Sale Amount</th>
+                      <th className={styles.tableTh}>Commission</th>
+                      <th className={styles.tableTh}>Status</th>
+                      <th className={styles.tableTh}>Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {commPagination.pagedItems.map((c: any) => (
+                      <tr key={c.id} className={styles.tableRow}>
+                        <td className={styles.tableTd}>
+                          <strong>
+                            {c.transactionId
+                              ? c.transactionId.slice(0, 8)
+                              : c.transaction_id
+                              ? c.transaction_id.slice(0, 8)
+                              : c.id.slice(0, 8)}
+                          </strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {Number(c.saleAmount ?? c.sale_amount ?? 0).toLocaleString()} ETB
+                        </td>
+                        <td className={styles.tableTd}>
+                          <strong>
+                            {Number(
+                              c.totalCommission ??
+                                c.total_commission ??
+                                c.sellerAmount ??
+                                c.seller_amount ??
+                                0
+                            ).toLocaleString()} ETB
+                          </strong>
+                        </td>
+                        <td className={styles.tableTd}>
+                          <span
+                            className={`${styles.badge} ${
+                              c.status === "paid"
+                                ? styles.badgeCompleted
+                                : c.status === "approved"
+                                ? styles.badgeActive
+                                : styles.badgePending
+                            }`}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+                        <td className={styles.tableTd}>
+                          {new Date(c.createdAt || c.created_at || Date.now()).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={commPagination.page}
+                totalItems={commPagination.totalItems}
+                pageSize={commPagination.pageSize}
+                onPageChange={commPagination.setPage}
+                itemName="commissions"
+              />
+            </>
           )}
         </div>
       )}

@@ -47,6 +47,7 @@ import { NotificationDrawer } from "./components/NotificationDrawer";
 import { BuyerWorkstation } from "./components/BuyerWorkstation";
 import { AgentDeveloperWorkstation } from "./components/AgentDeveloperWorkstation";
 import { AdminWorkstation } from "./components/AdminWorkstation";
+import { Pagination, usePagination } from "../components/Pagination";
 
 const PROPERTY_TYPES = [
   "apartment",
@@ -155,6 +156,11 @@ function DashboardContent() {
   });
   const [verificationFiles, setVerificationFiles] = useState<FileList | null>(null);
   const [verificationHistory, setVerificationHistory] = useState<VerificationSubmission[]>([]);
+
+  // Pagination for dashboard tabs
+  const devProjectsPagination = usePagination(developerProjects, 6);
+  const verificationHistoryPagination = usePagination(verificationHistory, 8);
+  const adminRequestsPagination = usePagination(adminRequests, 6);
 
   // Dedicated Developer Profile Loader (FE-004 / Dev Roster)
   const loadDeveloperProfile = useCallback(async () => {
@@ -1635,56 +1641,65 @@ function DashboardContent() {
                 </button>
               </div>
             ) : (
-              <div className={styles.projectGrid}>
-                {developerProjects.map((proj) => (
-                  <div key={proj.id} className={styles.projectCard}>
-                    <div>
-                      <div className={styles.projectCardHeader}>
-                        <h4 className={styles.projectName}>{proj.name}</h4>
+              <>
+                <div className={styles.projectGrid}>
+                  {devProjectsPagination.pagedItems.map((proj) => (
+                    <div key={proj.id} className={styles.projectCard}>
+                      <div>
+                        <div className={styles.projectCardHeader}>
+                          <h4 className={styles.projectName}>{proj.name}</h4>
+                          <span
+                            className={`${styles.projectStatusPill} ${
+                              proj.status === "active" ? styles.statusActive : styles.statusInactive
+                            }`}
+                          >
+                            {proj.status}
+                          </span>
+                        </div>
+
+                        <div className={styles.projectLocation}>
+                          <MapPin size={13} />
+                          <span>{proj.location}</span>
+                        </div>
+
+                        <p className={styles.projectDesc}>
+                          {proj.description || "No project description provided."}
+                        </p>
+                      </div>
+
+                      <div className={styles.projectCardFooter}>
                         <span
-                          className={`${styles.projectStatusPill} ${
-                            proj.status === "active" ? styles.statusActive : styles.statusInactive
-                          }`}
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "#9ca3af",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
                         >
-                          {proj.status}
+                          <Calendar size={12} />
+                          {new Date(proj.created_at).toLocaleDateString()}
                         </span>
+
+                        <button
+                          type="button"
+                          className={styles.actionBtnSmall}
+                          onClick={() => handleToggleProjectStatus(proj.id, proj.status)}
+                        >
+                          {proj.status === "active" ? "Set Inactive" : "Set Active"}
+                        </button>
                       </div>
-
-                      <div className={styles.projectLocation}>
-                        <MapPin size={13} />
-                        <span>{proj.location}</span>
-                      </div>
-
-                      <p className={styles.projectDesc}>
-                        {proj.description || "No project description provided."}
-                      </p>
                     </div>
-
-                    <div className={styles.projectCardFooter}>
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "#9ca3af",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
-                      >
-                        <Calendar size={12} />
-                        {new Date(proj.created_at).toLocaleDateString()}
-                      </span>
-
-                      <button
-                        type="button"
-                        className={styles.actionBtnSmall}
-                        onClick={() => handleToggleProjectStatus(proj.id, proj.status)}
-                      >
-                        {proj.status === "active" ? "Set Inactive" : "Set Active"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <Pagination
+                  currentPage={devProjectsPagination.page}
+                  totalItems={devProjectsPagination.totalItems}
+                  pageSize={devProjectsPagination.pageSize}
+                  onPageChange={devProjectsPagination.setPage}
+                  itemName="developments"
+                />
+              </>
             )}
           </div>
         )}
@@ -1761,25 +1776,13 @@ function DashboardContent() {
               </table>
             )}
 
-            <div className={styles.paginationRow}>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={adminProjectsPage <= 1}
-                onClick={() => loadAdminProjects(adminProjectsPage - 1, adminProjectsFilter)}
-              >
-                ← Previous Page
-              </button>
-
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={adminProjectsPage >= adminProjectsTotalPages}
-                onClick={() => loadAdminProjects(adminProjectsPage + 1, adminProjectsFilter)}
-              >
-                Next Page →
-              </button>
-            </div>
+            <Pagination
+              currentPage={adminProjectsPage}
+              totalItems={Math.max(adminProjects.length, adminProjectsTotalPages * 10)}
+              pageSize={10}
+              onPageChange={(p) => loadAdminProjects(p, adminProjectsFilter)}
+              itemName="platform projects"
+            />
           </div>
         )}
 
@@ -1928,7 +1931,7 @@ function DashboardContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {verificationHistory.map((item) => (
+                    {verificationHistoryPagination.pagedItems.map((item) => (
                       <tr key={item.id}>
                         <td style={{ fontWeight: 700 }}>{item.legalName}</td>
                         <td>{item.registrationNumber}</td>
@@ -1952,6 +1955,13 @@ function DashboardContent() {
                     ))}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={verificationHistoryPagination.page}
+                  totalItems={verificationHistoryPagination.totalItems}
+                  pageSize={verificationHistoryPagination.pageSize}
+                  onPageChange={verificationHistoryPagination.setPage}
+                  itemName="applications"
+                />
               </div>
             )}
           </div>
@@ -1971,104 +1981,113 @@ function DashboardContent() {
             {adminRequests.length === 0 ? (
               <p style={{ color: "#6a717e" }}>No pending verification requests at this time.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {adminRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    style={{
-                      border: "1px solid #e2e6ec",
-                      padding: 24,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div>
-                      <h4 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0 }}>
-                        {req.legalName}
-                      </h4>
-                      <p style={{ fontSize: "0.85rem", color: "#6a717e", margin: "4px 0" }}>
-                        Reg: {req.registrationNumber} • Phone: {req.contactPhone}
-                      </p>
-                      <span style={{ fontSize: "0.8rem", color: "#8c95a6" }}>
-                        Address: {req.businessAddress}
-                      </span>
-                    </div>
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {adminRequestsPagination.pagedItems.map((req) => (
+                    <div
+                      key={req.id}
+                      style={{
+                        border: "1px solid #e2e6ec",
+                        padding: 24,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <h4 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0 }}>
+                          {req.legalName}
+                        </h4>
+                        <p style={{ fontSize: "0.85rem", color: "#6a717e", margin: "4px 0" }}>
+                          Reg: {req.registrationNumber} • Phone: {req.contactPhone}
+                        </p>
+                        <span style={{ fontSize: "0.8rem", color: "#8c95a6" }}>
+                          Address: {req.businessAddress}
+                        </span>
+                      </div>
 
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <button
-                        type="button"
-                        style={{
-                          padding: "8px 18px",
-                          background: "#10b981",
-                          color: "#fff",
-                          fontWeight: 700,
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                        onClick={async () => {
-                          const res = await adminApi.decision(req.id, { decision: "approved" });
-                          if (res.ok) {
-                            setFormFeedback({
-                              type: "success",
-                              message: `Application ${req.legalName} approved!`,
-                            });
-                          } else {
-                            setFormFeedback({
-                              type: "error",
-                              message: res.message || "Failed to approve application.",
-                            });
-                          }
-                          const refreshed = await adminApi.getPendingApplications();
-                          const reqs = refreshed.data?.requests || refreshed.data?.data || [];
-                          if (Array.isArray(reqs)) setAdminRequests(reqs);
-                        }}
-                      >
-                        Approve
-                      </button>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <button
+                          type="button"
+                          style={{
+                            padding: "8px 18px",
+                            background: "#10b981",
+                            color: "#fff",
+                            fontWeight: 700,
+                            border: "none",
+                            cursor: "pointer",
+                          }}
+                          onClick={async () => {
+                            const res = await adminApi.decision(req.id, { decision: "approved" });
+                            if (res.ok) {
+                              setFormFeedback({
+                                type: "success",
+                                message: `Application ${req.legalName} approved!`,
+                              });
+                            } else {
+                              setFormFeedback({
+                                type: "error",
+                                message: res.message || "Failed to approve application.",
+                              });
+                            }
+                            const refreshed = await adminApi.getPendingApplications();
+                            const reqs = refreshed.data?.requests || refreshed.data?.data || [];
+                            if (Array.isArray(reqs)) setAdminRequests(reqs);
+                          }}
+                        >
+                          Approve
+                        </button>
 
-                      <button
-                        type="button"
-                        style={{
-                          padding: "8px 18px",
-                          background: "#ef4444",
-                          color: "#fff",
-                          fontWeight: 700,
-                          border: "none",
-                          cursor: "pointer",
-                        }}
-                        onClick={async () => {
-                          const reason = window.prompt(
-                            "Enter rejection reason for this applicant:",
-                            "Documentation insufficient or invalid license number."
-                          );
-                          if (!reason) return;
-                          const res = await adminApi.decision(req.id, {
-                            decision: "rejected",
-                            rejectionReason: reason,
-                          });
-                          if (res.ok) {
-                            setFormFeedback({
-                              type: "success",
-                              message: `Application ${req.legalName} rejected.`,
+                        <button
+                          type="button"
+                          style={{
+                            padding: "8px 18px",
+                            background: "#ef4444",
+                            color: "#fff",
+                            fontWeight: 700,
+                            border: "none",
+                            cursor: "pointer",
+                          }}
+                          onClick={async () => {
+                            const reason = window.prompt(
+                              "Enter rejection reason for this applicant:",
+                              "Documentation insufficient or invalid license number."
+                            );
+                            if (!reason) return;
+                            const res = await adminApi.decision(req.id, {
+                              decision: "rejected",
+                              rejectionReason: reason,
                             });
-                          } else {
-                            setFormFeedback({
-                              type: "error",
-                              message: res.message || "Failed to reject application.",
-                            });
-                          }
-                          const refreshed = await adminApi.getPendingApplications();
-                          const reqs = refreshed.data?.requests || refreshed.data?.data || [];
-                          if (Array.isArray(reqs)) setAdminRequests(reqs);
-                        }}
-                      >
-                        Reject
-                      </button>
+                            if (res.ok) {
+                              setFormFeedback({
+                                type: "success",
+                                message: `Application ${req.legalName} rejected.`,
+                              });
+                            } else {
+                              setFormFeedback({
+                                type: "error",
+                                message: res.message || "Failed to reject application.",
+                              });
+                            }
+                            const refreshed = await adminApi.getPendingApplications();
+                            const reqs = refreshed.data?.requests || refreshed.data?.data || [];
+                            if (Array.isArray(reqs)) setAdminRequests(reqs);
+                          }}
+                        >
+                          Reject
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <Pagination
+                  currentPage={adminRequestsPagination.page}
+                  totalItems={adminRequestsPagination.totalItems}
+                  pageSize={adminRequestsPagination.pageSize}
+                  onPageChange={adminRequestsPagination.setPage}
+                  itemName="pending applications"
+                />
+              </>
             )}
           </div>
         )}

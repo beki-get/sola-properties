@@ -24,6 +24,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { Navbar } from "../components/Navbar";
+import { Pagination } from "../components/Pagination";
 import {
   propertyApi,
   favoriteApi,
@@ -59,6 +60,9 @@ function PropertiesCatalogContent() {
 
   // Data State
   const [properties, setProperties] = useState<Property[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const pageSize = 12;
   const [loading, setLoading] = useState<boolean>(true);
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
   const [comparedIds, setComparedIds] = useState<string[]>([]);
@@ -94,6 +98,8 @@ function PropertiesCatalogContent() {
     setFeedback(null);
     try {
       const res = await propertyApi.listPublic({
+        page: currentPage,
+        limit: pageSize,
         category_ids: selectedCategory === "all" ? undefined : selectedCategory,
         location_id: selectedLocation === "all" ? undefined : selectedLocation,
         search: searchQuery.trim() || undefined,
@@ -109,6 +115,11 @@ function PropertiesCatalogContent() {
         res.data?.data ||
         (Array.isArray(res.data) ? res.data : []);
 
+      const total =
+        res.data?.total ??
+        (Array.isArray(list) ? list.length : 0);
+
+      setTotalCount(total);
       if (Array.isArray(list)) {
         setProperties(list);
       } else {
@@ -119,7 +130,7 @@ function PropertiesCatalogContent() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, selectedLocation, searchQuery, minBedrooms, minPrice, maxPrice]);
+  }, [selectedCategory, selectedLocation, searchQuery, minBedrooms, minPrice, maxPrice, currentPage]);
 
   useEffect(() => {
     loadProperties();
@@ -132,6 +143,7 @@ function PropertiesCatalogContent() {
     setMinBedrooms(0);
     setMinPrice("");
     setMaxPrice("");
+    setCurrentPage(1);
   };
 
   const toggleFavorite = async (propertyId: string) => {
@@ -289,7 +301,9 @@ function PropertiesCatalogContent() {
       <main className={styles.catalogContent}>
         <div className={styles.resultsMetaBar}>
           <div className={styles.resultsCount}>
-            Showing <strong>{properties.length}</strong> verified residences
+            Showing <strong>{totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}</strong>–
+            <strong>{Math.min(totalCount, currentPage * pageSize)}</strong> of{" "}
+            <strong>{totalCount}</strong> verified residences
           </div>
           {comparedIds.length > 0 && (
             <span style={{ fontSize: "0.82rem", color: "#059669", fontWeight: 700 }}>
@@ -455,6 +469,18 @@ function PropertiesCatalogContent() {
             })}
           </div>
         )}
+
+        {/* Catalog Pagination Controls */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalCount}
+          pageSize={pageSize}
+          onPageChange={(p) => {
+            setCurrentPage(p);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          itemName="residences"
+        />
       </main>
 
       {/* Floating Compare Tray */}
