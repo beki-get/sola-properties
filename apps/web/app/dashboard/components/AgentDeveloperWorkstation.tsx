@@ -7,7 +7,6 @@ import {
   Users,
   Calendar,
   DollarSign,
-  TrendingUp,
   Plus,
   Edit2,
   Trash2,
@@ -30,15 +29,12 @@ import {
   PropertyVisit,
   Transaction,
   Commission,
-  AgentReport,
-  DeveloperReport,
   propertyApi,
   propertyAuthApi,
   referralApi,
   visitApi,
   transactionApi,
   commissionApi,
-  reportApi,
 } from "../../../lib/api";
 import styles from "./workstations.module.css";
 
@@ -50,8 +46,7 @@ interface AgentDeveloperWorkstationProps {
     | "leads"
     | "visits"
     | "transactions"
-    | "commissions"
-    | "analytics";
+    | "commissions";
 }
 
 export function AgentDeveloperWorkstation({
@@ -116,10 +111,6 @@ export function AgentDeveloperWorkstation({
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [commissionSummary, setCommissionSummary] = useState<any>(null);
   const [commLoading, setCommLoading] = useState(false);
-
-  // Analytics State
-  const [analytics, setAnalytics] = useState<AgentReport | DeveloperReport | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // Feedback State
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -283,19 +274,6 @@ export function AgentDeveloperWorkstation({
           }
         })
         .finally(() => setCommLoading(false));
-    } else if (activeTab === "analytics") {
-      setAnalyticsLoading(true);
-      const call =
-        role === "agent"
-          ? reportApi.getAgentReport()
-          : reportApi.getDeveloperReport();
-      call
-        .then((res: any) => {
-          if (res.ok && res.data) {
-            setAnalytics(res.data.data || res.data.report || res.data || null);
-          }
-        })
-        .finally(() => setAnalyticsLoading(false));
     }
   }, [activeTab, role]);
 
@@ -1579,205 +1557,6 @@ export function AgentDeveloperWorkstation({
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 7. ANALYTICS & REPORTS TAB */}
-      {activeTab === "analytics" && (
-        <div className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h2 className={styles.sectionTitle}>Performance Overview</h2>
-              <p className={styles.sectionSubtitle}>
-                Summary of your sales, inquiries, and commission earnings.
-              </p>
-            </div>
-          </div>
-
-          {analyticsLoading ? (
-            <div className={styles.emptyBlock}>Loading performance data...</div>
-          ) : !analytics ? (
-            <div className={styles.emptyBlock}>
-              <TrendingUp size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>No Performance Data Yet</h4>
-              <p className={styles.emptyBlockDesc}>
-                Your performance metrics will appear here once you have inquiries and sales.
-              </p>
-            </div>
-          ) : (
-            <div>
-              <div className={styles.kpiGrid}>
-                {role === "agent" ? (
-                  <>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Total Inquiries</span>
-                      <span className={styles.kpiValue}>
-                        {(analytics as AgentReport)?.referrals?.total ??
-                          (analytics as AgentReport)?.total_referrals ??
-                          0}
-                      </span>
-                      <span className={styles.kpiSubtext}>Inquiries received</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Active Listings</span>
-                      <span className={styles.kpiValue}>
-                        {(analytics as AgentReport)?.properties?.total ??
-                          (analytics as AgentReport)?.active_listings ??
-                          0}
-                      </span>
-                      <span className={styles.kpiSubtext}>Properties listed</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Closed Deals</span>
-                      <span className={styles.kpiValue}>
-                        {(analytics as AgentReport)?.sales?.totalSalesCount ??
-                          (analytics as AgentReport)?.closed_deals ??
-                          0}
-                      </span>
-                      <span className={styles.kpiSubtext}>Completed sales</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Commission Earned</span>
-                      <span className={styles.kpiValue}>
-                        {Number(
-                          (analytics as AgentReport)?.commissions?.sellerEarnings ??
-                            (analytics as AgentReport)?.commissions?.totalCommission ??
-                            (analytics as AgentReport)?.total_commission ??
-                            0
-                        ).toLocaleString()} ETB
-                      </span>
-                      <span className={styles.kpiSubtext}>Total earned commission</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Total Sales Volume</span>
-                      <span className={styles.kpiValue}>
-                        {Number(
-                          (analytics as AgentReport)?.sales?.totalSalesValue || 0
-                        ).toLocaleString()} ETB
-                      </span>
-                      <span className={styles.kpiSubtext}>Total value of closed sales</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Authorized Properties</span>
-                      <span className={styles.kpiValue}>
-                        {(analytics as AgentReport)?.authorizedProperties?.total ?? 0}
-                      </span>
-                      <span className={styles.kpiSubtext}>Authorized properties to sell</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Commission Paid</span>
-                      <span className={styles.kpiValue}>
-                        {Number(
-                          (analytics as AgentReport)?.commissions?.amountPaid || 0
-                        ).toLocaleString()} ETB
-                      </span>
-                      <span className={styles.kpiSubtext}>Paid to your account</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Pending Commission</span>
-                      <span className={styles.kpiValue}>
-                        {Number(
-                          (analytics as AgentReport)?.commissions?.outstandingAmount || 0
-                        ).toLocaleString()} ETB
-                      </span>
-                      <span className={styles.kpiSubtext}>Awaiting payment</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Total Properties Listed</span>
-                      <span className={styles.kpiValue}>
-                        {(analytics as DeveloperReport)?.totalProperties ??
-                          (analytics as DeveloperReport)?.total_properties ??
-                          0}
-                      </span>
-                      <span className={styles.kpiSubtext}>Listed properties</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Active Projects</span>
-                      <span className={styles.kpiValue}>
-                        {(analytics as DeveloperReport)?.totalProjects ??
-                          (analytics as DeveloperReport)?.active_projects ??
-                          0}
-                      </span>
-                      <span className={styles.kpiSubtext}>Active projects</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Authorized Brokers</span>
-                      <span className={styles.kpiValue}>
-                        {(analytics as DeveloperReport)?.authorizedAgents ??
-                          (analytics as DeveloperReport)?.authorized_agents ??
-                          0}
-                      </span>
-                      <span className={styles.kpiSubtext}>Partnered agents</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Buyer Inquiries</span>
-                      <span className={styles.kpiValue}>
-                        {(analytics as DeveloperReport)?.referrals?.total ??
-                          (analytics as DeveloperReport)?.total_inquiries ??
-                          0}
-                      </span>
-                      <span className={styles.kpiSubtext}>Buyer inquiries</span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Status Breakdown from live backend */}
-              {((analytics as AgentReport)?.referrals?.byStatus ||
-                (analytics as DeveloperReport)?.referrals?.byStatus) && (
-                <div
-                  style={{
-                    marginTop: 24,
-                    padding: 18,
-                    backgroundColor: "#fafbfc",
-                    border: "1px solid #e5e7eb",
-                  }}
-                >
-                  <h4
-                    style={{
-                      margin: "0 0 12px",
-                      fontSize: "0.88rem",
-                      fontWeight: 800,
-                      letterSpacing: "0.02em",
-                      textTransform: "uppercase",
-                      color: "#374151",
-                    }}
-                  >
-                    Referrals by Status
-                  </h4>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    {Object.entries(
-                      ((analytics as AgentReport)?.referrals?.byStatus ||
-                        (analytics as DeveloperReport)?.referrals?.byStatus) ??
-                        {}
-                    ).map(([statusKey, count]) => (
-                      <div
-                        key={statusKey}
-                        style={{
-                          padding: "6px 14px",
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: 3,
-                          fontSize: "0.82rem",
-                          display: "flex",
-                          gap: 6,
-                          alignItems: "center",
-                        }}
-                      >
-                        <span style={{ textTransform: "capitalize", color: "#64748b" }}>
-                          {statusKey.replace(/_/g, " ")}:
-                        </span>
-                        <strong style={{ color: "#0f172a" }}>{count}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

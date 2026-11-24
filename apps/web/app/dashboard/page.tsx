@@ -788,13 +788,6 @@ function DashboardContent() {
                   >
                     Commissions
                   </button>
-                  <button
-                    type="button"
-                    className={`${styles.tabBtn} ${activeTab === "analytics" ? styles.tabBtnActive : ""}`}
-                    onClick={() => setActiveTab("analytics")}
-                  >
-                    Performance
-                  </button>
                 </>
               )}
 
@@ -850,13 +843,6 @@ function DashboardContent() {
                 onClick={() => setActiveTab("commissions")}
               >
                 Commissions
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "analytics" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("analytics")}
-              >
-                Performance
               </button>
               <button
                 type="button"
@@ -1152,15 +1138,66 @@ function DashboardContent() {
                   <div
                     className={styles.kpiCard}
                     style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("leads")}
+                  >
+                    <span className={styles.kpiLabel}>Total Inquiries</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.referrals?.total ?? kpiData?.total_referrals ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>Inquiries received</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
                     onClick={() => setActiveTab("inventory")}
                   >
-                    <span className={styles.kpiLabel}>My Listings</span>
+                    <span className={styles.kpiLabel}>Active Listings</span>
                     <span className={styles.kpiValue}>
                       {kpiData?.properties?.total ?? kpiData?.active_listings ?? 0}
                     </span>
-                    <span className={styles.kpiSubtext}>
-                      {kpiData?.properties?.byStatus?.approved ?? 0} approved active
+                    <span className={styles.kpiSubtext}>Properties listed</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("transactions")}
+                  >
+                    <span className={styles.kpiLabel}>Closed Deals</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.sales?.totalSalesCount ?? kpiData?.closed_deals ?? 0}
                     </span>
+                    <span className={styles.kpiSubtext}>Completed sales</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("commissions")}
+                  >
+                    <span className={styles.kpiLabel}>Commission Earned</span>
+                    <span className={styles.kpiValue}>
+                      {Number(
+                        kpiData?.commissions?.sellerEarnings ??
+                          kpiData?.commissions?.totalCommission ??
+                          kpiData?.total_commission ??
+                          0
+                      ).toLocaleString()} ETB
+                    </span>
+                    <span className={styles.kpiSubtext}>Total earned commission</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("transactions")}
+                  >
+                    <span className={styles.kpiLabel}>Total Sales Volume</span>
+                    <span className={styles.kpiValue}>
+                      {Number(kpiData?.sales?.totalSalesValue || 0).toLocaleString()} ETB
+                    </span>
+                    <span className={styles.kpiSubtext}>Total value of closed sales</span>
                   </div>
 
                   <div
@@ -1172,33 +1209,7 @@ function DashboardContent() {
                     <span className={styles.kpiValue}>
                       {kpiData?.authorizedProperties?.total ?? 0}
                     </span>
-                    <span className={styles.kpiSubtext}>Developer representations</span>
-                  </div>
-
-                  <div
-                    className={styles.kpiCard}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => setActiveTab("leads")}
-                  >
-                    <span className={styles.kpiLabel}>Leads Pipeline</span>
-                    <span className={styles.kpiValue}>
-                      {kpiData?.referrals?.total ?? kpiData?.total_referrals ?? 0}
-                    </span>
-                    <span className={styles.kpiSubtext}>Client referral requests</span>
-                  </div>
-
-                  <div
-                    className={styles.kpiCard}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => setActiveTab("transactions")}
-                  >
-                    <span className={styles.kpiLabel}>Closed Sales</span>
-                    <span className={styles.kpiValue}>
-                      {kpiData?.sales?.totalSalesCount ?? kpiData?.closed_deals ?? 0}
-                    </span>
-                    <span className={styles.kpiSubtext}>
-                      {Number(kpiData?.sales?.totalSalesValue ?? 0).toLocaleString()} ETB volume
-                    </span>
+                    <span className={styles.kpiSubtext}>Authorized properties to sell</span>
                   </div>
 
                   <div
@@ -1206,11 +1217,23 @@ function DashboardContent() {
                     style={{ cursor: "pointer" }}
                     onClick={() => setActiveTab("commissions")}
                   >
-                    <span className={styles.kpiLabel}>Commissions Earned</span>
+                    <span className={styles.kpiLabel}>Commission Paid</span>
                     <span className={styles.kpiValue}>
-                      {Number(kpiData?.commissions?.totalCommission ?? kpiData?.total_commission ?? 0).toLocaleString()} ETB
+                      {Number(kpiData?.commissions?.amountPaid || 0).toLocaleString()} ETB
                     </span>
-                    <span className={styles.kpiSubtext}>Earned earnings</span>
+                    <span className={styles.kpiSubtext}>Paid to your account</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("commissions")}
+                  >
+                    <span className={styles.kpiLabel}>Pending Commission</span>
+                    <span className={styles.kpiValue}>
+                      {Number(kpiData?.commissions?.outstandingAmount || 0).toLocaleString()} ETB
+                    </span>
+                    <span className={styles.kpiSubtext}>Awaiting payment</span>
                   </div>
                 </>
               )}
@@ -1220,25 +1243,25 @@ function DashboardContent() {
                   <div
                     className={styles.kpiCard}
                     style={{ cursor: "pointer" }}
-                    onClick={() => setActiveTab("developments")}
+                    onClick={() => setActiveTab("inventory")}
                   >
-                    <span className={styles.kpiLabel}>Registered Projects</span>
+                    <span className={styles.kpiLabel}>Total Properties Listed</span>
                     <span className={styles.kpiValue}>
-                      {kpiData?.totalProjects ?? kpiData?.active_projects ?? developerProjects.length}
+                      {kpiData?.totalProperties ?? kpiData?.total_properties ?? 0}
                     </span>
-                    <span className={styles.kpiSubtext}>Active developments</span>
+                    <span className={styles.kpiSubtext}>Listed properties</span>
                   </div>
 
                   <div
                     className={styles.kpiCard}
                     style={{ cursor: "pointer" }}
-                    onClick={() => setActiveTab("inventory")}
+                    onClick={() => setActiveTab("developments")}
                   >
-                    <span className={styles.kpiLabel}>Total Units</span>
+                    <span className={styles.kpiLabel}>Active Projects</span>
                     <span className={styles.kpiValue}>
-                      {kpiData?.totalProperties ?? kpiData?.total_properties ?? 0}
+                      {kpiData?.totalProjects ?? kpiData?.active_projects ?? developerProjects.length}
                     </span>
-                    <span className={styles.kpiSubtext}>Residential and commercial</span>
+                    <span className={styles.kpiSubtext}>Active projects</span>
                   </div>
 
                   <div
@@ -1250,7 +1273,7 @@ function DashboardContent() {
                     <span className={styles.kpiValue}>
                       {kpiData?.authorizedAgents ?? kpiData?.authorized_agents ?? 0}
                     </span>
-                    <span className={styles.kpiSubtext}>Active sales partners</span>
+                    <span className={styles.kpiSubtext}>Partnered agents</span>
                   </div>
 
                   <div
@@ -1262,7 +1285,7 @@ function DashboardContent() {
                     <span className={styles.kpiValue}>
                       {kpiData?.referrals?.total ?? kpiData?.total_inquiries ?? 0}
                     </span>
-                    <span className={styles.kpiSubtext}>Direct buyer leads</span>
+                    <span className={styles.kpiSubtext}>Buyer inquiries</span>
                   </div>
                 </>
               )}
@@ -1311,6 +1334,59 @@ function DashboardContent() {
                 </>
               )}
             </div>
+
+            {/* Referrals by Status Breakdown for Agent & Developer */}
+            {(role === "agent" || role === "developer") && (
+              <div
+                style={{
+                  marginTop: 20,
+                  padding: 18,
+                  backgroundColor: "#fafbfc",
+                  border: "1px solid #e5e7eb",
+                }}
+              >
+                <h4
+                  style={{
+                    margin: "0 0 12px",
+                    fontSize: "0.88rem",
+                    fontWeight: 800,
+                    letterSpacing: "0.02em",
+                    textTransform: "uppercase",
+                    color: "#374151",
+                  }}
+                >
+                  Referrals by Status
+                </h4>
+                {kpiData?.referrals?.byStatus && Object.keys(kpiData.referrals.byStatus).length > 0 ? (
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {Object.entries(kpiData.referrals.byStatus).map(([statusKey, count]) => (
+                      <div
+                        key={statusKey}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "6px 14px",
+                          backgroundColor: "#ffffff",
+                          border: "1px solid #e5e7eb",
+                          fontSize: "0.85rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <span style={{ textTransform: "capitalize", color: "#4b5563" }}>
+                          {statusKey.replace(/_/g, " ")}:
+                        </span>
+                        <strong style={{ color: "#111827" }}>{count as number}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>
+                    No client inquiries recorded yet. Inquiries received will be grouped here by lifecycle status.
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Quick Actions Navigation Row */}
             <div
@@ -1485,7 +1561,6 @@ function DashboardContent() {
             "visits",
             "transactions",
             "commissions",
-            "analytics",
           ].includes(activeTab) && (
             <AgentDeveloperWorkstation role={role} activeTab={activeTab as any} />
           )}
