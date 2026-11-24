@@ -1739,7 +1739,7 @@ export const adminManagementApi = {
   getUserById: (id: string) =>
     apiRequest<{ user?: AdminUser; data?: AdminUser }>(`/api/v1/admin/users/${id}`),
 
-  createAdminUser: (payload: { fullName: string; email: string; role: "admin" | "finance_admin" }) =>
+  createAdminUser: (payload: { fullName: string; email: string; password?: string; role: "admin" | "finance_admin" }) =>
     apiRequest<{ message: string; user?: AdminUser }>(
       "/api/v1/admin/users",
       {

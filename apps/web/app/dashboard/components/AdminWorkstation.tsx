@@ -90,6 +90,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
   const [newUser, setNewUser] = useState({
     fullName: "",
     email: "",
+    password: "",
     role: "admin" as "admin" | "finance_admin",
   });
 
@@ -184,6 +185,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
             setUsers(res.data.users || res.data.data || []);
           }
         })
+        .catch(() => {})
         .finally(() => setUserLoading(false));
     } else if (activeTab === "admin-taxonomy") {
       Promise.all([propertyApi.getCategories(), propertyApi.getLocations()]).then(
@@ -314,20 +316,22 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
       const res = await adminManagementApi.createAdminUser({
         fullName: newUser.fullName.trim(),
         email: newUser.email.trim(),
+        password: newUser.password.trim() || undefined,
         role: newUser.role,
       });
       if (res.ok) {
         setCreateUserModal(false);
-        setFeedback({ ok: true, msg: "New administrative staff account provisioned!" });
-        const refresh = await adminManagementApi.getUsers();
-        if (refresh.ok && refresh.data) {
+        setNewUser({ fullName: "", email: "", password: "", role: "admin" });
+        showToast("New administrative staff account provisioned!", "success");
+        const refresh = await adminManagementApi.getUsers().catch(() => null);
+        if (refresh?.ok && refresh.data) {
           setUsers(refresh.data.users || refresh.data.data || []);
         }
       } else {
-        setFeedback({ ok: false, msg: res.message || "Failed to create user." });
+        showToast(res.message || "Failed to create user account.", "error");
       }
     } catch (err: any) {
-      setFeedback({ ok: false, msg: err.message || "Network error." });
+      showToast(err.message || "Network error provisioning staff account.", "error");
     }
   };
 
@@ -1094,6 +1098,19 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                       className={styles.formInput}
                       value={newUser.email}
                       onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    />
+                  </div>
+
+                  <div className={styles.formField}>
+                    <label className={styles.formLabel}>Initial Password</label>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      placeholder="Minimum 8 characters"
+                      className={styles.formInput}
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                     />
                   </div>
 

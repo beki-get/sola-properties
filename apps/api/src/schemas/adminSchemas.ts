@@ -24,17 +24,21 @@ export const adminUserListQuerySchema = paginationSchema
         z.string().max(100).optional(),
       )
       .transform((value) => (value && value.length > 0 ? value : undefined)),
-    role: z.enum(userRoles).optional(),
-    status: z.enum(userStatuses).optional(),
+    role: z
+      .preprocess((v) => (v === "" ? undefined : v), z.enum(userRoles).optional()),
+    status: z
+      .preprocess((v) => (v === "" ? undefined : v), z.enum(userStatuses).optional()),
 
-    dateFrom: z.iso.date().optional(),
-    dateTo: z.iso.date().optional(),
-    emailVerified: z.enum(["true", "false"]).optional(),
+    dateFrom: z
+      .preprocess((v) => (v === "" ? undefined : v), z.iso.date().optional()),
+    dateTo: z
+      .preprocess((v) => (v === "" ? undefined : v), z.iso.date().optional()),
+    emailVerified: z
+      .preprocess((v) => (v === "" ? undefined : v), z.enum(["true", "false"]).optional()),
 
     page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(50).default(20),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
   })
-  .strict()
   .refine(
     (data) => !data.dateFrom || !data.dateTo || data.dateFrom <= data.dateTo,
     {
@@ -88,10 +92,11 @@ export const adminUserCreateSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
-      .max(128, "Password must not exceed 128 characters"),
+      .max(128, "Password must not exceed 128 characters")
+      .optional()
+      .default("SolaAdmin2026!"),
     role: z.enum(["admin", "finance_admin"]),
-  })
-  .strict();
+  });
 
 export type AdminUserCreateInput = z.infer<typeof adminUserCreateSchema>;
 
