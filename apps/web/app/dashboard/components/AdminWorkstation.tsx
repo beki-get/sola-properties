@@ -86,6 +86,9 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
   // 5. User Management
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [userLoading, setUserLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [userFilterRole, setUserFilterRole] = useState("");
+  const [userFilterStatus, setUserFilterStatus] = useState("");
   const [createUserModal, setCreateUserModal] = useState(false);
   const [newUser, setNewUser] = useState({
     fullName: "",
@@ -189,7 +192,11 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
     } else if (activeTab === "admin-users") {
       setUserLoading(true);
       adminManagementApi
-        .getUsers()
+        .getUsers({
+          q: userSearch.trim() || undefined,
+          role: userFilterRole || undefined,
+          status: userFilterStatus || undefined,
+        })
         .then((res) => {
           if (res.ok && res.data) {
             setUsers(res.data.users || res.data.data || []);
@@ -232,7 +239,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
         })
         .finally(() => setReportLoading(false));
     }
-  }, [activeTab, role]);
+  }, [activeTab, role, userSearch, userFilterRole, userFilterStatus]);
 
   // Decide Property
   const handleDecideProperty = async (
@@ -1008,6 +1015,57 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                 <span>Export Users CSV</span>
               </button>
             </div>
+          </div>
+
+          {/* User Filters & Search Toolbar */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+            <input
+              type="text"
+              placeholder="Search users by name or email..."
+              className={styles.filterSelect}
+              style={{ flex: "1 1 240px", height: 38 }}
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+            />
+            <select
+              className={styles.filterSelect}
+              style={{ width: "auto", minWidth: 140, height: 38 }}
+              value={userFilterRole}
+              onChange={(e) => setUserFilterRole(e.target.value)}
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="finance_admin">Finance Admin</option>
+              <option value="agent">Agent</option>
+              <option value="developer">Developer</option>
+              <option value="buyer">Buyer</option>
+            </select>
+            <select
+              className={styles.filterSelect}
+              style={{ width: "auto", minWidth: 140, height: 38 }}
+              value={userFilterStatus}
+              onChange={(e) => setUserFilterStatus(e.target.value)}
+            >
+              <option value="">All Statuses</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending</option>
+              <option value="suspended">Suspended</option>
+              <option value="deactivated">Deactivated</option>
+            </select>
+            {(userSearch || userFilterRole || userFilterStatus) && (
+              <button
+                type="button"
+                className={styles.actionBtnSecondary}
+                style={{ height: 38 }}
+                onClick={() => {
+                  setUserSearch("");
+                  setUserFilterRole("");
+                  setUserFilterStatus("");
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
           {userLoading ? (

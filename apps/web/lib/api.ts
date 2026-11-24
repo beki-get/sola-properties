@@ -1727,8 +1727,9 @@ export const notificationApi = {
 };
 
 export const adminManagementApi = {
-  getUsers: (params?: { role?: string; status?: string; page?: number; limit?: number }) => {
+  getUsers: (params?: { q?: string; role?: string; status?: string; page?: number; limit?: number }) => {
     const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
     if (params?.role) query.set("role", params.role);
     if (params?.status) query.set("status", params.status);
     if (params?.page) query.set("page", String(params.page));
