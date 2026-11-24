@@ -253,15 +253,39 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
     status: "approved" | "suspended" | "deactivated"
   ) => {
     try {
-      const res = await adminManagementApi.updateUserStatus(userId, { status });
+      const action =
+        status === "approved"
+          ? "reactivate"
+          : status === "suspended"
+          ? "suspend"
+          : "deactivate";
+      const reason =
+        status === "suspended"
+          ? "Suspended by administrator"
+          : status === "deactivated"
+          ? "Deactivated by administrator"
+          : undefined;
+
+      const res = await adminManagementApi.updateUserStatus(userId, {
+        action,
+        reason,
+      });
       if (res.ok) {
         setUsers((prev) =>
           prev.map((u) => (u.id === userId ? { ...u, status } : u))
         );
         setFeedback({ ok: true, msg: `User account updated to ${status}.` });
+      } else {
+        setFeedback({
+          ok: false,
+          msg: res.message || "Failed to update user status.",
+        });
       }
-    } catch {
-      // ignore
+    } catch (err: any) {
+      setFeedback({
+        ok: false,
+        msg: err?.message || "Failed to update user status.",
+      });
     }
   };
 
@@ -385,7 +409,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
             <div>
               <h2 className={styles.sectionTitle}>Pending Listings Compliance Review</h2>
               <p className={styles.sectionSubtitle}>
-                Audit developer and agent submissions for cadastral title accuracy and image fidelity.
+                Audit developer and agent submissions for title document accuracy and image fidelity.
               </p>
             </div>
             <button
@@ -851,7 +875,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>User Access & Governance</h2>
+              <h2 className={styles.sectionTitle}>User Access & Accounts</h2>
               <p className={styles.sectionSubtitle}>
                 Manage verified account privileges, staff assignments, and access suspensions.
               </p>
@@ -889,7 +913,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                     <th className={styles.tableTh}>Platform Role</th>
                     <th className={styles.tableTh}>Account Status</th>
                     <th className={styles.tableTh}>Created</th>
-                    <th className={styles.tableTh}>Governance Action</th>
+                    <th className={styles.tableTh}>Action</th>
                   </tr>
                 </thead>
                 <tbody>

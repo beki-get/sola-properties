@@ -53,23 +53,34 @@ export async function createPropertyLookup(
 ) {
   const entityType = lookupEntityMap[kind];
 
-  return withTransaction(async (client) => {
-    const created = await insertPropertyLookup(kind, input, client);
+  try {
+    return await withTransaction(async (client) => {
+      const created = await insertPropertyLookup(kind, input, client);
 
-    await writeAuditLog(client, {
-      actorId: actingUserId,
-      action: `${entityType}.created`,
-      entityType,
-      entityId: created.id,
-      oldValues: null,
-      newValues: {
-        name: created.name,
-        isActive: created.isActive,
-      },
+      await writeAuditLog(client, {
+        actorId: actingUserId,
+        action: `${entityType}.created`,
+        entityType,
+        entityId: created.id,
+        oldValues: null,
+        newValues: {
+          name: created.name,
+          isActive: created.isActive,
+        },
+      });
+
+      return created;
     });
-
-    return created;
-  });
+  } catch (error: any) {
+    if (error?.code === "23505") {
+      throw new AdminUserServiceError(
+        409,
+        "LOOKUP_ALREADY_EXISTS",
+        `A ${kind} with the name "${input.name}" already exists.`,
+      );
+    }
+    throw error;
+  }
 }
 
 export async function updatePropertyLookupEntry(
@@ -80,55 +91,66 @@ export async function updatePropertyLookupEntry(
 ) {
   const entityType = lookupEntityMap[kind];
 
-  return withTransaction(async (client) => {
-    const existing = await findPropertyLookupById(kind, lookupId, client);
+  try {
+    return await withTransaction(async (client) => {
+      const existing = await findPropertyLookupById(kind, lookupId, client);
 
-    if (!existing) {
+      if (!existing) {
+        throw new AdminUserServiceError(
+          404,
+          "LOOKUP_NOT_FOUND",
+          "Record not found",
+        );
+      }
+
+      const updates: Partial<{ name: string; is_active: boolean }> = {};
+
+      if (input.name !== undefined) {
+        updates.name = input.name;
+      }
+
+      if (input.isActive !== undefined) {
+        updates.is_active = input.isActive;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return existing;
+      }
+
+      const result = await updatePropertyLookupRecord(
+        kind,
+        lookupId,
+        updates,
+        client,
+      );
+
+      await writeAuditLog(client, {
+        actorId: actingUserId,
+        action: `${entityType}.updated`,
+        entityType,
+        entityId: lookupId,
+        oldValues: {
+          name: existing.name,
+          isActive: existing.isActive,
+        },
+        newValues: {
+          name: result.name,
+          isActive: result.isActive,
+        },
+      });
+
+      return result;
+    });
+  } catch (error: any) {
+    if (error?.code === "23505") {
       throw new AdminUserServiceError(
-        404,
-        "LOOKUP_NOT_FOUND",
-        "Record not found",
+        409,
+        "LOOKUP_ALREADY_EXISTS",
+        `A ${kind} with the specified name already exists.`,
       );
     }
-
-    const updates: Partial<{ name: string; is_active: boolean }> = {};
-
-    if (input.name !== undefined) {
-      updates.name = input.name;
-    }
-
-    if (input.isActive !== undefined) {
-      updates.is_active = input.isActive;
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return existing;
-    }
-
-    const result = await updatePropertyLookupRecord(
-      kind,
-      lookupId,
-      updates,
-      client,
-    );
-
-    await writeAuditLog(client, {
-      actorId: actingUserId,
-      action: `${entityType}.updated`,
-      entityType,
-      entityId: lookupId,
-      oldValues: {
-        name: existing.name,
-        isActive: existing.isActive,
-      },
-      newValues: {
-        name: result.name,
-        isActive: result.isActive,
-      },
-    });
-
-    return result;
-  });
+    throw error;
+  }
 }
 
 const adminUserStatusTransitions: Record<

@@ -64,7 +64,7 @@ function VerifyEmailContent() {
     try {
       const res = await authApi.resendVerification({ email: resendEmail.trim() });
       if (res.ok) {
-        setResendSuccess(res.message || "Verification instructions dispatched to your inbox.");
+        setResendSuccess(res.message || "Verification instructions sent to your inbox.");
       } else {
         setFeedbackMsg(res.message || "Could not process verification resend.");
       }
@@ -230,6 +230,7 @@ function VerifyEmailContent() {
                 <div className={styles.formGroup}>
                   <input
                     type="email"
+                    autoComplete="email"
                     required
                     placeholder="Enter email to resend"
                     className={styles.formInput}

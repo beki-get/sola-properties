@@ -34,7 +34,7 @@ function ProjectsCatalogContent() {
   );
 
   useEffect(() => {
-    // Attempt to load live projects from backend
+    // Attempt to load live projects from backend for authorized roles
     setLoading(true);
     const fetchProjects = async () => {
       try {
@@ -45,10 +45,6 @@ function ProjectsCatalogContent() {
         } else if (user?.role === "developer") {
           const res = await developerApi.getProjects();
           live = res.data?.projects || res.data?.result?.projects || (res.data as any)?.data || [];
-        } else {
-          // Public visitor - attempt admin or developer projects if available
-          const res = await adminApi.getAllProjects({ limit: 50 });
-          live = res.data?.projects || (res.data as any)?.data || [];
         }
         if (Array.isArray(live)) {
           setProjects(live);

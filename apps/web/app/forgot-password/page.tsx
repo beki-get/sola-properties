@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
       } else {
         setSuccessMsg(
           result.message ||
-            "If an account exists with this email, a password reset token has been dispatched."
+            "If an account exists with this email, a password reset token has been sent to your inbox."
         );
       }
     } catch (err: any) {
@@ -116,6 +116,7 @@ export default function ForgotPasswordPage() {
             <label className={styles.formLabel}>Registered Email Address</label>
             <input
               type="email"
+              autoComplete="email"
               required
               maxLength={255}
               placeholder="alex@example.com"

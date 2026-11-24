@@ -494,7 +494,7 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
             <div>
               <h2 className={styles.sectionTitle}>Tailored Investment Matches</h2>
               <p className={styles.sectionSubtitle}>
-                Architectural listings matched to your budget, preferred locations, and target specs.
+                Verified listings matched to your budget, preferred locations, and target preferences.
               </p>
             </div>
           </div>

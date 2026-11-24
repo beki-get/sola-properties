@@ -200,6 +200,7 @@ function LoginForm() {
             <label className={styles.formLabel}>Email Address</label>
             <input
               type="email"
+              autoComplete="email"
               required
               maxLength={255}
               placeholder="e.g. agent@example.com"
@@ -215,6 +216,7 @@ function LoginForm() {
             <div className={styles.inputWrap}>
               <input
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 required
                 maxLength={128}
                 placeholder="Enter account password"

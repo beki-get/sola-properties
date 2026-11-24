@@ -156,6 +156,7 @@ export default function RegisterPage() {
             <label className={styles.formLabel}>Full Name</label>
             <input
               type="text"
+              autoComplete="name"
               required
               minLength={2}
               maxLength={150}
@@ -171,6 +172,7 @@ export default function RegisterPage() {
             <label className={styles.formLabel}>Email Address</label>
             <input
               type="email"
+              autoComplete="email"
               required
               maxLength={255}
               placeholder="alex@example.com"
@@ -186,6 +188,7 @@ export default function RegisterPage() {
             <div className={styles.inputWrap}>
               <input
                 type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
                 required
                 minLength={8}
                 maxLength={128}

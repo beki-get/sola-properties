@@ -143,6 +143,7 @@ function ResetPasswordForm() {
             <div className={styles.inputWrap}>
               <input
                 type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
                 required
                 minLength={8}
                 maxLength={128}
@@ -167,6 +168,7 @@ function ResetPasswordForm() {
             <label className={styles.formLabel}>Confirm New Password</label>
             <input
               type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
               required
               minLength={8}
               maxLength={128}

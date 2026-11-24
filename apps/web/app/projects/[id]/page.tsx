@@ -57,7 +57,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         if (user?.role === "developer") {
           const res = await developerApi.getProjectById(projectId);
           p = res.data?.project || (res.data as any)?.data || null;
-        } else {
+        } else if (user?.role === "admin") {
           const res = await adminApi.getProjectById(projectId);
           p = res.data?.project || (res.data as any)?.data || null;
         }
@@ -90,13 +90,13 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
       setInquiryFeedback({
         ok: true,
-        msg: "Your development consultation request has been dispatched directly to the certified developer team.",
+        msg: "Your development consultation request has been sent directly to the developer team.",
       });
       setInquiryNotes("");
     } catch (err: any) {
       setInquiryFeedback({
         ok: false,
-        msg: err.message || "Failed to dispatch consultation request. Please try again.",
+        msg: err.message || "Failed to send consultation request. Please try again.",
       });
     } finally {
       setSubmittingInquiry(false);
@@ -282,10 +282,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
           {/* Consultation Request Form */}
           <div className={styles.inquiryCard}>
-            <span className={styles.inquiryPre}>Private Access</span>
+            <span className={styles.inquiryPre}>Direct Inquiry</span>
             <h3 className={styles.inquiryTitle}>Developer Consultation</h3>
             <p className={styles.inquiryDesc}>
-              Request master floor plans, architectural elevation drawings, or an on-site private briefing with the accredited developer team.
+              Request floor plans, project layout drawings, or an on-site private visit with the developer team.
             </p>
 
             {inquiryFeedback && (
@@ -304,6 +304,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 <label className={styles.formLabel}>Full Legal Name</label>
                 <input
                   type="text"
+                  autoComplete="name"
                   required
                   placeholder="e.g. Dawit Tadesse"
                   className={styles.formInput}
@@ -317,6 +318,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 <label className={styles.formLabel}>Direct Email</label>
                 <input
                   type="email"
+                  autoComplete="email"
                   required
                   placeholder="dawit@example.com"
                   className={styles.formInput}
@@ -330,6 +332,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 <label className={styles.formLabel}>Phone Number</label>
                 <input
                   type="tel"
+                  autoComplete="tel"
                   placeholder="+251 91 123 4567"
                   className={styles.formInput}
                   value={inquiryPhone}
@@ -354,7 +357,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
                 className={styles.submitBtn}
                 disabled={submittingInquiry}
               >
-                <span>{submittingInquiry ? "Dispatching..." : "Submit Consultation Request"}</span>
+                <span>{submittingInquiry ? "Sending..." : "Submit Consultation Request"}</span>
                 <Send size={16} />
               </button>
             </form>

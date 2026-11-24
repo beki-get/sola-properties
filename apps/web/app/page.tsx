@@ -456,7 +456,7 @@ export default function SolaPropertiesPage() {
               fontSize: "0.92rem",
             }}
           >
-            <span>Browse Full Architectural Property Catalog & Comparison Matrix</span>
+            <span>Browse Full Property Catalog & Comparison</span>
             <ArrowRight size={18} />
           </Link>
         </div>
@@ -568,7 +568,7 @@ export default function SolaPropertiesPage() {
             <div className={styles.systemFeatureList}>
               <div className={styles.systemFeatureItem}>
                 <CheckCircle2 size={16} />
-                <span>100% municipal title deed clearance</span>
+                <span>100% verified legal title deeds</span>
               </div>
               <div className={styles.systemFeatureItem}>
                 <CheckCircle2 size={16} />
@@ -642,7 +642,7 @@ export default function SolaPropertiesPage() {
             </div>
             <h3 className={styles.systemCardTitle}>Developer Project Showcase</h3>
             <p className={styles.systemCardDesc}>
-              Showcase upcoming residential buildings, modern towers, and gated communities directly to serious local and diaspora investors with complete architectural plans and structural milestones.
+              Showcase upcoming residential buildings, modern towers, and gated communities directly to serious local and diaspora investors with verified building plans and structural milestones.
             </p>
             <div className={styles.systemFeatureList}>
               <div className={styles.systemFeatureItem}>
@@ -758,7 +758,7 @@ export default function SolaPropertiesPage() {
               Sola Properties
             </div>
             <p style={{ color: "#8a93a5", lineHeight: 1.6, fontSize: "0.92rem", maxWidth: 300, marginBottom: 16 }}>
-              A product of Solanova Tech Solutions. Curated architectural residences and verified real estate platform across Addis Ababa, Ethiopia.
+              A product of Solanova Tech Solutions. Curated homes and verified real estate platform across Addis Ababa, Ethiopia.
             </p>
             <div style={{ fontSize: "0.82rem", color: "#6e7787" }}>
               Bole Sub-City, Addis Ababa, Ethiopia
@@ -832,13 +832,14 @@ export default function SolaPropertiesPage() {
           </div>
 
           <div>
-            <div className={styles.footerLedgerColHeader}>Private Registry VIP Dispatch</div>
+            <div className={styles.footerLedgerColHeader}>Exclusive Property Updates</div>
             <p style={{ color: "#8a93a5", fontSize: "0.88rem", marginBottom: 14 }}>
               Receive off-market residential acquisitions before public announcement.
             </p>
             <div className={styles.vipNewsletterBox}>
               <input
                 type="email"
+                autoComplete="email"
                 className={styles.vipInput}
                 placeholder="Enter email address..."
                 value={newsletterEmail}

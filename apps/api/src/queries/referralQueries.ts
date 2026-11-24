@@ -1221,7 +1221,7 @@ const referralIssueAdminSelect = `
 
     p.id AS property_id,
     p.title AS property_title,
-   property_location.name AS property_location
+    property_location.name AS property_location,
     p.status AS property_status,
 
     reporter.full_name AS reporter_name,

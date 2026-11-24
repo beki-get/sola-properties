@@ -115,7 +115,7 @@ function CompareContent() {
               No Properties Selected for Comparison
             </h3>
             <p style={{ color: "#6b7280", marginBottom: 24, maxWidth: 500, margin: "0 auto 24px" }}>
-              Browse our architectural catalog and select the "Compare" checkbox on multiple properties to evaluate them side-by-side.
+              Browse our property catalog and select the "Compare" checkbox on multiple properties to evaluate them side-by-side.
             </p>
             <Link
               href="/properties"

@@ -851,7 +851,7 @@ function DashboardContent() {
                 className={`${styles.tabBtn} ${activeTab === "admin-users" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("admin-users")}
               >
-                User Governance
+                User Accounts
               </button>
               <button
                 type="button"
@@ -952,10 +952,10 @@ function DashboardContent() {
                   {role === "buyer"
                     ? "Search verified residences, track inquiries, and manage your scheduled tours."
                     : role === "agent"
-                    ? "Accredited broker managing verified luxury listings."
+                    ? "Licensed broker managing verified listings and client inquiries."
                     : role === "developer"
                     ? "Manage development projects, property units, and authorized agents."
-                    : "System governance, compliance reviews, and transaction management."}
+                    : "Platform administration, user management, and transaction oversight."}
                 </p>
               </div>
 
@@ -982,7 +982,7 @@ function DashboardContent() {
                 </div>
                 <p style={{ fontSize: "0.86rem", color: "#6a717e", marginTop: 6 }}>
                   {status === "approved"
-                    ? "Clearance active. All capabilities and listing tools unlocked."
+                    ? "Account approved. Full access to create listings, manage leads, and handle transactions."
                     : status === "rejected"
                     ? "Your submission requires updates. Please check reviewer remarks and resubmit documents."
                     : "Your verification request is currently under review by our administration team."}

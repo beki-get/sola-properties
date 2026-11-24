@@ -1667,14 +1667,34 @@ export const adminManagementApi = {
       }
     ),
 
-  updateUserStatus: (id: string, payload: { status: "approved" | "suspended" | "deactivated" }) =>
-    apiRequest<{ message: string }>(
+  updateUserStatus: (
+    id: string,
+    payload:
+      | { action: "suspend" | "deactivate" | "reactivate"; reason?: string }
+      | { status: "approved" | "suspended" | "deactivated"; reason?: string }
+  ) => {
+    const action =
+      "action" in payload
+        ? payload.action
+        : payload.status === "approved"
+        ? "reactivate"
+        : payload.status === "suspended"
+        ? "suspend"
+        : "deactivate";
+
+    const body: { action: string; reason?: string } = { action };
+    if (action === "suspend" || action === "deactivate") {
+      body.reason = payload.reason?.trim() || "Administrative action by administrator.";
+    }
+
+    return apiRequest<{ message: string }>(
       `/api/v1/admin/users/${id}/status`,
       {
         method: "PATCH",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       }
-    ),
+    );
+  },
 
   exportUsers: () =>
     apiRequest<{ downloadUrl?: string; data?: any }>("/api/v1/admin/users/export"),

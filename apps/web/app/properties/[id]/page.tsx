@@ -106,8 +106,8 @@ export default function PropertyDetailPage() {
 
     loadData();
 
-    // Check favorite status if authenticated
-    if (isAuthenticated) {
+    // Check favorite status if authenticated buyer
+    if (isAuthenticated && user?.role === "buyer") {
       favoriteApi.list().then((favRes) => {
         if (mounted && favRes.ok && favRes.data) {
           const list = favRes.data.favorites || favRes.data.data || [];
@@ -117,17 +117,22 @@ export default function PropertyDetailPage() {
           );
           setIsFavorite(matched);
         }
+      }).catch(() => {
+        // Silently ignore if favorites call fails
       });
     }
 
     return () => {
       mounted = false;
     };
-  }, [propertyId, isAuthenticated]);
+  }, [propertyId, isAuthenticated, user]);
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
       router.push(`/login?redirect=/properties/${propertyId}`);
+      return;
+    }
+    if (user?.role !== "buyer") {
       return;
     }
     setFavLoading(true);
@@ -432,8 +437,8 @@ export default function PropertyDetailPage() {
                 </div>
               </div>
 
-              {/* Architectural Description */}
-              <h3 className={styles.sectionTitle}>Architectural Overview</h3>
+              {/* Property Overview */}
+              <h3 className={styles.sectionTitle}>Property Overview</h3>
               <p className={styles.propDescription}>
                 {property.description ||
                   "A meticulously engineered living experience configured for premium privacy, structural endurance, and expansive natural light. Finished with high-specification materials adhering to strict institutional real estate standards."}
@@ -509,13 +514,13 @@ export default function PropertyDetailPage() {
 
             {/* Verification Seal Card */}
             <div className={styles.sellerCard}>
-              <div className={styles.sellerTitle}>Institutional Assurance</div>
+              <div className={styles.sellerTitle}>Verified Property</div>
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
                 <ShieldCheck size={28} color="#000000" />
                 <div>
                   <h4 className={styles.sellerName}>Verified Sola Property</h4>
                   <p className={styles.sellerMeta}>
-                    Cadastral ownership, title deeds, and developer accreditation vetted by Sola Compliance Team.
+                    Property ownership documents, title deeds, and developer registration verified by Sola Team.
                   </p>
                 </div>
               </div>
@@ -536,7 +541,7 @@ export default function PropertyDetailPage() {
             </button>
             <h3 className={styles.modalTitle}>Request Verified Property Details</h3>
             <p className={styles.modalDesc}>
-              Submit a direct referral inquiry for <strong>{property.title}</strong>. An authorized licensed advisor will provide comprehensive documentation.
+              Submit a direct inquiry for <strong>{property.title}</strong>. An authorized licensed advisor will provide comprehensive documentation.
             </p>
 
             {inquireStatus && (
@@ -581,7 +586,7 @@ export default function PropertyDetailPage() {
                 disabled={inquireSubmitting}
               >
                 <span>
-                  {inquireSubmitting ? "Dispatching..." : "Transmit Inquiry"}
+                  {inquireSubmitting ? "Sending..." : "Submit Inquiry"}
                 </span>
               </button>
             </form>

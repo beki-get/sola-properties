@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sola Properties | Curated Architectural Real Estate",
+  title: "Sola Properties | Verified Real Estate & Homes in Addis Ababa",
   description: "Find verified residential developments and properties across prime locations with transparent pricing.",
 };
 

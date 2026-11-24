@@ -188,7 +188,7 @@ function ProfileContent() {
         throw new Error(res.message || "Failed to update notification preferences.");
       }
 
-      setFeedback({ ok: true, msg: "Notification dispatch preferences updated successfully." });
+      setFeedback({ ok: true, msg: "Notification preferences updated successfully." });
     } catch (err: any) {
       setFeedback({ ok: false, msg: err.message || "Could not update notification settings." });
     } finally {
@@ -469,9 +469,9 @@ function ProfileContent() {
         {/* Notification Preferences */}
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Dispatch & Notification Preferences</h2>
+            <h2 className={styles.sectionTitle}>Notification Preferences</h2>
             <p className={styles.sectionDesc}>
-              Control which system alerts, referral lead activities, and escrow settlement notifications are dispatched to your devices.
+              Choose which alerts and emails you want to receive for tours, inquiries, and transaction updates.
             </p>
           </div>
 
@@ -494,9 +494,9 @@ function ProfileContent() {
 
             <div className={styles.toggleRow}>
               <div className={styles.toggleInfo}>
-                <span className={styles.toggleLabel}>Direct Email Dispatches</span>
+                <span className={styles.toggleLabel}>Email Notifications</span>
                 <span className={styles.toggleDesc}>
-                  Receive official transactional emails for title verification approvals, tour confirmations, and commission disbursements.
+                  Receive updates for tour confirmations, client inquiries, and transaction progress.
                 </span>
               </div>
               <input
