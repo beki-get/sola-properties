@@ -930,6 +930,31 @@ export interface DeveloperReport {
 }
 
 export interface AdminReport {
+  properties?: {
+    total: number;
+    byStatus?: Record<string, number>;
+  };
+  referrals?: {
+    total: number;
+    byStatus?: Record<string, number>;
+  };
+  sales?: {
+    totalSalesCount: number;
+    totalSalesValue: string;
+  };
+  commissions?: {
+    totalCommission: string;
+    sellerEarnings: string;
+    adjustments: string;
+    amountPaid: string;
+    outstandingAmount: string;
+  };
+  users?: {
+    total: number;
+  };
+  pendingVerifications?: {
+    total: number;
+  };
   total_users?: number;
   total_properties?: number;
   pending_properties?: number;
@@ -938,6 +963,17 @@ export interface AdminReport {
 }
 
 export interface FinanceAdminReport {
+  sales?: {
+    totalSalesCount: number;
+    totalSalesValue: string;
+  };
+  commissions?: {
+    totalCommission: string;
+    sellerEarnings: string;
+    adjustments: string;
+    amountPaid: string;
+    outstandingAmount: string;
+  };
   total_commissions_earned?: number;
   platform_revenue?: number;
   pending_payouts?: number;
@@ -1317,6 +1353,11 @@ export const referralApi = {
         method: "PATCH",
         body: JSON.stringify(payload),
       }
+    ),
+
+  getBuyerVisits: () =>
+    apiRequest<{ visits?: PropertyVisit[]; items?: PropertyVisit[]; data?: any }>(
+      "/api/v1/referral/buyer/me/visits"
     ),
 };
 

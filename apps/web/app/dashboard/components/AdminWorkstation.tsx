@@ -1215,61 +1215,83 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Total Users Registered</span>
                       <span className={styles.kpiValue}>
-                        {(report as AdminReport)?.total_users ?? 0}
+                        {(report as AdminReport)?.users?.total ?? (report as AdminReport)?.total_users ?? 0}
                       </span>
                       <span className={styles.kpiSubtext}>Buyers, agents, and developers</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Verified Listings</span>
+                      <span className={styles.kpiLabel}>Properties Catalog</span>
                       <span className={styles.kpiValue}>
-                        {(report as AdminReport)?.total_properties ?? 0}
+                        {(report as AdminReport)?.properties?.total ?? (report as AdminReport)?.total_properties ?? 0}
                       </span>
-                      <span className={styles.kpiSubtext}>Approved active catalog</span>
+                      <span className={styles.kpiSubtext}>
+                        {(report as AdminReport)?.properties?.byStatus?.approved ?? 0} approved active
+                      </span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Pending Review Queue</span>
                       <span className={styles.kpiValue}>
-                        {(report as AdminReport)?.pending_properties ?? 0}
+                        {(report as AdminReport)?.properties?.byStatus?.pending ?? (report as AdminReport)?.pending_properties ?? 0}
                       </span>
                       <span className={styles.kpiSubtext}>Listings awaiting audit</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Gross Platform GMV</span>
+                      <span className={styles.kpiLabel}>Gross Sales Volume</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as AdminReport)?.total_gmv ?? 0).toLocaleString()}
+                        ${Number((report as AdminReport)?.sales?.totalSalesValue ?? (report as AdminReport)?.total_gmv ?? 0).toLocaleString()}
                       </span>
-                      <span className={styles.kpiSubtext}>Settled property capital</span>
+                      <span className={styles.kpiSubtext}>
+                        {(report as AdminReport)?.sales?.totalSalesCount ?? 0} verified transactions
+                      </span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Client Referrals</span>
+                      <span className={styles.kpiValue}>
+                        {(report as AdminReport)?.referrals?.total ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Platform referral leads</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Total Platform Commission</span>
+                      <span className={styles.kpiValue}>
+                        ${Number((report as AdminReport)?.commissions?.totalCommission ?? 0).toLocaleString()}
+                      </span>
+                      <span className={styles.kpiSubtext}>
+                        ${Number((report as AdminReport)?.commissions?.outstandingAmount ?? 0).toLocaleString()} outstanding
+                      </span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Commissions Earned</span>
+                      <span className={styles.kpiLabel}>Total Sales Volume</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as FinanceAdminReport)?.total_commissions_earned ?? 0).toLocaleString()}
+                        ${Number((report as FinanceAdminReport)?.sales?.totalSalesValue ?? 0).toLocaleString()}
+                      </span>
+                      <span className={styles.kpiSubtext}>
+                        {(report as FinanceAdminReport)?.sales?.totalSalesCount ?? 0} closed deals
+                      </span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Total Commission</span>
+                      <span className={styles.kpiValue}>
+                        ${Number((report as FinanceAdminReport)?.commissions?.totalCommission ?? (report as FinanceAdminReport)?.total_commissions_earned ?? 0).toLocaleString()}
                       </span>
                       <span className={styles.kpiSubtext}>Cumulative volume fees</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Platform Revenue</span>
+                      <span className={styles.kpiLabel}>Disbursed to Brokers</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as FinanceAdminReport)?.platform_revenue ?? 0).toLocaleString()}
+                        ${Number((report as FinanceAdminReport)?.commissions?.amountPaid ?? (report as FinanceAdminReport)?.paid_commissions ?? 0).toLocaleString()}
                       </span>
-                      <span className={styles.kpiSubtext}>Net retained platform fees</span>
+                      <span className={styles.kpiSubtext}>Paid commissions</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Pending Payouts</span>
+                      <span className={styles.kpiLabel}>Outstanding Balance</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as FinanceAdminReport)?.pending_payouts ?? 0).toLocaleString()}
+                        ${Number((report as FinanceAdminReport)?.commissions?.outstandingAmount ?? (report as FinanceAdminReport)?.pending_payouts ?? 0).toLocaleString()}
                       </span>
                       <span className={styles.kpiSubtext}>Commissions awaiting release</span>
-                    </div>
-                    <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Paid Commissions</span>
-                      <span className={styles.kpiValue}>
-                        ${Number((report as FinanceAdminReport)?.paid_commissions ?? 0).toLocaleString()}
-                      </span>
-                      <span className={styles.kpiSubtext}>Settled agent disbursements</span>
                     </div>
                   </>
                 )}

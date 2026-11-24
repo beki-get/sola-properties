@@ -32,6 +32,9 @@ import {
   developerApi,
   verificationApi,
   adminApi,
+  reportApi,
+  favoriteApi,
+  referralApi,
   BuyerProfile,
   BuyerPreferencesInput,
   AgentProfile,
@@ -137,6 +140,10 @@ function DashboardContent() {
   const [adminProjectsPage, setAdminProjectsPage] = useState(1);
   const [adminProjectsTotalPages, setAdminProjectsTotalPages] = useState(1);
 
+  // Executive KPI & Overview Metrics
+  const [kpiData, setKpiData] = useState<any>(null);
+  const [kpiLoading, setKpiLoading] = useState(false);
+
   // Verification Form State (FE-005)
   const [verificationForm, setVerificationForm] = useState({
     legalName: "",
@@ -237,9 +244,56 @@ function DashboardContent() {
     }
   }, []);
 
+  // Real Role-Specific KPI Loader
+  const loadKpis = useCallback(async () => {
+    if (!user) return;
+    setKpiLoading(true);
+    try {
+      if (user.role === "admin" || user.role === "finance_admin") {
+        const res =
+          user.role === "finance_admin"
+            ? await reportApi.getFinanceAdminReport()
+            : await reportApi.getAdminReport();
+        if (res.ok && res.data) {
+          setKpiData(res.data.report || (res.data as any).data || null);
+        }
+      } else if (user.role === "agent") {
+        const res = await reportApi.getAgentReport();
+        if (res.ok && res.data) {
+          setKpiData(res.data.report || (res.data as any).data || null);
+        }
+      } else if (user.role === "developer") {
+        const res = await reportApi.getDeveloperReport();
+        if (res.ok && res.data) {
+          setKpiData(res.data.report || (res.data as any).data || null);
+        }
+      } else if (user.role === "buyer") {
+        const [favRes, tourRes, refRes] = await Promise.all([
+          favoriteApi.list().catch(() => ({ ok: false, data: null })),
+          referralApi.getBuyerVisits().catch(() => ({ ok: false, data: null })),
+          referralApi.getBuyerReferrals().catch(() => ({ ok: false, data: null })),
+        ]);
+        const favs = favRes.data?.favorites || (favRes.data as any)?.data || [];
+        const tours = tourRes.data?.visits || (tourRes.data as any)?.data || [];
+        const refs = refRes.data?.referrals || (refRes.data as any)?.data || [];
+        setKpiData({
+          shortlistCount: favs.length,
+          toursCount: tours.length,
+          inquiriesCount: refs.length,
+        });
+      }
+    } catch (err) {
+      console.error("Could not load KPI data:", err);
+    } finally {
+      setKpiLoading(false);
+    }
+  }, [user]);
+
   // Load Real Data based on the authenticated user's actual role
   useEffect(() => {
     if (!user) return;
+
+    loadKpis();
 
     if (user.role === "buyer") {
       loadBuyerData();
@@ -267,7 +321,7 @@ function DashboardContent() {
       });
       loadAdminProjects(1, adminProjectsFilter);
     }
-  }, [user, adminProjectsFilter, loadBuyerData, loadAgentProfile, loadDeveloperProfile]);
+  }, [user, adminProjectsFilter, loadBuyerData, loadAgentProfile, loadDeveloperProfile, loadKpis]);
 
   // Redirect to dedicated /profile page if user navigates to the profile tab
   useEffect(() => {
@@ -876,13 +930,6 @@ function DashboardContent() {
               </button>
               <button
                 type="button"
-                className={`${styles.tabBtn} ${activeTab === "admin" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("admin")}
-              >
-                Verification Queue
-              </button>
-              <button
-                type="button"
                 className={`${styles.tabBtn} ${
                   activeTab === "admin-projects" ? styles.tabBtnActive : ""
                 }`}
@@ -915,78 +962,509 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* TAB 1: OVERVIEW */}
+        {/* TAB 1: OVERVIEW - EXECUTIVE KPIS & QUICK ACTIONS */}
         {activeTab === "overview" && (
           <div className={styles.cardBox}>
             <div className={styles.cardHeader}>
-              <span className={styles.cardPretitle}>Account Summary</span>
-              <h3 className={styles.cardTitle}>Welcome back, {user?.fullName}</h3>
-              <p className={styles.cardDesc}>
-                Manage your properties, inquiries, and account settings.
-              </p>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
+                  gap: 16,
+                }}
+              >
+                <div>
+                  <span className={styles.cardPretitle}>Dashboard Overview</span>
+                  <h3 className={styles.cardTitle}>Welcome back, {user?.fullName}</h3>
+                  <p className={styles.cardDesc}>
+                    {role === "admin" || role === "finance_admin"
+                      ? "Executive platform operations, listing reviews, user registrations, and transaction volume."
+                      : role === "agent"
+                      ? "Performance metrics, client referral pipeline, and property listings."
+                      : role === "developer"
+                      ? "Project developments, listed residential units, and sales performance."
+                      : "Your saved residences, scheduled visits, and active advisory inquiries."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={loadKpis}
+                  disabled={kpiLoading}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 16px",
+                    background: "#ffffff",
+                    border: "1px solid #000000",
+                    color: "#000000",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    cursor: kpiLoading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <RefreshCw
+                    size={13}
+                    style={{
+                      animation: kpiLoading ? "spin 1s linear infinite" : "none",
+                    }}
+                  />
+                  <span>{kpiLoading ? "Updating..." : "Refresh Metrics"}</span>
+                </button>
+              </div>
             </div>
 
-            <div className={styles.formGrid2}>
-              <div style={{ backgroundColor: "#f6f7f9", padding: "24px 20px" }}>
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    color: "#6b7280",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Active Role
-                </span>
-                <div
-                  style={{
-                    fontSize: "1.2rem",
-                    fontWeight: 700,
-                    marginTop: 4,
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {role.replace("_", " ")}
-                </div>
-                <p style={{ fontSize: "0.86rem", color: "#6a717e", marginTop: 6 }}>
-                  {role === "buyer"
-                    ? "Search verified residences, track inquiries, and manage your scheduled tours."
-                    : role === "agent"
-                    ? "Licensed broker managing verified listings and client inquiries."
-                    : role === "developer"
-                    ? "Manage development projects, property units, and authorized agents."
-                    : "Platform administration, user management, and transaction oversight."}
-                </p>
-              </div>
+            {/* Role-Specific KPI Cards Grid */}
+            <div className={styles.kpiGrid}>
+              {role === "admin" && (
+                <>
+                  <div className={styles.kpiCard}>
+                    <span className={styles.kpiLabel}>Total Properties</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.properties?.total ?? kpiData?.total_properties ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>
+                      {kpiData?.properties?.byStatus?.approved ?? 0} approved active
+                    </span>
+                  </div>
 
-              <div style={{ backgroundColor: "#f6f7f9", padding: "24px 20px" }}>
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    color: "#6b7280",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Verification Status
-                </span>
-                <div
-                  style={{
-                    fontSize: "1.2rem",
-                    fontWeight: 700,
-                    marginTop: 4,
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {status}
-                </div>
-                <p style={{ fontSize: "0.86rem", color: "#6a717e", marginTop: 6 }}>
-                  {status === "approved"
-                    ? "Account approved. Full access to create listings, manage leads, and handle transactions."
-                    : status === "rejected"
-                    ? "Your submission requires updates. Please check reviewer remarks and resubmit documents."
-                    : "Your verification request is currently under review by our administration team."}
-                </p>
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer", borderLeft: "4px solid #f59e0b" }}
+                    onClick={() => setActiveTab("admin-properties")}
+                  >
+                    <span className={styles.kpiLabel}>Pending Review Queue</span>
+                    <span className={styles.kpiValue} style={{ color: "#d97706" }}>
+                      {kpiData?.properties?.byStatus?.pending ?? kpiData?.pending_properties ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext} style={{ color: "#d97706", fontWeight: 700 }}>
+                      Listings awaiting audit → Click to review
+                    </span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("admin-users")}
+                  >
+                    <span className={styles.kpiLabel}>Platform Users</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.users?.total ?? kpiData?.total_users ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>Registered accounts</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("admin-referrals")}
+                  >
+                    <span className={styles.kpiLabel}>Client Referrals</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.referrals?.total ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>Referral inquiry pipeline</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("admin-transactions")}
+                  >
+                    <span className={styles.kpiLabel}>Verified Transactions</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.sales?.totalSalesCount ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>
+                      ${Number(kpiData?.sales?.totalSalesValue ?? kpiData?.total_gmv ?? 0).toLocaleString()} volume
+                    </span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("admin-commissions")}
+                  >
+                    <span className={styles.kpiLabel}>Total Commission</span>
+                    <span className={styles.kpiValue}>
+                      ${Number(kpiData?.commissions?.totalCommission ?? 0).toLocaleString()}
+                    </span>
+                    <span className={styles.kpiSubtext}>
+                      ${Number(kpiData?.commissions?.outstandingAmount ?? 0).toLocaleString()} outstanding
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {role === "finance_admin" && (
+                <>
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("admin-transactions")}
+                  >
+                    <span className={styles.kpiLabel}>Verified Transactions</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.sales?.totalSalesCount ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>
+                      ${Number(kpiData?.sales?.totalSalesValue ?? 0).toLocaleString()} sales volume
+                    </span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("admin-commissions")}
+                  >
+                    <span className={styles.kpiLabel}>Total Commissions</span>
+                    <span className={styles.kpiValue}>
+                      ${Number(kpiData?.commissions?.totalCommission ?? kpiData?.total_commissions_earned ?? 0).toLocaleString()}
+                    </span>
+                    <span className={styles.kpiSubtext}>Cumulative volume fees</span>
+                  </div>
+
+                  <div className={styles.kpiCard}>
+                    <span className={styles.kpiLabel}>Paid to Brokers</span>
+                    <span className={styles.kpiValue}>
+                      ${Number(kpiData?.commissions?.amountPaid ?? kpiData?.paid_commissions ?? 0).toLocaleString()}
+                    </span>
+                    <span className={styles.kpiSubtext}>Disbursed settlement earnings</span>
+                  </div>
+
+                  <div className={styles.kpiCard}>
+                    <span className={styles.kpiLabel}>Outstanding Balance</span>
+                    <span className={styles.kpiValue} style={{ color: "#d97706" }}>
+                      ${Number(kpiData?.commissions?.outstandingAmount ?? kpiData?.pending_payouts ?? 0).toLocaleString()}
+                    </span>
+                    <span className={styles.kpiSubtext}>Awaiting release</span>
+                  </div>
+                </>
+              )}
+
+              {role === "agent" && (
+                <>
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("inventory")}
+                  >
+                    <span className={styles.kpiLabel}>My Listings</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.properties?.total ?? kpiData?.active_listings ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>
+                      {kpiData?.properties?.byStatus?.approved ?? 0} approved active
+                    </span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("authorizations")}
+                  >
+                    <span className={styles.kpiLabel}>Authorized Properties</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.authorizedProperties?.total ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>Developer representations</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("leads")}
+                  >
+                    <span className={styles.kpiLabel}>Leads Pipeline</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.referrals?.total ?? kpiData?.total_referrals ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>Client referral requests</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("transactions")}
+                  >
+                    <span className={styles.kpiLabel}>Closed Sales</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.sales?.totalSalesCount ?? kpiData?.closed_deals ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>
+                      ${Number(kpiData?.sales?.totalSalesValue ?? 0).toLocaleString()} volume
+                    </span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("commissions")}
+                  >
+                    <span className={styles.kpiLabel}>Commissions Earned</span>
+                    <span className={styles.kpiValue}>
+                      ${Number(kpiData?.commissions?.totalCommission ?? kpiData?.total_commission ?? 0).toLocaleString()}
+                    </span>
+                    <span className={styles.kpiSubtext}>Earned earnings</span>
+                  </div>
+                </>
+              )}
+
+              {role === "developer" && (
+                <>
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("developments")}
+                  >
+                    <span className={styles.kpiLabel}>Registered Projects</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.totalProjects ?? kpiData?.active_projects ?? developerProjects.length}
+                    </span>
+                    <span className={styles.kpiSubtext}>Active developments</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("inventory")}
+                  >
+                    <span className={styles.kpiLabel}>Total Units</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.totalProperties ?? kpiData?.total_properties ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>Residential and commercial</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("authorizations")}
+                  >
+                    <span className={styles.kpiLabel}>Authorized Brokers</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.authorizedAgents ?? kpiData?.authorized_agents ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>Active sales partners</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("leads")}
+                  >
+                    <span className={styles.kpiLabel}>Buyer Inquiries</span>
+                    <span className={styles.kpiValue}>
+                      {kpiData?.referrals?.total ?? kpiData?.total_inquiries ?? 0}
+                    </span>
+                    <span className={styles.kpiSubtext}>Direct buyer leads</span>
+                  </div>
+                </>
+              )}
+
+              {role === "buyer" && (
+                <>
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("favorites")}
+                  >
+                    <span className={styles.kpiLabel}>Saved Shortlist</span>
+                    <span className={styles.kpiValue}>{kpiData?.shortlistCount ?? 0}</span>
+                    <span className={styles.kpiSubtext}>Properties saved to shortlist</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("tours")}
+                  >
+                    <span className={styles.kpiLabel}>Tours & Visits</span>
+                    <span className={styles.kpiValue}>{kpiData?.toursCount ?? 0}</span>
+                    <span className={styles.kpiSubtext}>Scheduled property viewings</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("inquiries")}
+                  >
+                    <span className={styles.kpiLabel}>Inquiries & Conversations</span>
+                    <span className={styles.kpiValue}>{kpiData?.inquiriesCount ?? 0}</span>
+                    <span className={styles.kpiSubtext}>Active requests with advisors</span>
+                  </div>
+
+                  <div
+                    className={styles.kpiCard}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setActiveTab("recommendations")}
+                  >
+                    <span className={styles.kpiLabel}>Recommendations</span>
+                    <span className={styles.kpiValue}>Active</span>
+                    <span className={styles.kpiSubtext}>Matched to your preferences</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Quick Actions Navigation Row */}
+            <div
+              style={{
+                marginTop: 28,
+                paddingTop: 20,
+                borderTop: "1px solid #e5e7eb",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "#6b7280",
+                }}
+              >
+                Quick Navigation
+              </span>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  marginTop: 12,
+                }}
+              >
+                {(role === "admin" || role === "finance_admin") && (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("admin-properties")}
+                    >
+                      <FileCheck size={14} />
+                      <span>Review Pending Listings</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("admin-users")}
+                    >
+                      <User size={14} />
+                      <span>Manage Users</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => {
+                        setActiveTab("admin-projects");
+                        loadAdminProjects(1, adminProjectsFilter);
+                      }}
+                    >
+                      <Building2 size={14} />
+                      <span>Projects Directory</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("admin-reports")}
+                    >
+                      <Sliders size={14} />
+                      <span>Executive Reports</span>
+                    </button>
+                  </>
+                )}
+
+                {role === "agent" && (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("inventory")}
+                    >
+                      <Plus size={14} />
+                      <span>View Listings</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("leads")}
+                    >
+                      <Send size={14} />
+                      <span>Leads Pipeline</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("visits")}
+                    >
+                      <Calendar size={14} />
+                      <span>Scheduled Tours</span>
+                    </button>
+                  </>
+                )}
+
+                {role === "developer" && (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("developments")}
+                    >
+                      <Building2 size={14} />
+                      <span>Manage Developments</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("inventory")}
+                    >
+                      <Plus size={14} />
+                      <span>Units Catalog</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("authorizations")}
+                    >
+                      <FileCheck size={14} />
+                      <span>Agent Authorizations</span>
+                    </button>
+                  </>
+                )}
+
+                {role === "buyer" && (
+                  <>
+                    <Link
+                      href="/properties"
+                      className={styles.quickActionBtn}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <Building2 size={14} />
+                      <span>Browse Available Properties</span>
+                    </Link>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("favorites")}
+                    >
+                      <FileCheck size={14} />
+                      <span>View Shortlist</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickActionBtn}
+                      onClick={() => setActiveTab("tours")}
+                    >
+                      <Calendar size={14} />
+                      <span>My Visits & Tours</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

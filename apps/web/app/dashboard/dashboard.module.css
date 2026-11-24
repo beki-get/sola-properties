@@ -241,43 +241,114 @@
 }
 
 /* Tabs Bar */
-.tabsBar {
+.tabsBar,
+.tabNav {
   display: flex;
   align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #dcdfe4;
+  gap: 6px;
+  border-bottom: 2px solid #e5e7eb;
   overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  margin-bottom: 24px;
+}
+
+.tabsBar::-webkit-scrollbar,
+.tabNav::-webkit-scrollbar {
+  display: none;
 }
 
 .tabBtn {
-  padding: 14px 20px;
-  font-size: 0.92rem;
-  font-weight: 750;
-  color: #6a717e;
+  padding: 12px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #64748b;
   background: transparent;
   border: none !important;
   border-bottom: 3px solid transparent !important;
+  margin-bottom: -2px;
   border-radius: 0px !important;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
   font-family: inherit;
-  outline: none;
+  outline: none !important;
 }
 
 .tabBtn:hover {
-  color: #000000;
-}
-
-.tabBtn:focus-visible {
-  outline: 2px solid #000000;
-  outline-offset: -2px;
+  color: #0f172a;
 }
 
 .tabBtnActive {
-  color: #000000;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  border-bottom-color: #0f172a !important;
+  background: transparent !important;
+}
+
+/* KPI Dashboard Cards */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+  margin-bottom: 12px;
+}
+
+.kpiCard {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 22px 20px;
+  border-radius: 0px !important;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.kpiCard:hover {
+  border-color: #cbd5e1;
+}
+
+.kpiLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.kpiValue {
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.kpiSubtext {
+  font-size: 0.76rem;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+.quickActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: #0f172a;
+  color: #ffffff;
+  font-size: 0.78rem;
   font-weight: 700;
-  border-bottom-color: #000000 !important;
+  border: none;
+  cursor: pointer;
+  border-radius: 0px;
+  transition: background-color 0.15s ease;
+}
+
+.quickActionBtn:hover {
+  background-color: #334155;
 }
 
 /* Card Section */
