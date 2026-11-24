@@ -281,7 +281,7 @@ export default function SolaPropertiesPage() {
           <div>
             <h2 className={styles.sectionMainTitle}>Popular Residences</h2>
             <p className={styles.sectionMainSubtitle}>
-              Hand-curated architectural homes inspected for title verification and construction quality.
+              Verified residential homes with clean legal title and quality construction.
             </p>
           </div>
 
@@ -342,12 +342,11 @@ export default function SolaPropertiesPage() {
                 const cat = (prop.category_name || "").toLowerCase();
                 return cat.includes(propCategory);
               })
-              .map((prop, idx) => {
-                const sampleImages = ["/property-penthouse.jpg", "/property-villa.jpg", "/hero-building.jpg"];
+              .map((prop) => {
                 const imgSrc =
                   prop.images && prop.images.length > 0 && prop.images[0]?.image_url
                     ? prop.images[0].image_url
-                    : sampleImages[idx % sampleImages.length];
+                    : (prop as any).image_url || (prop as any).primary_image_url || null;
 
                 const formattedPrice =
                   typeof prop.price === "number"
@@ -357,12 +356,33 @@ export default function SolaPropertiesPage() {
                 return (
                   <article key={prop.id} className={styles.sharpCard}>
                     <div className={styles.cardImgWrap}>
-                      <img
-                        src={imgSrc}
-                        alt={prop.title}
-                        className={styles.cardImg}
-                        style={{ width: "100%", height: 260, objectFit: "cover" }}
-                      />
+                      {imgSrc ? (
+                        <img
+                          src={imgSrc}
+                          alt={prop.title}
+                          className={styles.cardImg}
+                          style={{ width: "100%", height: 260, objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: 260,
+                            backgroundColor: "#f3f4f6",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 8,
+                            color: "#9ca3af",
+                          }}
+                        >
+                          <Building2 size={40} color="#cbd5e1" />
+                          <span style={{ fontSize: "0.78rem", fontWeight: 600, letterSpacing: "0.02em" }}>
+                            No photo uploaded
+                          </span>
+                        </div>
+                      )}
                       <div className={styles.cardTagRow}>
                         <div className={styles.verifiedPill}>
                           <ShieldCheck size={14} />
@@ -486,10 +506,10 @@ export default function SolaPropertiesPage() {
           >
             <h3 className={styles.bentoTitle}>Book Private Walkthrough</h3>
             <p className={styles.bentoDesc}>
-              Schedule an in-person property inspection or HD live video tour with an accredited local architect and receive complete architectural floor plans.
+              Schedule an in-person property visit or live video tour with an accredited local agent and receive complete property details.
             </p>
             <div className={styles.bentoActionRow}>
-              <span className={styles.bentoActionText}>Schedule Inspection</span>
+              <span className={styles.bentoActionText}>Schedule Tour</span>
               <div className={styles.cardArrowBtn}>
                 <ArrowUpRight size={22} strokeWidth={2.4} />
               </div>
@@ -659,7 +679,7 @@ export default function SolaPropertiesPage() {
             <span className={styles.consultBadge}>Direct Platform Assistance</span>
             <h3 className={styles.consultTitle}>Looking for a Specific Residence in Addis Ababa?</h3>
             <p className={styles.consultDesc}>
-              Tell us what you are looking for. Our accredited concierge matches you with legally vetted properties and arranges private on-site inspections.
+              Tell us what you are looking for. Our team matches you with legally verified properties and arranges private tours.
             </p>
           </div>
 

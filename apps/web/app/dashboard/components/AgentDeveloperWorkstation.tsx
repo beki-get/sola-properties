@@ -1145,7 +1145,7 @@ export function AgentDeveloperWorkstation({
           </div>
 
           {visitLoading ? (
-            <div className={styles.emptyBlock}>Loading inspection appointments...</div>
+            <div className={styles.emptyBlock}>Loading tour appointments...</div>
           ) : visits.length === 0 ? (
             <div className={styles.emptyBlock}>
               <Calendar size={36} color="#9ca3af" />
@@ -1242,7 +1242,7 @@ export function AgentDeveloperWorkstation({
                       onChange={(e) => setOutcomeVal(e.target.value as any)}
                     >
                       <option value="interested">Interested / Advancing to Proposal</option>
-                      <option value="requested_another_visit">Requested Secondary Inspection</option>
+                      <option value="requested_another_visit">Requested Secondary Tour</option>
                       <option value="not_interested">Not Interested / Spec Mismatch</option>
                     </select>
                   </div>

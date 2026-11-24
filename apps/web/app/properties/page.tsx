@@ -19,6 +19,7 @@ import {
   Layers,
   Sparkles,
   RefreshCw,
+  Building,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Navbar } from "../components/Navbar";
@@ -333,19 +334,40 @@ function PropertiesCatalogContent() {
               const isFavorited = favoritedIds.has(prop.id);
               const isCompared = comparedIds.includes(prop.id);
               const primaryImg =
-                prop.images && prop.images.length > 0
-                  ? prop.images[0]?.image_url
-                  : "/property-penthouse.jpg";
+                prop.images && prop.images.length > 0 && prop.images[0]?.image_url
+                  ? prop.images[0].image_url
+                  : (prop as any).image_url || (prop as any).primary_image_url || null;
 
               return (
                 <div key={prop.id} className={styles.propertyCard}>
                   {/* Image */}
                   <div className={styles.cardImageWrapper}>
-                    <img
-                      src={primaryImg}
-                      alt={prop.title}
-                      className={styles.cardImage}
-                    />
+                    {primaryImg ? (
+                      <img
+                        src={primaryImg}
+                        alt={prop.title}
+                        className={styles.cardImage}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: 220,
+                          backgroundColor: "#f8fafc",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 8,
+                          color: "#94a3b8",
+                        }}
+                      >
+                        <Building size={36} color="#cbd5e1" />
+                        <span style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.02em" }}>
+                          No photo available
+                        </span>
+                      </div>
+                    )}
                     <span className={styles.cardBadgeTopLeft}>
                       {prop.status === "active" ? "Verified Available" : prop.status}
                     </span>
@@ -404,8 +426,8 @@ function PropertiesCatalogContent() {
 
                     {/* Actions */}
                     <div className={styles.cardActions}>
-                      <Link href={`/properties/${prop.id}`} className={styles.inspectBtn}>
-                        <span>Inspect Residence</span>
+                      <Link href={`/properties/${prop.id}`} className={styles.viewPropertyBtn}>
+                        <span>View Property</span>
                         <ArrowRight size={14} />
                       </Link>
 
@@ -415,7 +437,7 @@ function PropertiesCatalogContent() {
                           isCompared ? styles.compareCheckBtnActive : ""
                         }`}
                         onClick={() => toggleCompare(prop.id)}
-                        title="Add to side-by-side spec comparison"
+                        title="Add to comparison"
                       >
                         {isCompared ? <Check size={14} /> : null}
                         <span>{isCompared ? "Compared" : "Compare"}</span>

@@ -131,37 +131,59 @@ function CompareContent() {
             <table className={styles.compareTable}>
               <thead>
                 <tr>
-                  <th className={styles.specRowHeader}>Architectural Spec</th>
-                  {properties.map((prop) => (
-                    <th key={prop.id} className={styles.propTopCell}>
-                      <button
-                        type="button"
-                        className={styles.removeColBtn}
-                        onClick={() => handleRemoveProperty(prop.id)}
-                        title="Remove from comparison"
-                      >
-                        <X size={14} />
-                      </button>
-                      <img
-                        src={
-                          prop.images?.[0]?.image_url ||
-                          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop"
-                        }
-                        alt={prop.title}
-                        className={styles.propThumb}
-                      />
-                      <h4 className={styles.propColTitle}>{prop.title}</h4>
-                      <div className={styles.propColPrice}>
-                        ${Number(prop.price).toLocaleString()}
-                      </div>
-                      <Link
-                        href={`/properties/${prop.id}`}
-                        className={styles.actionBtn}
-                      >
-                        <span>Inspect Dossier</span>
-                      </Link>
-                    </th>
-                  ))}
+                  <th className={styles.specRowHeader}>Property Feature</th>
+                  {properties.map((prop) => {
+                    const thumbUrl =
+                      prop.images?.[0]?.image_url ||
+                      (prop as any).image_url ||
+                      (prop as any).primary_image_url ||
+                      null;
+
+                    return (
+                      <th key={prop.id} className={styles.propTopCell}>
+                        <button
+                          type="button"
+                          className={styles.removeColBtn}
+                          onClick={() => handleRemoveProperty(prop.id)}
+                          title="Remove from comparison"
+                        >
+                          <X size={14} />
+                        </button>
+                        {thumbUrl ? (
+                          <img
+                            src={thumbUrl}
+                            alt={prop.title}
+                            className={styles.propThumb}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "100%",
+                              height: 120,
+                              backgroundColor: "#f8fafc",
+                              border: "1px solid #e2e8f0",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              marginBottom: 8,
+                            }}
+                          >
+                            <Building size={24} color="#cbd5e1" />
+                          </div>
+                        )}
+                        <h4 className={styles.propColTitle}>{prop.title}</h4>
+                        <div className={styles.propColPrice}>
+                          ${Number(prop.price).toLocaleString()}
+                        </div>
+                        <Link
+                          href={`/properties/${prop.id}`}
+                          className={styles.actionBtn}
+                        >
+                          <span>View Property</span>
+                        </Link>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>

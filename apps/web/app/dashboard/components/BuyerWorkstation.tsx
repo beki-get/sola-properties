@@ -256,9 +256,9 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Private Tours & Inspections</h2>
+              <h2 className={styles.sectionTitle}>Private Tours & Visits</h2>
               <p className={styles.sectionSubtitle}>
-                On-site inspections and cadastral reviews scheduled with accredited agents.
+                On-site property visits scheduled with accredited agents.
               </p>
             </div>
           </div>
@@ -543,7 +543,7 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
                           className={styles.actionBtnPrimary}
                           style={{ padding: "4px 10px", fontSize: "0.72rem" }}
                         >
-                          <span>Inspect Dossier</span>
+                          <span>View Property</span>
                         </Link>
                       </td>
                     </tr>

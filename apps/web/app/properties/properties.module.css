@@ -473,6 +473,7 @@
   margin-top: 16px;
 }
 
+.viewPropertyBtn,
 .inspectBtn {
   flex: 1;
   height: 40px;
@@ -491,6 +492,7 @@
   transition: opacity 0.15s;
 }
 
+.viewPropertyBtn:hover,
 .inspectBtn:hover {
   opacity: 0.85;
 }

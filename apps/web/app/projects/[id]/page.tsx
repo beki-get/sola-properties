@@ -107,7 +107,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     return (
       <div className={styles.pageWrapper}>
         <div style={{ padding: "64px", textAlign: "center" }}>
-          <p style={{ fontWeight: 800 }}>Loading Master Development Dossier...</p>
+          <p style={{ fontWeight: 800 }}>Loading Project Details...</p>
         </div>
       </div>
     );
@@ -156,20 +156,32 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         <div className={styles.leftCol}>
           <div className={styles.heroCard}>
             <div className={styles.heroBanner}>
-              <Image
-                src={
-                  projectId.includes("olympia")
-                    ? "/property-villa.jpg"
-                    : projectId.includes("financial")
-                    ? "/property-terrace.jpg"
-                    : "/property-penthouse.jpg"
-                }
-                alt={p.name}
-                width={1200}
-                height={600}
-                priority
-                className={styles.heroImg}
-              />
+              {(p as any).image_url || (p as any).cover_image ? (
+                <img
+                  src={(p as any).image_url || (p as any).cover_image}
+                  alt={p.name}
+                  className={styles.heroImg}
+                  style={{ width: "100%", height: 340, objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: 280,
+                    backgroundColor: "#f8fafc",
+                    borderBottom: "1px solid #e5e7eb",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 12,
+                    color: "#94a3b8",
+                  }}
+                >
+                  <Building2 size={48} color="#cbd5e1" />
+                  <span style={{ fontSize: "0.95rem", fontWeight: 600 }}>Development Project Overview</span>
+                </div>
+              )}
 
               <div className={styles.heroBadges}>
                 <span

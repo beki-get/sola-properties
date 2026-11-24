@@ -163,19 +163,32 @@ function ProjectsCatalogContent() {
             {filteredProjects.map((project, idx) => (
               <article key={project.id} className={styles.projectCard}>
                 <div className={styles.cardBanner}>
-                  <Image
-                    src={
-                      idx % 3 === 0
-                        ? "/property-penthouse.jpg"
-                        : idx % 3 === 1
-                        ? "/property-villa.jpg"
-                        : "/property-terrace.jpg"
-                    }
-                    alt={project.name}
-                    width={600}
-                    height={380}
-                    className={styles.cardImg}
-                  />
+                  {(project as any).image_url || (project as any).cover_image ? (
+                    <img
+                      src={(project as any).image_url || (project as any).cover_image}
+                      alt={project.name}
+                      className={styles.cardImg}
+                      style={{ width: "100%", height: 220, objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: 220,
+                        backgroundColor: "#f8fafc",
+                        borderBottom: "1px solid #e5e7eb",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        color: "#94a3b8",
+                      }}
+                    >
+                      <Building2 size={40} color="#cbd5e1" />
+                      <span style={{ fontSize: "0.78rem", fontWeight: 600 }}>Development Project</span>
+                    </div>
+                  )}
 
                   <div className={styles.cardTopBadges}>
                     <span

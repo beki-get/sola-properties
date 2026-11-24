@@ -238,15 +238,8 @@ export default function PropertyDetailPage() {
     }
   };
 
-  // Build fallback photo URLs if images empty
-  const photoUrls =
-    images.length > 0
-      ? images.map((img) => img.image_url)
-      : [
-          "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1600&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1600&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop",
-        ];
+  // Live photo URLs from backend
+  const photoUrls: string[] = images.map((img) => img.image_url);
 
   if (loading) {
     return (
@@ -340,32 +333,59 @@ export default function PropertyDetailPage() {
           <div>
             {/* Gallery Card */}
             <div className={styles.galleryCard}>
-              <div className={styles.mainPhotoWrapper}>
-                <img
-                  src={photoUrls[activePhotoIdx] || photoUrls[0]}
-                  alt={property.title}
-                  className={styles.mainPhoto}
-                />
-              </div>
+              {photoUrls.length > 0 ? (
+                <>
+                  <div className={styles.mainPhotoWrapper}>
+                    <img
+                      src={photoUrls[activePhotoIdx] || photoUrls[0]}
+                      alt={property.title}
+                      className={styles.mainPhoto}
+                    />
+                  </div>
 
-              {photoUrls.length > 1 && (
-                <div className={styles.thumbnailStrip}>
-                  {photoUrls.map((url, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      className={`${styles.thumbnailBtn} ${
-                        activePhotoIdx === idx ? styles.thumbnailBtnActive : ""
-                      }`}
-                      onClick={() => setActivePhotoIdx(idx)}
-                    >
-                      <img
-                        src={url}
-                        alt={`Photo ${idx + 1}`}
-                        className={styles.thumbnailImg}
-                      />
-                    </button>
-                  ))}
+                  {photoUrls.length > 1 && (
+                    <div className={styles.thumbnailStrip}>
+                      {photoUrls.map((url, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`${styles.thumbnailBtn} ${
+                            activePhotoIdx === idx ? styles.thumbnailBtnActive : ""
+                          }`}
+                          onClick={() => setActivePhotoIdx(idx)}
+                        >
+                          <img
+                            src={url}
+                            alt={`Photo ${idx + 1}`}
+                            className={styles.thumbnailImg}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: 380,
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 12,
+                    color: "#94a3b8",
+                  }}
+                >
+                  <Building size={48} color="#cbd5e1" />
+                  <span style={{ fontSize: "0.95rem", fontWeight: 600 }}>
+                    No photos uploaded yet for this property
+                  </span>
+                  <span style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
+                    Photos will appear once uploaded by the listing agent
+                  </span>
                 </div>
               )}
             </div>
@@ -514,7 +534,7 @@ export default function PropertyDetailPage() {
             >
               <X size={20} />
             </button>
-            <h3 className={styles.modalTitle}>Request Verified Property Dossier</h3>
+            <h3 className={styles.modalTitle}>Request Verified Property Details</h3>
             <p className={styles.modalDesc}>
               Submit a direct referral inquiry for <strong>{property.title}</strong>. An authorized licensed advisor will provide comprehensive documentation.
             </p>
@@ -581,7 +601,7 @@ export default function PropertyDetailPage() {
             </button>
             <h3 className={styles.modalTitle}>Schedule Private On-Site Tour</h3>
             <p className={styles.modalDesc}>
-              Propose a scheduled appointment to inspect <strong>{property.title}</strong>.
+              Propose a scheduled appointment to visit <strong>{property.title}</strong>.
             </p>
 
             {tourStatus && (
