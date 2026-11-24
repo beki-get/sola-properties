@@ -286,7 +286,7 @@ export default function ComparePage() {
     <Suspense
       fallback={
         <div style={{ padding: 48, textAlign: "center", fontFamily: "Syne" }}>
-          INITIALIZING COMPARISON VIEWPORT...
+          Loading property comparison...
         </div>
       }
     >

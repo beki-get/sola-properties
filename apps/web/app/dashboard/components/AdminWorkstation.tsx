@@ -613,17 +613,17 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Transaction Settlement Approvals</h2>
+              <h2 className={styles.sectionTitle}>Deal & Sale Approvals</h2>
               <p className={styles.sectionSubtitle}>
-                Institutional closing audit: authorize commission generation and ledger disbursement.
+                Review completed sales to approve commission payouts.
               </p>
             </div>
           </div>
 
           {txLoading ? (
-            <div className={styles.emptyBlock}>Loading transaction audit ledger...</div>
+            <div className={styles.emptyBlock}>Loading sales...</div>
           ) : adminTxs.length === 0 ? (
-            <div className={styles.emptyBlock}>No transactions submitted for review.</div>
+            <div className={styles.emptyBlock}>No sales submitted for review yet.</div>
           ) : (
             <div className={styles.tableResponsive}>
               <table className={styles.dataTable}>
@@ -696,9 +696,9 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Institutional Commission Administration</h2>
+              <h2 className={styles.sectionTitle}>Commissions Management</h2>
               <p className={styles.sectionSubtitle}>
-                Configure commission agreements, authorize splits, and execute disbursement payouts.
+                View and manage commission agreements and agent payouts.
               </p>
             </div>
             <button
@@ -750,7 +750,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
           )}
 
           <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: "0 0 12px" }}>
-            Itemized Commission Ledger ({commissions.length})
+            All Commissions ({commissions.length})
           </h3>
           {commissions.length === 0 ? (
             <div className={styles.emptyBlock}>No commission records generated yet.</div>
@@ -1047,9 +1047,9 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Property Taxonomy & Districts</h2>
+              <h2 className={styles.sectionTitle}>Property Categories & Locations</h2>
               <p className={styles.sectionSubtitle}>
-                Maintain master categories and geographical districts across Addis Ababa.
+                Manage property types, categories, and city locations.
               </p>
             </div>
           </div>
@@ -1192,20 +1192,20 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Executive Platform Overview</h2>
+              <h2 className={styles.sectionTitle}>Platform Reports & Overview</h2>
               <p className={styles.sectionSubtitle}>
-                System-wide volume, transaction velocity, and escrow settlement summaries.
+                Summary of platform sales, active listings, and user activity.
               </p>
             </div>
           </div>
 
           {reportLoading ? (
-            <div className={styles.emptyBlock}>Compiling executive platform metrics...</div>
+            <div className={styles.emptyBlock}>Loading platform reports...</div>
           ) : !report ? (
             <div className={styles.emptyBlock}>
               <TrendingUp size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>Reports Initializing</h4>
-              <p className={styles.emptyBlockDesc}>Platform metrics will aggregate in real time.</p>
+              <h4 className={styles.emptyBlockTitle}>No Reports Available Yet</h4>
+              <p className={styles.emptyBlockDesc}>Platform reports will update as sales and activities occur.</p>
             </div>
           ) : (
             <div>

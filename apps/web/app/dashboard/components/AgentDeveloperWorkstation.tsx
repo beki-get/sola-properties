@@ -123,6 +123,34 @@ export function AgentDeveloperWorkstation({
 
   // Feedback State
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  const handleExportLeads = async () => {
+    setExportingCsv(true);
+    const res = await referralApi.exportMyReferrals();
+    setExportingCsv(false);
+    if (!res.ok) {
+      setFeedback({ ok: false, msg: res.message || "Could not download leads CSV" });
+    }
+  };
+
+  const handleExportTx = async () => {
+    setExportingCsv(true);
+    const res = await transactionApi.export();
+    setExportingCsv(false);
+    if (!res.ok) {
+      setFeedback({ ok: false, msg: res.message || "Could not download transactions CSV" });
+    }
+  };
+
+  const handleExportCommissions = async () => {
+    setExportingCsv(true);
+    const res = await commissionApi.exportCommissions();
+    setExportingCsv(false);
+    if (!res.ok) {
+      setFeedback({ ok: false, msg: res.message || "Could not download commissions CSV" });
+    }
+  };
 
   // Load Categories & Locations for selectors
   useEffect(() => {
@@ -516,9 +544,9 @@ export function AgentDeveloperWorkstation({
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Asset Portfolio & Listings</h2>
+              <h2 className={styles.sectionTitle}>Properties & Listings</h2>
               <p className={styles.sectionSubtitle}>
-                Manage verified property specifications, floorplates, and pricing structures.
+                Manage your property details, photos, and prices.
               </p>
             </div>
             <button
@@ -527,18 +555,18 @@ export function AgentDeveloperWorkstation({
               className={styles.actionBtnPrimary}
             >
               <Plus size={14} />
-              <span>Register New Listing</span>
+              <span>Add New Property</span>
             </button>
           </div>
 
           {propLoading ? (
-            <div className={styles.emptyBlock}>Loading asset portfolio...</div>
+            <div className={styles.emptyBlock}>Loading properties...</div>
           ) : properties.length === 0 ? (
             <div className={styles.emptyBlock}>
               <Building size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>No Properties Listed</h4>
+              <h4 className={styles.emptyBlockTitle}>No Properties Yet</h4>
               <p className={styles.emptyBlockDesc}>
-                Register your residential or commercial inventory to expose them to verified buyers.
+                Add homes or commercial properties to show them to buyers.
               </p>
             </div>
           ) : (
@@ -800,11 +828,11 @@ export function AgentDeveloperWorkstation({
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Marketing Authorizations</h2>
+              <h2 className={styles.sectionTitle}>Agent Permissions</h2>
               <p className={styles.sectionSubtitle}>
                 {role === "developer"
-                  ? "Authorize accredited real estate agents to market and close your developments."
-                  : "Listings and developments where you hold active marketing representation authorization."}
+                  ? "Allow trusted agents to market and sell your properties."
+                  : "Properties you are approved to market and sell for developers."}
               </p>
             </div>
           </div>
@@ -812,13 +840,13 @@ export function AgentDeveloperWorkstation({
           {role === "developer" && (
             <form onSubmit={handleGrantAuth} style={{ marginBottom: 28, padding: 20, backgroundColor: "#fafbfc", border: "1px solid #e5e7eb" }}>
               <h4 style={{ margin: "0 0 12px", fontSize: "0.95rem", fontWeight: 800 }}>
-                Authorize Licensed Agent
+                Authorize an Agent
               </h4>
               <div className={styles.formGrid}>
                 <input
                   type="email"
                   required
-                  placeholder="Licensed Agent Email"
+                  placeholder="Agent Email Address"
                   className={styles.formInput}
                   value={grantAgentEmail}
                   onChange={(e) => setGrantAgentEmail(e.target.value)}
@@ -843,19 +871,19 @@ export function AgentDeveloperWorkstation({
                 className={styles.actionBtnPrimary}
                 style={{ marginTop: 12 }}
               >
-                <span>{grantSubmitting ? "Authorizing..." : "Grant Marketing Mandate"}</span>
+                <span>{grantSubmitting ? "Authorizing..." : "Grant Permission"}</span>
               </button>
             </form>
           )}
 
           {authLoading ? (
-            <div className={styles.emptyBlock}>Loading authorization records...</div>
+            <div className={styles.emptyBlock}>Loading permissions...</div>
           ) : authorizations.length === 0 ? (
             <div className={styles.emptyBlock}>
               <ShieldCheck size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>No Active Authorizations</h4>
+              <h4 className={styles.emptyBlockTitle}>No Authorizations Yet</h4>
               <p className={styles.emptyBlockDesc}>
-                Mandates allow verified representation agreements between developers and brokers.
+                Authorizations let developers partner with agents to market and sell properties.
               </p>
             </div>
           ) : (
@@ -863,12 +891,12 @@ export function AgentDeveloperWorkstation({
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
-                    <th className={styles.tableTh}>Property / Development</th>
+                    <th className={styles.tableTh}>Property</th>
                     <th className={styles.tableTh}>
                       {role === "developer" ? "Authorized Agent" : "Location"}
                     </th>
                     {role === "agent" && <th className={styles.tableTh}>List Price</th>}
-                    <th className={styles.tableTh}>Mandate Status</th>
+                    <th className={styles.tableTh}>Status</th>
                     <th className={styles.tableTh}>Date Granted</th>
                   </tr>
                 </thead>
@@ -923,29 +951,30 @@ export function AgentDeveloperWorkstation({
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Client Referral Pipeline</h2>
+              <h2 className={styles.sectionTitle}>Buyer Inquiries</h2>
               <p className={styles.sectionSubtitle}>
-                Manage active buyer leads from initial inquiry to signed contract and closing.
+                Track inquiries from interested buyers from start to close.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => referralApi.exportMyReferrals()}
+              onClick={handleExportLeads}
+              disabled={exportingCsv}
               className={styles.actionBtnSecondary}
             >
               <Download size={14} />
-              <span>Export CSV</span>
+              <span>{exportingCsv ? "Exporting..." : "Export CSV"}</span>
             </button>
           </div>
 
           {leadsLoading ? (
-            <div className={styles.emptyBlock}>Loading client referral pipeline...</div>
+            <div className={styles.emptyBlock}>Loading buyer inquiries...</div>
           ) : referrals.length === 0 ? (
             <div className={styles.emptyBlock}>
               <Users size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>Pipeline Empty</h4>
+              <h4 className={styles.emptyBlockTitle}>No Inquiries Yet</h4>
               <p className={styles.emptyBlockDesc}>
-                Inquiries made by buyers for your listed properties will appear here.
+                When buyers send inquiries about your properties, they will appear here.
               </p>
             </div>
           ) : (
@@ -953,11 +982,11 @@ export function AgentDeveloperWorkstation({
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
-                    <th className={styles.tableTh}>Client Name</th>
+                    <th className={styles.tableTh}>Buyer</th>
                     <th className={styles.tableTh}>Property</th>
-                    <th className={styles.tableTh}>Stage</th>
-                    <th className={styles.tableTh}>Stage Actions</th>
-                    <th className={styles.tableTh}>Follow-up</th>
+                    <th className={styles.tableTh}>Status</th>
+                    <th className={styles.tableTh}>Update Status</th>
+                    <th className={styles.tableTh}>Notes & Messages</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1014,10 +1043,10 @@ export function AgentDeveloperWorkstation({
                             onChange={(e) => handleLeadStatusChange(r.id, e.target.value)}
                           >
                             <option value="accepted">Accepted</option>
-                            <option value="in_progress">In Progress / Tours</option>
-                            <option value="agreement">Drafting Agreement</option>
-                            <option value="closed_won">Closed Won</option>
-                            <option value="closed_lost">Closed Lost</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="agreement">Contract Pending</option>
+                            <option value="closed_won">Deal Closed</option>
+                            <option value="closed_lost">Lost / Inactive</option>
                           </select>
                         )}
                       </td>
@@ -1029,7 +1058,7 @@ export function AgentDeveloperWorkstation({
                           style={{ padding: "4px 8px", fontSize: "0.72rem" }}
                         >
                           <MessageSquare size={12} />
-                          <span>Log & Chat</span>
+                          <span>Notes & Chat</span>
                         </button>
                       </td>
                     </tr>
@@ -1049,18 +1078,18 @@ export function AgentDeveloperWorkstation({
                 >
                   <X size={20} />
                 </button>
-                <h3 className={styles.modalTitle}>Client Lead Management</h3>
+                <h3 className={styles.modalTitle}>Buyer Inquiry</h3>
                 <p className={styles.modalDesc}>
-                  Client: <strong>{activeLead.buyer_name || "Verified Buyer"}</strong> &bull; Ref: {activeLead.id.slice(0, 8)}
+                  Buyer: <strong>{activeLead.buyer_name || "Verified Buyer"}</strong> &bull; Ref: {activeLead.id.slice(0, 8)}
                 </p>
 
                 {/* Internal Follow-Up Log */}
                 <h4 style={{ fontSize: "0.88rem", fontWeight: 800, margin: "16px 0 8px" }}>
-                  Internal Broker Notes
+                  Private Notes
                 </h4>
                 <div style={{ maxHeight: 140, overflowY: "auto", border: "1px solid #e5e7eb", padding: 10, marginBottom: 12, backgroundColor: "#fafbfc" }}>
                   {leadFollowUps.length === 0 ? (
-                    <div style={{ color: "#9ca3af", fontSize: "0.8rem" }}>No follow-up notes logged yet.</div>
+                    <div style={{ color: "#9ca3af", fontSize: "0.8rem" }}>No private notes added yet.</div>
                   ) : (
                     leadFollowUps.map((fu) => (
                       <div key={fu.id} style={{ fontSize: "0.8rem", marginBottom: 6, borderBottom: "1px solid #edf0f4", paddingBottom: 4 }}>
@@ -1076,19 +1105,19 @@ export function AgentDeveloperWorkstation({
                   <input
                     type="text"
                     required
-                    placeholder="Log internal follow-up note..."
+                    placeholder="Add a private note..."
                     className={styles.formInput}
                     value={newFollowUpNote}
                     onChange={(e) => setNewFollowUpNote(e.target.value)}
                   />
                   <button type="submit" className={styles.actionBtnSecondary}>
-                    Log Note
+                    Add Note
                   </button>
                 </form>
 
                 {/* Direct Messages */}
                 <h4 style={{ fontSize: "0.88rem", fontWeight: 800, margin: "0 0 8px" }}>
-                  Direct Messages with Buyer
+                  Messages with Buyer
                 </h4>
                 <div className={styles.chatBox}>
                   {leadMessages.length === 0 ? (
@@ -1117,7 +1146,7 @@ export function AgentDeveloperWorkstation({
                   <input
                     type="text"
                     required
-                    placeholder="Message client..."
+                    placeholder="Type a message to buyer..."
                     className={styles.formInput}
                     value={newLeadMsg}
                     onChange={(e) => setNewLeadMsg(e.target.value)}
@@ -1137,21 +1166,21 @@ export function AgentDeveloperWorkstation({
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Tour Scheduling & Outcomes</h2>
+              <h2 className={styles.sectionTitle}>Property Visits & Tours</h2>
               <p className={styles.sectionSubtitle}>
-                Schedule appointments and log institutional visitor feedback.
+                View scheduled visits and record feedback from buyers.
               </p>
             </div>
           </div>
 
           {visitLoading ? (
-            <div className={styles.emptyBlock}>Loading tour appointments...</div>
+            <div className={styles.emptyBlock}>Loading visits...</div>
           ) : visits.length === 0 ? (
             <div className={styles.emptyBlock}>
               <Calendar size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>No Scheduled Tours</h4>
+              <h4 className={styles.emptyBlockTitle}>No Visits Scheduled Yet</h4>
               <p className={styles.emptyBlockDesc}>
-                Appointment requests initiated by prospective buyers will show up here.
+                When buyers request a visit to your properties, they will appear here.
               </p>
             </div>
           ) : (
@@ -1228,22 +1257,22 @@ export function AgentDeveloperWorkstation({
                 >
                   <X size={20} />
                 </button>
-                <h3 className={styles.modalTitle}>Record Tour Outcome</h3>
+                <h3 className={styles.modalTitle}>Record Visit Result</h3>
                 <p className={styles.modalDesc}>
                   Property: <strong>{outcomeModalVisit.property_title || outcomeModalVisit.id}</strong>
                 </p>
 
                 <form onSubmit={handleRecordOutcome}>
                   <div className={styles.formField}>
-                    <label className={styles.formLabel}>Tour Result</label>
+                    <label className={styles.formLabel}>Visit Result</label>
                     <select
                       className={styles.formSelect}
                       value={outcomeVal}
                       onChange={(e) => setOutcomeVal(e.target.value as any)}
                     >
-                      <option value="interested">Interested / Advancing to Proposal</option>
-                      <option value="requested_another_visit">Requested Secondary Tour</option>
-                      <option value="not_interested">Not Interested / Spec Mismatch</option>
+                      <option value="interested">Interested in buying</option>
+                      <option value="requested_another_visit">Requested another visit</option>
+                      <option value="not_interested">Not interested</option>
                     </select>
                   </div>
 
@@ -1252,7 +1281,7 @@ export function AgentDeveloperWorkstation({
                     <textarea
                       rows={3}
                       className={styles.formTextarea}
-                      placeholder="e.g. Buyer loved floorplan, requesting payment milestone adjustment."
+                      placeholder="e.g. Buyer liked the property, wants to discuss price next week."
                       value={outcomeNotes}
                       onChange={(e) => setOutcomeNotes(e.target.value)}
                     />
@@ -1263,7 +1292,7 @@ export function AgentDeveloperWorkstation({
                     className={styles.actionBtnPrimary}
                     style={{ width: "100%", height: 44, justifyContent: "center" }}
                   >
-                    Confirm & Complete Tour
+                    Save Visit Result
                   </button>
                 </form>
               </div>
@@ -1277,9 +1306,9 @@ export function AgentDeveloperWorkstation({
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Deal Closings & Settlements</h2>
+              <h2 className={styles.sectionTitle}>Closed Deals & Sales</h2>
               <p className={styles.sectionSubtitle}>
-                Submit closed deals and upload binding sales agreements for compliance auditing.
+                Submit completed sales to record your closing and commission.
               </p>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -1289,27 +1318,28 @@ export function AgentDeveloperWorkstation({
                 className={styles.actionBtnPrimary}
               >
                 <Plus size={14} />
-                <span>Submit Closed Deal</span>
+                <span>Record a Sale</span>
               </button>
               <button
                 type="button"
-                onClick={() => transactionApi.export()}
+                onClick={handleExportTx}
+                disabled={exportingCsv}
                 className={styles.actionBtnSecondary}
               >
                 <Download size={14} />
-                <span>Export CSV</span>
+                <span>{exportingCsv ? "Exporting..." : "Export CSV"}</span>
               </button>
             </div>
           </div>
 
           {txLoading ? (
-            <div className={styles.emptyBlock}>Loading transaction ledger...</div>
+            <div className={styles.emptyBlock}>Loading sales...</div>
           ) : transactions.length === 0 ? (
             <div className={styles.emptyBlock}>
               <DollarSign size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>No Closings Recorded</h4>
+              <h4 className={styles.emptyBlockTitle}>No Closed Deals Yet</h4>
               <p className={styles.emptyBlockDesc}>
-                When an agreement is finalized, submit the closing details for escrow verification and commission disbursement.
+                When a sale is agreed, submit the details here to record the sale and process your commission.
               </p>
             </div>
           ) : (
@@ -1367,18 +1397,18 @@ export function AgentDeveloperWorkstation({
                 >
                   <X size={20} />
                 </button>
-                <h3 className={styles.modalTitle}>Submit Deal Closing</h3>
+                <h3 className={styles.modalTitle}>Record a Closed Sale</h3>
                 <p className={styles.modalDesc}>
-                  Record an executed sales agreement for administrative verification.
+                  Enter the details of the completed sale.
                 </p>
 
                 <form onSubmit={handleCreateTransaction}>
                   <div className={styles.formField}>
-                    <label className={styles.formLabel}>Associated Referral ID</label>
+                    <label className={styles.formLabel}>Buyer Inquiry / Referral ID</label>
                     <input
                       type="text"
                       required
-                      placeholder="Paste referral UUID from Pipeline tab"
+                      placeholder="Paste Referral ID from the Inquiries tab"
                       className={styles.formInput}
                       value={newTx.referralId}
                       onChange={(e) => setNewTx({ ...newTx, referralId: e.target.value })}
@@ -1438,18 +1468,19 @@ export function AgentDeveloperWorkstation({
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Commission Statements & Disbursements</h2>
+              <h2 className={styles.sectionTitle}>Commissions & Payouts</h2>
               <p className={styles.sectionSubtitle}>
-                Institutional fee ledger, payment disbursements, and escrow disbursements.
+                Track your earned commission fees and payouts.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => commissionApi.exportCommissions()}
+              onClick={handleExportCommissions}
+              disabled={exportingCsv}
               className={styles.actionBtnSecondary}
             >
               <Download size={14} />
-              <span>Export Statement</span>
+              <span>{exportingCsv ? "Exporting..." : "Export CSV"}</span>
             </button>
           </div>
 
@@ -1461,33 +1492,33 @@ export function AgentDeveloperWorkstation({
                 <span className={styles.kpiValue}>
                   ${Number(commissionSummary.total_commission || 0).toLocaleString()}
                 </span>
-                <span className={styles.kpiSubtext}>Accrued gross fees</span>
+                <span className={styles.kpiSubtext}>Total commission earned</span>
               </div>
               <div className={styles.kpiCard}>
                 <span className={styles.kpiLabel}>Amount Paid</span>
                 <span className={styles.kpiValue}>
                   ${Number(commissionSummary.paid_total || 0).toLocaleString()}
                 </span>
-                <span className={styles.kpiSubtext}>Disbursed payouts</span>
+                <span className={styles.kpiSubtext}>Paid to you</span>
               </div>
               <div className={styles.kpiCard}>
                 <span className={styles.kpiLabel}>Outstanding Balance</span>
                 <span className={styles.kpiValue}>
                   ${Number(commissionSummary.outstanding || 0).toLocaleString()}
                 </span>
-                <span className={styles.kpiSubtext}>Pending settlement</span>
+                <span className={styles.kpiSubtext}>Pending payment</span>
               </div>
             </div>
           )}
 
           {commLoading ? (
-            <div className={styles.emptyBlock}>Loading commission ledger...</div>
+            <div className={styles.emptyBlock}>Loading commissions...</div>
           ) : commissions.length === 0 ? (
             <div className={styles.emptyBlock}>
               <DollarSign size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>No Commission Records</h4>
+              <h4 className={styles.emptyBlockTitle}>No Commissions Yet</h4>
               <p className={styles.emptyBlockDesc}>
-                Approved transactions will automatically generate itemized commission allocations here.
+                When deals are approved, your earned commissions will appear here.
               </p>
             </div>
           ) : (
@@ -1495,11 +1526,11 @@ export function AgentDeveloperWorkstation({
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
-                    <th className={styles.tableTh}>Transaction Ref</th>
-                    <th className={styles.tableTh}>Base Amount</th>
-                    <th className={styles.tableTh}>Net Payable</th>
+                    <th className={styles.tableTh}>Deal Ref</th>
+                    <th className={styles.tableTh}>Sale Amount</th>
+                    <th className={styles.tableTh}>Commission</th>
                     <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Calculation Date</th>
+                    <th className={styles.tableTh}>Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1558,21 +1589,21 @@ export function AgentDeveloperWorkstation({
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className={styles.sectionTitle}>Institutional Performance Analytics</h2>
+              <h2 className={styles.sectionTitle}>Performance Overview</h2>
               <p className={styles.sectionSubtitle}>
-                Key operational metrics: lead velocities, conversion ratios, and volume closed.
+                Summary of your sales, inquiries, and commission earnings.
               </p>
             </div>
           </div>
 
           {analyticsLoading ? (
-            <div className={styles.emptyBlock}>Compiling analytics...</div>
+            <div className={styles.emptyBlock}>Loading performance data...</div>
           ) : !analytics ? (
             <div className={styles.emptyBlock}>
               <TrendingUp size={36} color="#9ca3af" />
-              <h4 className={styles.emptyBlockTitle}>Analytics Initializing</h4>
+              <h4 className={styles.emptyBlockTitle}>No Performance Data Yet</h4>
               <p className={styles.emptyBlockDesc}>
-                Data metrics will populate dynamically as referrals and property views accrue.
+                Your performance metrics will appear here once you have inquiries and sales.
               </p>
             </div>
           ) : (
@@ -1581,13 +1612,13 @@ export function AgentDeveloperWorkstation({
                 {role === "agent" ? (
                   <>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Total Referrals Handled</span>
+                      <span className={styles.kpiLabel}>Total Inquiries</span>
                       <span className={styles.kpiValue}>
                         {(analytics as AgentReport)?.referrals?.total ??
                           (analytics as AgentReport)?.total_referrals ??
                           0}
                       </span>
-                      <span className={styles.kpiSubtext}>Direct client inquiries</span>
+                      <span className={styles.kpiSubtext}>Inquiries received</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Active Listings</span>
@@ -1596,19 +1627,19 @@ export function AgentDeveloperWorkstation({
                           (analytics as AgentReport)?.active_listings ??
                           0}
                       </span>
-                      <span className={styles.kpiSubtext}>Properties currently marketed</span>
+                      <span className={styles.kpiSubtext}>Properties listed</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Closed Won Deals</span>
+                      <span className={styles.kpiLabel}>Closed Deals</span>
                       <span className={styles.kpiValue}>
                         {(analytics as AgentReport)?.sales?.totalSalesCount ??
                           (analytics as AgentReport)?.closed_deals ??
                           0}
                       </span>
-                      <span className={styles.kpiSubtext}>Audited closings</span>
+                      <span className={styles.kpiSubtext}>Completed sales</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Commission Accrued</span>
+                      <span className={styles.kpiLabel}>Commission Earned</span>
                       <span className={styles.kpiValue}>
                         $
                         {Number(
@@ -1618,7 +1649,7 @@ export function AgentDeveloperWorkstation({
                             0
                         ).toLocaleString()}
                       </span>
-                      <span className={styles.kpiSubtext}>Net earned broker fees</span>
+                      <span className={styles.kpiSubtext}>Total earned commission</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Total Sales Volume</span>
@@ -1628,24 +1659,24 @@ export function AgentDeveloperWorkstation({
                           (analytics as AgentReport)?.sales?.totalSalesValue || 0
                         ).toLocaleString()}
                       </span>
-                      <span className={styles.kpiSubtext}>Verified transaction value</span>
+                      <span className={styles.kpiSubtext}>Total value of closed sales</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Authorized Properties</span>
                       <span className={styles.kpiValue}>
                         {(analytics as AgentReport)?.authorizedProperties?.total ?? 0}
                       </span>
-                      <span className={styles.kpiSubtext}>Active representation mandates</span>
+                      <span className={styles.kpiSubtext}>Authorized properties to sell</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Disbursed Payouts</span>
+                      <span className={styles.kpiLabel}>Commission Paid</span>
                       <span className={styles.kpiValue}>
                         $
                         {Number(
                           (analytics as AgentReport)?.commissions?.amountPaid || 0
                         ).toLocaleString()}
                       </span>
-                      <span className={styles.kpiSubtext}>Completed payments</span>
+                      <span className={styles.kpiSubtext}>Paid to your account</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Pending Commission</span>
@@ -1655,7 +1686,7 @@ export function AgentDeveloperWorkstation({
                           (analytics as AgentReport)?.commissions?.outstandingAmount || 0
                         ).toLocaleString()}
                       </span>
-                      <span className={styles.kpiSubtext}>Awaiting payout release</span>
+                      <span className={styles.kpiSubtext}>Awaiting payment</span>
                     </div>
                   </>
                 ) : (
@@ -1667,7 +1698,7 @@ export function AgentDeveloperWorkstation({
                           (analytics as DeveloperReport)?.total_properties ??
                           0}
                       </span>
-                      <span className={styles.kpiSubtext}>Active portfolio assets</span>
+                      <span className={styles.kpiSubtext}>Listed properties</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Active Projects</span>
@@ -1676,7 +1707,7 @@ export function AgentDeveloperWorkstation({
                           (analytics as DeveloperReport)?.active_projects ??
                           0}
                       </span>
-                      <span className={styles.kpiSubtext}>Developments underway</span>
+                      <span className={styles.kpiSubtext}>Active projects</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Authorized Brokers</span>
@@ -1685,16 +1716,16 @@ export function AgentDeveloperWorkstation({
                           (analytics as DeveloperReport)?.authorized_agents ??
                           0}
                       </span>
-                      <span className={styles.kpiSubtext}>Marketing representation mandates</span>
+                      <span className={styles.kpiSubtext}>Partnered agents</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Client Inquiries</span>
+                      <span className={styles.kpiLabel}>Buyer Inquiries</span>
                       <span className={styles.kpiValue}>
                         {(analytics as DeveloperReport)?.referrals?.total ??
                           (analytics as DeveloperReport)?.total_inquiries ??
                           0}
                       </span>
-                      <span className={styles.kpiSubtext}>Platform client demand</span>
+                      <span className={styles.kpiSubtext}>Buyer inquiries</span>
                     </div>
                   </>
                 )}

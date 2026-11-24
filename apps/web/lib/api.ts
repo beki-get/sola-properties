@@ -318,6 +318,45 @@ export async function apiRequest<T = any>(
   }
 }
 
+export async function downloadCsvFile(
+  endpoint: string,
+  defaultFilename = "export.csv"
+): Promise<{ ok: boolean; message?: string }> {
+  try {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}${endpoint}`;
+    const headers: Record<string, string> = {};
+
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("sola_access_token");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    }
+
+    const res = await fetch(url, { headers, credentials: "include" });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.message || `Failed to download CSV (${res.status})`);
+    }
+
+    const blob = await res.blob();
+    if (typeof window !== "undefined") {
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = defaultFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    }
+    return { ok: true };
+  } catch (err: any) {
+    console.error("CSV Download Error:", err);
+    return { ok: false, message: err.message };
+  }
+}
+
 export const authApi = {
   register: (payload: RegisterPayload) =>
     apiRequest<AuthResponse>("/api/v1/auth/register", {
@@ -1228,7 +1267,7 @@ export const referralApi = {
     ),
 
   exportMyReferrals: () =>
-    apiRequest<{ downloadUrl?: string; data?: any }>("/api/v1/referrals/me/export"),
+    downloadCsvFile("/api/v1/referrals/me/export", "my-leads.csv"),
 
   respondReferral: (
     referralId: string,
@@ -1324,7 +1363,7 @@ export const referralApi = {
     ),
 
   exportAdminReferrals: () =>
-    apiRequest<{ downloadUrl?: string; data?: any }>("/api/v1/referrals/admin/export"),
+    downloadCsvFile("/api/v1/referrals/admin/export", "all-referrals.csv"),
 
   // Referral Issues
   reportIssue: (payload: { referral_id?: string; description: string; issue_type?: string }) =>
@@ -1527,7 +1566,7 @@ export const transactionApi = {
     ),
 
   export: () =>
-    apiRequest<{ downloadUrl?: string; data?: any }>("/api/v1/transactions/export"),
+    downloadCsvFile("/api/v1/transactions/export", "transactions.csv"),
 };
 
 export const disputeApi = {
@@ -1638,7 +1677,7 @@ export const commissionApi = {
     ),
 
   exportCommissions: () =>
-    apiRequest<{ downloadUrl?: string; data?: any }>("/api/v1/commissions/export"),
+    downloadCsvFile("/api/v1/commissions/export", "commissions.csv"),
 };
 
 export const notificationApi = {
@@ -1738,7 +1777,7 @@ export const adminManagementApi = {
   },
 
   exportUsers: () =>
-    apiRequest<{ downloadUrl?: string; data?: any }>("/api/v1/admin/users/export"),
+    downloadCsvFile("/api/v1/admin/users/export", "users.csv"),
 
   getAuditLogs: (params?: { page?: number; limit?: number }) => {
     const query = new URLSearchParams();
@@ -1826,7 +1865,7 @@ export const adminManagementApi = {
   },
 
   exportAdminProperties: () =>
-    apiRequest<{ downloadUrl?: string; data?: any }>("/api/v1/admin/properties/all/export"),
+    downloadCsvFile("/api/v1/admin/properties/all/export", "properties.csv"),
 };
 
 export const reportApi = {

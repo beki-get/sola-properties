@@ -167,7 +167,7 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
             <div>
               <h2 className={styles.sectionTitle}>Shortlisted Properties</h2>
               <p className={styles.sectionSubtitle}>
-                Verified residential and commercial assets saved for institutional comparison.
+                Properties you have saved to view and compare later.
               </p>
             </div>
           </div>
@@ -359,7 +359,7 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
               <MessageSquare size={36} color="#9ca3af" />
               <h4 className={styles.emptyBlockTitle}>No Active Inquiries</h4>
               <p className={styles.emptyBlockDesc}>
-                When you inquire about a property, a secure direct messaging pipeline will open here.
+                When you inquire about a property, your conversations with the seller or agent will appear here.
               </p>
             </div>
           ) : (

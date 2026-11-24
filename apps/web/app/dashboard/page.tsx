@@ -828,21 +828,21 @@ function DashboardContent() {
                 className={`${styles.tabBtn} ${activeTab === "leads" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("leads")}
               >
-                Referrals
+                Buyer Inquiries
               </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === "visits" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("visits")}
               >
-                Tours
+                Property Tours
               </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === "transactions" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("transactions")}
               >
-                Closings
+                Deals & Sales
               </button>
               <button
                 type="button"
@@ -865,7 +865,7 @@ function DashboardContent() {
                 }`}
                 onClick={() => setActiveTab("verification")}
               >
-                Accreditation Documents
+                Account Verification
               </button>
             </>
           )}
@@ -884,14 +884,14 @@ function DashboardContent() {
                 className={`${styles.tabBtn} ${activeTab === "admin-referrals" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("admin-referrals")}
               >
-                Master Referrals
+                Buyer Inquiries
               </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === "admin-transactions" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("admin-transactions")}
               >
-                Settlements
+                Deals & Sales
               </button>
               <button
                 type="button"
@@ -905,28 +905,28 @@ function DashboardContent() {
                 className={`${styles.tabBtn} ${activeTab === "admin-users" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("admin-users")}
               >
-                User Accounts
+                Users
               </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === "admin-taxonomy" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("admin-taxonomy")}
               >
-                Taxonomy
+                Categories & Locations
               </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === "admin-audit" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("admin-audit")}
               >
-                Audit Logs
+                Activity Logs
               </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === "admin-reports" ? styles.tabBtnActive : ""}`}
                 onClick={() => setActiveTab("admin-reports")}
               >
-                Platform Reports
+                Reports
               </button>
               <button
                 type="button"
@@ -938,7 +938,7 @@ function DashboardContent() {
                   loadAdminProjects(1, adminProjectsFilter);
                 }}
               >
-                Project Directory
+                Projects
               </button>
             </>
           )}
@@ -980,12 +980,12 @@ function DashboardContent() {
                   <h3 className={styles.cardTitle}>Welcome back, {user?.fullName}</h3>
                   <p className={styles.cardDesc}>
                     {role === "admin" || role === "finance_admin"
-                      ? "Executive platform operations, listing reviews, user registrations, and transaction volume."
+                      ? "Platform overview, listing reviews, users, and sales."
                       : role === "agent"
-                      ? "Performance metrics, client referral pipeline, and property listings."
+                      ? "Your property listings, buyer inquiries, and commissions."
                       : role === "developer"
-                      ? "Project developments, listed residential units, and sales performance."
-                      : "Your saved residences, scheduled visits, and active advisory inquiries."}
+                      ? "Your developments, listed units, and sales performance."
+                      : "Your saved properties, scheduled visits, and inquiries."}
                   </p>
                 </div>
 
@@ -1374,7 +1374,7 @@ function DashboardContent() {
                       onClick={() => setActiveTab("admin-reports")}
                     >
                       <Sliders size={14} />
-                      <span>Executive Reports</span>
+                      <span>Reports</span>
                     </button>
                   </>
                 )}
@@ -1395,7 +1395,7 @@ function DashboardContent() {
                       onClick={() => setActiveTab("leads")}
                     >
                       <Send size={14} />
-                      <span>Leads Pipeline</span>
+                      <span>Buyer Inquiries</span>
                     </button>
                     <button
                       type="button"
@@ -1403,7 +1403,7 @@ function DashboardContent() {
                       onClick={() => setActiveTab("visits")}
                     >
                       <Calendar size={14} />
-                      <span>Scheduled Tours</span>
+                      <span>Property Tours</span>
                     </button>
                   </>
                 )}
@@ -1424,7 +1424,7 @@ function DashboardContent() {
                       onClick={() => setActiveTab("inventory")}
                     >
                       <Plus size={14} />
-                      <span>Units Catalog</span>
+                      <span>Properties</span>
                     </button>
                     <button
                       type="button"
@@ -1432,7 +1432,7 @@ function DashboardContent() {
                       onClick={() => setActiveTab("authorizations")}
                     >
                       <FileCheck size={14} />
-                      <span>Agent Authorizations</span>
+                      <span>Agent Permissions</span>
                     </button>
                   </>
                 )}
