@@ -36,6 +36,7 @@ import {
   transactionApi,
   commissionApi,
 } from "../../../lib/api";
+import { useToast } from "../../../context/ToastContext";
 import styles from "./workstations.module.css";
 
 interface AgentDeveloperWorkstationProps {
@@ -53,6 +54,7 @@ export function AgentDeveloperWorkstation({
   role,
   activeTab,
 }: AgentDeveloperWorkstationProps) {
+  const { showToast } = useToast();
   // Inventory State
   const [properties, setProperties] = useState<Property[]>([]);
   const [categories, setCategories] = useState<PropertyCategory[]>([]);
@@ -281,7 +283,7 @@ export function AgentDeveloperWorkstation({
   const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProp.category_id || !newProp.location_id) {
-      alert("Please select both a property category and location.");
+      showToast("Please select both a property category and location.", "warning");
       return;
     }
     setCreatePropSubmitting(true);
@@ -468,7 +470,7 @@ export function AgentDeveloperWorkstation({
   const handleCreateTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTx.referralId) {
-      alert("Please provide the associated Referral ID.");
+      showToast("Please provide the associated Referral ID.", "warning");
       return;
     }
     try {

@@ -22,6 +22,7 @@ import {
   Building,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { Navbar } from "../components/Navbar";
 import {
   propertyApi,
@@ -36,6 +37,7 @@ function PropertiesCatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
 
   // Lookups
   const [categories, setCategories] = useState<PropertyCategory[]>([]);
@@ -145,6 +147,7 @@ function PropertiesCatalogContent() {
         next.delete(propertyId);
         return next;
       });
+      showToast("Removed from saved shortlist.", "info");
     } else {
       await favoriteApi.add(propertyId);
       setFavoritedIds((prev) => {
@@ -152,18 +155,21 @@ function PropertiesCatalogContent() {
         next.add(propertyId);
         return next;
       });
+      showToast("Added to saved shortlist.", "success");
     }
   };
 
   const toggleCompare = (propertyId: string) => {
     setComparedIds((prev) => {
       if (prev.includes(propertyId)) {
+        showToast("Removed from comparison list.", "info");
         return prev.filter((id) => id !== propertyId);
       } else {
         if (prev.length >= 4) {
-          alert("You can compare up to 4 residences simultaneously.");
+          showToast("You can compare up to 4 residences simultaneously.", "warning");
           return prev;
         }
+        showToast(`Added to comparison (${prev.length + 1}/4).`, "success");
         return [...prev, propertyId];
       }
     });

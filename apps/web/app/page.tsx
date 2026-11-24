@@ -24,6 +24,7 @@ import {
   Send,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { authApi, propertyApi, Property } from "../lib/api";
 import { Navbar } from "./components/Navbar";
 import styles from "./page.module.css";
@@ -31,6 +32,7 @@ import styles from "./page.module.css";
 export default function SolaPropertiesPage() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuth();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<"buy" | "rent">("buy");
   const [locationText, setLocationText] = useState("Bole, Addis Ababa");
   const [startText, setStartText] = useState("Dec 16, 10:00 AM");
@@ -730,9 +732,12 @@ export default function SolaPropertiesPage() {
               onClick={() => {
                 if (consultContact.trim()) {
                   setConsultSubmitted(true);
-                  alert(`Request received for ${consultLocation} (${consultType === "buy" ? "Purchase" : "Rental"}). A licensed advisor will reach out to ${consultContact} shortly.`);
+                  showToast(
+                    `Inquiry received for ${consultLocation} (${consultType === "buy" ? "Purchase" : "Rental"}). An advisor will reach out shortly.`,
+                    "success"
+                  );
                 } else {
-                  alert("Please enter your phone number, WhatsApp, or email address.");
+                  showToast("Please enter your phone number, WhatsApp, or email address.", "warning");
                 }
               }}
             >
@@ -851,7 +856,7 @@ export default function SolaPropertiesPage() {
                 onClick={() => {
                   if (newsletterEmail) {
                     setNewsletterSubscribed(true);
-                    alert(`Private registry VIP advisory enabled for: ${newsletterEmail}`);
+                    showToast(`Private registry advisory enabled for: ${newsletterEmail}`, "success");
                   }
                 }}
               >

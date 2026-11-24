@@ -29,6 +29,7 @@ import {
   favoriteApi,
 } from "../../../lib/api";
 import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../context/ToastContext";
 import { Navbar } from "../../components/Navbar";
 import styles from "./property-detail.module.css";
 
@@ -36,6 +37,7 @@ export default function PropertyDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const { showToast } = useToast();
   const propertyId = params?.id as string;
 
   const [property, setProperty] = useState<Property | null>(null);
@@ -239,7 +241,7 @@ export default function PropertyDetailPage() {
   const handleShare = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
-      alert("Property link copied to clipboard!");
+      showToast("Property link copied to clipboard!", "success");
     }
   };
 
