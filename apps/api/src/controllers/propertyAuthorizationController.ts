@@ -6,6 +6,7 @@ import {
   listAgentAuthorizedProperties,
   listApprovedAgents,
   listAuthorizedAgents,
+  listDeveloperAuthorizations,
   parseListOptions,
   revokeAgentAuthorization,
 } from "../services/propertyAuthorizationService";
@@ -123,6 +124,21 @@ export const listAuthorizedAgentsController: RequestHandler = async (
       validateQuery(req.query as Record<string, unknown>),
     );
 
+    res.status(200).json(result);
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const listDeveloperAuthorizationsController: RequestHandler = async (
+  req,
+  res,
+) => {
+  try {
+    const result = await listDeveloperAuthorizations(
+      req.currentUser!.id,
+      validateQuery(req.query as Record<string, unknown>),
+    );
     res.status(200).json(result);
   } catch (error) {
     sendError(res, error);

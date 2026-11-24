@@ -5,6 +5,7 @@ import {
   listAgentAuthorizedPropertiesController,
   listApprovedAgentsController,
   listAuthorizedAgentsController,
+  listDeveloperAuthorizationsController,
   revokeAgentAuthorizationController,
 } from "../controllers/propertyAuthorizationController";
 import { authenticate } from "../middlewares/authenticate";
@@ -20,6 +21,15 @@ router.get(
   authorizeRoles("developer"),
   requireApprovedAccount,
   listApprovedAgentsController,
+);
+
+// Developer: view all authorizations granted by this developer across all properties
+router.get(
+  "/developer/authorizations",
+  authenticate,
+  authorizeRoles("developer"),
+  requireApprovedAccount,
+  listDeveloperAuthorizationsController,
 );
 
 // Developer: view a specific approved agent.

@@ -25,6 +25,7 @@ export interface ListOptions {
 export interface AgentSummary extends QueryResultRow {
   id: string;
   full_name: string;
+  email?: string;
   status: string;
   agency_name: string | null;
   bio?: string | null;
@@ -88,25 +89,42 @@ export async function authorizeAgent(
       );
     }
 
-    const agent = await client.query<{ id: string }>(
-      `SELECT id
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(agentId.trim());
+    const agent = await client.query<{ id: string; role: string; status: string; email: string }>(
+      `SELECT id, role, status, email
        FROM users
-       WHERE id = $1
-         AND role = 'agent'
-         AND status = 'approved'
-         AND email_verified_at IS NOT NULL`,
-      [agentId],
+       WHERE (${isUuid ? "id = $1::uuid" : "LOWER(email) = LOWER($1)"})`,
+      [agentId.trim()],
     );
 
     if (!agent.rows[0]) {
       throw new PropertyAuthorizationError(
         404,
-        "APPROVED_AGENT_NOT_FOUND",
-        "Approved agent not found.",
+        "AGENT_NOT_FOUND",
+        `No registered account found with ${isUuid ? "ID" : "email"} "${agentId.trim()}".`,
       );
     }
 
-    if (agentId === developerId) {
+    const targetUser = agent.rows[0];
+    if (targetUser.role !== "agent") {
+      throw new PropertyAuthorizationError(
+        400,
+        "USER_NOT_AN_AGENT",
+        `Account "${targetUser.email}" is registered as "${targetUser.role}". Only approved agent accounts can be authorized.`,
+      );
+    }
+
+    if (targetUser.status !== "approved") {
+      throw new PropertyAuthorizationError(
+        400,
+        "AGENT_NOT_APPROVED",
+        `Agent "${targetUser.email}" account status is "${targetUser.status}". Only approved agents can be authorized.`,
+      );
+    }
+
+    const resolvedAgentId = targetUser.id;
+
+    if (resolvedAgentId === developerId) {
       throw new PropertyAuthorizationError(
         400,
         "SELF_AUTHORIZATION_NOT_ALLOWED",
@@ -122,7 +140,7 @@ export async function authorizeAgent(
        FROM property_authorizations
        WHERE property_id = $1 AND agent_id = $2
        FOR UPDATE`,
-      [propertyId, agentId],
+      [propertyId, resolvedAgentId],
     );
 
     if (existing.rows[0]?.status === "active") {
@@ -144,7 +162,7 @@ export async function authorizeAgent(
          WHERE property_id = $1 AND agent_id = $2
          RETURNING id, property_id, agent_id, authorized_by,
                    status, created_at, updated_at`,
-        [propertyId, agentId, developerId],
+        [propertyId, resolvedAgentId, developerId],
       );
     } else {
       result = await client.query(
@@ -153,7 +171,7 @@ export async function authorizeAgent(
          VALUES ($1, $2, $3)
          RETURNING id, property_id, agent_id, authorized_by,
                    status, created_at, updated_at`,
-        [propertyId, agentId, developerId],
+        [propertyId, resolvedAgentId, developerId],
       );
     }
     await writeAuditLog(client, {
@@ -166,7 +184,7 @@ export async function authorizeAgent(
       oldValues: existing.rows[0] ? { status: "revoked" } : null,
       newValues: {
         property_id: propertyId,
-        agent_id: agentId,
+        agent_id: resolvedAgentId,
         status: "active",
       },
     });
@@ -235,6 +253,69 @@ export async function listAuthorizedAgents(
             paa.status AS authorization_status,
             paa.created_at AS authorized_at
      FROM property_authorizations paa
+     JOIN users u ON u.id = paa.agent_id
+     LEFT JOIN agent_profiles ap ON ap.user_id = u.id
+     WHERE ${whereSql}
+     ORDER BY paa.created_at DESC
+     LIMIT $${values.length - 1}
+     OFFSET $${values.length}`,
+    values,
+  );
+
+  return {
+    items: result.rows,
+    pagination: {
+      page: options.page,
+      limit: options.limit,
+      total: Number(count.rows[0]?.count ?? 0),
+    },
+  };
+}
+
+export async function listDeveloperAuthorizations(
+  developerId: string,
+  options: ListOptions,
+) {
+  const values: unknown[] = [developerId];
+  const where = ["p.owner_id = $1"];
+
+  if (options.status) {
+    values.push(options.status);
+    where.push(`paa.status = $${values.length}`);
+  }
+
+  if (options.search) {
+    values.push(`%${options.search}%`);
+    where.push(
+      `(p.title ILIKE $${values.length}
+        OR u.full_name ILIKE $${values.length}
+        OR u.email ILIKE $${values.length}
+        OR ap.agency_name ILIKE $${values.length})`,
+    );
+  }
+
+  const whereSql = where.join(" AND ");
+
+  const count = await pool.query<{ count: string }>(
+    `SELECT COUNT(*)::text AS count
+     FROM property_authorizations paa
+     JOIN properties p ON p.id = paa.property_id
+     JOIN users u ON u.id = paa.agent_id
+     LEFT JOIN agent_profiles ap ON ap.user_id = u.id
+     WHERE ${whereSql}`,
+    values,
+  );
+
+  values.push(options.limit, (options.page - 1) * options.limit);
+
+  const result = await pool.query(
+    `SELECT paa.id, paa.property_id, paa.agent_id, paa.status,
+            paa.created_at AS authorized_at,
+            p.title AS property_title, p.price,
+            u.full_name AS agent_name, u.email AS agent_email,
+            ap.agency_name
+     FROM property_authorizations paa
+     JOIN properties p ON p.id = paa.property_id
      JOIN users u ON u.id = paa.agent_id
      LEFT JOIN agent_profiles ap ON ap.user_id = u.id
      WHERE ${whereSql}
@@ -441,7 +522,7 @@ export async function listApprovedAgents(options: ListOptions) {
   values.push(options.limit, (options.page - 1) * options.limit);
 
   const result = await pool.query<AgentSummary>(
-    `SELECT u.id, u.full_name, u.status, ap.agency_name,
+    `SELECT u.id, u.full_name, u.email, u.status, ap.agency_name,
             ap.bio, ap.years_of_experience
      FROM users u
      LEFT JOIN agent_profiles ap ON ap.user_id = u.id
@@ -464,7 +545,7 @@ export async function listApprovedAgents(options: ListOptions) {
 
 export async function getApprovedAgent(agentId: string) {
   const result = await pool.query<AgentSummary>(
-    `SELECT u.id, u.full_name, u.status, ap.agency_name,
+    `SELECT u.id, u.full_name, u.email, u.status, ap.agency_name,
             ap.bio, ap.years_of_experience
      FROM users u
      LEFT JOIN agent_profiles ap ON ap.user_id = u.id

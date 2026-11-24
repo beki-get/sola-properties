@@ -3,7 +3,10 @@ import { z } from "zod";
 const uuidSchema = z.string().uuid();
 
 export const authorizeAgentSchema = z.object({
-  agentId: uuidSchema,
+  agentId: z
+    .string()
+    .trim()
+    .min(1, "A valid agent ID or registered agent email is required."),
 });
 
 export const propertyAuthorizationParamsSchema = z.object({

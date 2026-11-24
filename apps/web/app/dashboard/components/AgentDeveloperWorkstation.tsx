@@ -78,6 +78,7 @@ export function AgentDeveloperWorkstation({
 
   // Authorizations State
   const [authorizations, setAuthorizations] = useState<any[]>([]);
+  const [approvedAgents, setApprovedAgents] = useState<any[]>([]);
   const [authLoading, setAuthLoading] = useState(false);
   const [grantAgentEmail, setGrantAgentEmail] = useState("");
   const [grantPropId, setGrantPropId] = useState("");
@@ -184,23 +185,55 @@ export function AgentDeveloperWorkstation({
         .finally(() => setPropLoading(false));
     } else if (activeTab === "authorizations") {
       setAuthLoading(true);
-      const call =
-        role === "developer"
-          ? propertyAuthApi.listApprovedAgents()
-          : propertyAuthApi.listAgentAuthorizedProperties();
-      call
-        .then((res: any) => {
+      if (role === "developer") {
+        propertyAuthApi
+          .listDeveloperAuthorizations()
+          .then((res: any) => {
+            if (res.ok && res.data) {
+              const list =
+                res.data.items ||
+                res.data.authorizations ||
+                res.data.data ||
+                [];
+              setAuthorizations(Array.isArray(list) ? list : []);
+            }
+          })
+          .finally(() => setAuthLoading(false));
+
+        propertyAuthApi.listApprovedAgents().then((res: any) => {
           if (res.ok && res.data) {
             const list =
               res.data.items ||
               res.data.agents ||
-              res.data.properties ||
               res.data.data ||
               [];
-            setAuthorizations(Array.isArray(list) ? list : []);
+            setApprovedAgents(Array.isArray(list) ? list : []);
           }
-        })
-        .finally(() => setAuthLoading(false));
+        });
+
+        if (properties.length === 0) {
+          propertyApi.getMyProperties().then((res) => {
+            if (res.ok && res.data) {
+              const list = res.data.items || res.data.properties || res.data.data || [];
+              setProperties(Array.isArray(list) ? list : []);
+            }
+          });
+        }
+      } else {
+        propertyAuthApi
+          .listAgentAuthorizedProperties()
+          .then((res: any) => {
+            if (res.ok && res.data) {
+              const list =
+                res.data.items ||
+                res.data.properties ||
+                res.data.data ||
+                [];
+              setAuthorizations(Array.isArray(list) ? list : []);
+            }
+          })
+          .finally(() => setAuthLoading(false));
+      }
     } else if (activeTab === "leads") {
       setLeadsLoading(true);
       referralApi
@@ -350,22 +383,35 @@ export function AgentDeveloperWorkstation({
   // Grant Authorization
   const handleGrantAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!grantPropId) {
+      showToast("Please select a property to authorize.", "warning");
+      return;
+    }
+    if (!grantAgentEmail.trim()) {
+      showToast("Please select an approved agent or enter an agent email.", "warning");
+      return;
+    }
     setGrantSubmitting(true);
     try {
       const res = await propertyAuthApi.authorizeAgent(grantPropId, grantAgentEmail.trim());
       if (res.ok) {
         setGrantAgentEmail("");
+        showToast("Agent successfully authorized to market this property!", "success");
         setFeedback({ ok: true, msg: "Agent authorized for property marketing." });
-        const refresh = await propertyAuthApi.listApprovedAgents();
+        const refresh = await propertyAuthApi.listDeveloperAuthorizations();
         if (refresh.ok && refresh.data) {
-          const list = refresh.data.items || refresh.data.agents || refresh.data.data || [];
+          const list = refresh.data.items || refresh.data.authorizations || refresh.data.data || [];
           setAuthorizations(Array.isArray(list) ? list : []);
         }
       } else {
-        setFeedback({ ok: false, msg: res.message || "Failed to grant authorization." });
+        const errorMsg = res.message || "Failed to grant authorization.";
+        showToast(errorMsg, "error");
+        setFeedback({ ok: false, msg: errorMsg });
       }
     } catch (err: any) {
-      setFeedback({ ok: false, msg: err.message || "Error granting authorization." });
+      const errorMsg = err.message || "Error granting authorization.";
+      showToast(errorMsg, "error");
+      setFeedback({ ok: false, msg: errorMsg });
     } finally {
       setGrantSubmitting(false);
     }
@@ -836,38 +882,69 @@ export function AgentDeveloperWorkstation({
           </div>
 
           {role === "developer" && (
-            <form onSubmit={handleGrantAuth} style={{ marginBottom: 28, padding: 20, backgroundColor: "#fafbfc", border: "1px solid #e5e7eb" }}>
-              <h4 style={{ margin: "0 0 12px", fontSize: "0.95rem", fontWeight: 800 }}>
+            <form onSubmit={handleGrantAuth} style={{ marginBottom: 28, padding: 20, backgroundColor: "#fafbfc", border: "1px solid #e5e7eb", borderRadius: 4 }}>
+              <h4 style={{ margin: "0 0 8px", fontSize: "0.95rem", fontWeight: 800 }}>
                 Authorize an Agent
               </h4>
+              <p style={{ margin: "0 0 16px", fontSize: "0.85rem", color: "#6b7280" }}>
+                Select a property and choose an approved agent to market and sell your listing.
+              </p>
               <div className={styles.formGrid}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, marginBottom: 4, color: "#374151" }}>
+                    Select Property
+                  </label>
+                  <select
+                    required
+                    className={styles.formSelect}
+                    value={grantPropId}
+                    onChange={(e) => setGrantPropId(e.target.value)}
+                  >
+                    <option value="">Choose property...</option>
+                    {properties.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title} {p.price ? `(${Number(p.price).toLocaleString()} ETB)` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, marginBottom: 4, color: "#374151" }}>
+                    Select Approved Agent
+                  </label>
+                  <select
+                    className={styles.formSelect}
+                    value={grantAgentEmail}
+                    onChange={(e) => setGrantAgentEmail(e.target.value)}
+                  >
+                    <option value="">Choose from approved agents...</option>
+                    {approvedAgents.map((ag: any) => (
+                      <option key={ag.id} value={ag.email || ag.id}>
+                        {ag.full_name || ag.email} {ag.agency_name ? `• ${ag.agency_name}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, marginBottom: 4, color: "#374151" }}>
+                  Or Enter Agent Email / ID
+                </label>
                 <input
-                  type="email"
-                  required
-                  placeholder="Agent Email Address"
+                  type="text"
+                  placeholder="e.g. agent@example.com or Agent UUID"
                   className={styles.formInput}
                   value={grantAgentEmail}
                   onChange={(e) => setGrantAgentEmail(e.target.value)}
                 />
-                <select
-                  required
-                  className={styles.formSelect}
-                  value={grantPropId}
-                  onChange={(e) => setGrantPropId(e.target.value)}
-                >
-                  <option value="">Select Property</option>
-                  {properties.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
               </div>
+
               <button
                 type="submit"
                 disabled={grantSubmitting}
                 className={styles.actionBtnPrimary}
-                style={{ marginTop: 12 }}
+                style={{ marginTop: 14 }}
               >
                 <span>{grantSubmitting ? "Authorizing..." : "Grant Permission"}</span>
               </button>
@@ -903,14 +980,17 @@ export function AgentDeveloperWorkstation({
                     {authPagination.pagedItems.map((a: any) => (
                       <tr key={a.id || a.property_id} className={styles.tableRow}>
                         <td className={styles.tableTd}>
-                          <strong>{a.title || a.property_title || a.property_id}</strong>
+                          <strong>{a.property_title || a.title || a.property_id}</strong>
                           <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
-                            ID: {(a.id || a.property_id || "").slice(0, 8)}
+                            {a.price ? `${Number(a.price).toLocaleString()} ETB` : `ID: ${(a.id || a.property_id || "").slice(0, 8)}`}
                           </div>
                         </td>
                         {role === "developer" ? (
                           <td className={styles.tableTd}>
-                            <strong>{a.full_name || a.agent_name || a.agent_email}</strong>
+                            <strong>{a.agent_name || a.full_name || a.agent_email}</strong>
+                            {a.agent_email && a.agent_name && (
+                              <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{a.agent_email}</div>
+                            )}
                             {a.agency_name && (
                               <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{a.agency_name}</div>
                             )}
@@ -929,8 +1009,12 @@ export function AgentDeveloperWorkstation({
                           </td>
                         )}
                         <td className={styles.tableTd}>
-                          <span className={`${styles.badge} ${styles.badgeActive}`}>
-                            {a.status || "Authorized"}
+                          <span
+                            className={`${styles.badge} ${
+                              a.status === "revoked" ? styles.badgeInactive : styles.badgeActive
+                            }`}
+                          >
+                            {a.status || "active"}
                           </span>
                         </td>
                         <td className={styles.tableTd}>

@@ -1216,6 +1216,11 @@ export const propertyAuthApi = {
   listApprovedAgents: () =>
     apiRequest<{ agents?: any[]; items?: any[]; data?: any[] }>("/api/v1/developer/agents"),
 
+  listDeveloperAuthorizations: () =>
+    apiRequest<{ items?: any[]; data?: any[]; authorizations?: any[] }>(
+      "/api/v1/developer/authorizations"
+    ),
+
   getApprovedAgent: (agentId: string) =>
     apiRequest<{ agent?: any; data?: any }>(`/api/v1/developer/agents/${agentId}`),
 

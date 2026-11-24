@@ -4,6 +4,7 @@ import {
   listAgentAuthorizedProperties,
   listApprovedAgents,
   listAuthorizedAgents,
+  listDeveloperAuthorizations,
   revokeAgentAuthorization as queryRevokeAgentAuthorization,
   type ListOptions,
 } from "../queries/propertyAuthorizationQueries";
@@ -119,4 +120,5 @@ export {
   listAgentAuthorizedProperties,
   listApprovedAgents,
   listAuthorizedAgents,
+  listDeveloperAuthorizations,
 };
