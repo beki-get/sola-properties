@@ -114,6 +114,7 @@ export function AgentDeveloperWorkstation({
 
   // Commissions State
   const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [commissionSummary, setCommissionSummary] = useState<any>(null);
   const [commLoading, setCommLoading] = useState(false);
 
   // Analytics State
@@ -146,7 +147,8 @@ export function AgentDeveloperWorkstation({
         .getMyProperties()
         .then((res) => {
           if (res.ok && res.data) {
-            setProperties(res.data.properties || res.data.data || []);
+            const list = res.data.items || res.data.properties || res.data.data || [];
+            setProperties(Array.isArray(list) ? list : []);
           }
         })
         .finally(() => setPropLoading(false));
@@ -159,7 +161,13 @@ export function AgentDeveloperWorkstation({
       call
         .then((res: any) => {
           if (res.ok && res.data) {
-            setAuthorizations(res.data.agents || res.data.properties || res.data.data || []);
+            const list =
+              res.data.items ||
+              res.data.agents ||
+              res.data.properties ||
+              res.data.data ||
+              [];
+            setAuthorizations(Array.isArray(list) ? list : []);
           }
         })
         .finally(() => setAuthLoading(false));
@@ -169,21 +177,45 @@ export function AgentDeveloperWorkstation({
         .getMyReferrals()
         .then((res) => {
           if (res.ok && res.data) {
-            setReferrals(res.data.referrals || res.data.data || []);
+            const list =
+              res.data.referrals ||
+              res.data.items ||
+              res.data.data ||
+              (Array.isArray(res.data) ? res.data : []);
+            setReferrals(Array.isArray(list) ? list : []);
           }
         })
         .finally(() => setLeadsLoading(false));
     } else if (activeTab === "visits") {
       setVisitLoading(true);
       referralApi.getMyReferrals().then(async (refRes) => {
-        const refList = refRes.data?.referrals || refRes.data?.data || [];
-        if (refList.length > 0) {
+        const refList =
+          refRes.data?.referrals ||
+          refRes.data?.items ||
+          refRes.data?.data ||
+          (Array.isArray(refRes.data) ? refRes.data : []);
+        if (Array.isArray(refList) && refList.length > 0) {
           const allVisits: PropertyVisit[] = [];
-          for (const r of refList.slice(0, 5)) {
+          for (const r of refList.slice(0, 10)) {
             const vRes = await visitApi.getSellerVisits(r.id);
             if (vRes.ok && vRes.data) {
-              const vList = vRes.data.visits || vRes.data.data || [];
-              allVisits.push(...vList);
+              const vList =
+                (vRes.data as any)?.data?.items ||
+                (vRes.data as any)?.items ||
+                (vRes.data as any)?.visits ||
+                (Array.isArray((vRes.data as any)?.data) ? (vRes.data as any)?.data : []);
+              if (Array.isArray(vList)) {
+                allVisits.push(
+                  ...vList.map((v: any) => ({
+                    ...v,
+                    property_title:
+                      v.property_title ||
+                      r.property_title ||
+                      r.property?.title ||
+                      `Referral #${r.id.slice(0, 8)}`,
+                  }))
+                );
+              }
             }
           }
           setVisits(allVisits);
@@ -196,9 +228,12 @@ export function AgentDeveloperWorkstation({
       setTxLoading(true);
       transactionApi
         .list()
-        .then((res) => {
+        .then((res: any) => {
           if (res.ok && res.data) {
-            setTransactions(res.data.transactions || res.data.data || []);
+            const list = Array.isArray(res.data)
+              ? res.data
+              : res.data.items || res.data.transactions || res.data.data || [];
+            setTransactions(Array.isArray(list) ? list : []);
           }
         })
         .finally(() => setTxLoading(false));
@@ -206,9 +241,17 @@ export function AgentDeveloperWorkstation({
       setCommLoading(true);
       commissionApi
         .listCommissions()
-        .then((res) => {
+        .then((res: any) => {
           if (res.ok && res.data) {
-            setCommissions(res.data.commissions || res.data.data || []);
+            const list =
+              (res.data as any)?.data ||
+              (res.data as any)?.items ||
+              (res.data as any)?.commissions ||
+              (Array.isArray(res.data) ? res.data : []);
+            setCommissions(Array.isArray(list) ? list : []);
+            if ((res.data as any)?.summary) {
+              setCommissionSummary((res.data as any).summary);
+            }
           }
         })
         .finally(() => setCommLoading(false));
@@ -219,9 +262,9 @@ export function AgentDeveloperWorkstation({
           ? reportApi.getAgentReport()
           : reportApi.getDeveloperReport();
       call
-        .then((res) => {
+        .then((res: any) => {
           if (res.ok && res.data) {
-            setAnalytics(res.data.report || res.data.data || null);
+            setAnalytics(res.data.data || res.data.report || res.data || null);
           }
         })
         .finally(() => setAnalyticsLoading(false));
@@ -259,7 +302,8 @@ export function AgentDeveloperWorkstation({
         // Reload properties
         const refresh = await propertyApi.getMyProperties();
         if (refresh.ok && refresh.data) {
-          setProperties(refresh.data.properties || refresh.data.data || []);
+          const list = refresh.data.items || refresh.data.properties || refresh.data.data || [];
+          setProperties(Array.isArray(list) ? list : []);
         }
       } else {
         setFeedback({ ok: false, msg: res.message || "Failed to create property." });
@@ -297,7 +341,8 @@ export function AgentDeveloperWorkstation({
         setFeedback({ ok: true, msg: "Agent authorized for property marketing." });
         const refresh = await propertyAuthApi.listApprovedAgents();
         if (refresh.ok && refresh.data) {
-          setAuthorizations(refresh.data.agents || refresh.data.data || []);
+          const list = refresh.data.items || refresh.data.agents || refresh.data.data || [];
+          setAuthorizations(Array.isArray(list) ? list : []);
         }
       } else {
         setFeedback({ ok: false, msg: res.message || "Failed to grant authorization." });
@@ -432,7 +477,10 @@ export function AgentDeveloperWorkstation({
         setFeedback({ ok: true, msg: "Transaction closing submitted for compliance verification!" });
         const refresh = await transactionApi.list();
         if (refresh.ok && refresh.data) {
-          setTransactions(refresh.data.transactions || refresh.data.data || []);
+          const list = Array.isArray(refresh.data)
+            ? refresh.data
+            : (refresh.data as any).items || (refresh.data as any).transactions || (refresh.data as any).data || [];
+          setTransactions(Array.isArray(list) ? list : []);
         }
       } else {
         setFeedback({ ok: false, msg: res.message || "Failed to submit transaction." });
@@ -588,9 +636,9 @@ export function AgentDeveloperWorkstation({
                 >
                   <X size={20} />
                 </button>
-                <h3 className={styles.modalTitle}>Register Architectural Asset</h3>
+                <h3 className={styles.modalTitle}>Register New Property Listing</h3>
                 <p className={styles.modalDesc}>
-                  Submit complete architectural specs. Postings require Sola compliance review before public display.
+                  Submit property details. Postings require Sola compliance review before public display.
                 </p>
 
                 <form onSubmit={handleCreateProperty}>
@@ -721,7 +769,7 @@ export function AgentDeveloperWorkstation({
                   </div>
 
                   <div className={styles.formField}>
-                    <label className={styles.formLabel}>Architectural Description</label>
+                    <label className={styles.formLabel}>Property Description</label>
                     <textarea
                       rows={3}
                       className={styles.formTextarea}
@@ -817,28 +865,49 @@ export function AgentDeveloperWorkstation({
                   <tr>
                     <th className={styles.tableTh}>Property / Development</th>
                     <th className={styles.tableTh}>
-                      {role === "developer" ? "Authorized Agent" : "Developer"}
+                      {role === "developer" ? "Authorized Agent" : "Location"}
                     </th>
-                    <th className={styles.tableTh}>Status</th>
-                    <th className={styles.tableTh}>Mandate Granted</th>
+                    {role === "agent" && <th className={styles.tableTh}>List Price</th>}
+                    <th className={styles.tableTh}>Mandate Status</th>
+                    <th className={styles.tableTh}>Date Granted</th>
                   </tr>
                 </thead>
                 <tbody>
                   {authorizations.map((a: any) => (
-                    <tr key={a.id} className={styles.tableRow}>
+                    <tr key={a.id || a.property_id} className={styles.tableRow}>
                       <td className={styles.tableTd}>
-                        <strong>{a.property_title || a.property_id}</strong>
+                        <strong>{a.title || a.property_title || a.property_id}</strong>
+                        <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>
+                          ID: {(a.id || a.property_id || "").slice(0, 8)}
+                        </div>
                       </td>
-                      <td className={styles.tableTd}>
-                        {role === "developer" ? a.agent_name || a.agent_email : a.developer_name}
-                      </td>
+                      {role === "developer" ? (
+                        <td className={styles.tableTd}>
+                          <strong>{a.full_name || a.agent_name || a.agent_email}</strong>
+                          {a.agency_name && (
+                            <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{a.agency_name}</div>
+                          )}
+                        </td>
+                      ) : (
+                        <td className={styles.tableTd}>
+                          {a.location_name || a.address || "Addis Ababa"}
+                          {a.category_name && (
+                            <div style={{ fontSize: "0.72rem", color: "#8c95a6" }}>{a.category_name}</div>
+                          )}
+                        </td>
+                      )}
+                      {role === "agent" && (
+                        <td className={styles.tableTd}>
+                          <strong>{a.price ? `$${Number(a.price).toLocaleString()}` : "—"}</strong>
+                        </td>
+                      )}
                       <td className={styles.tableTd}>
                         <span className={`${styles.badge} ${styles.badgeActive}`}>
                           {a.status || "Authorized"}
                         </span>
                       </td>
                       <td className={styles.tableTd}>
-                        {new Date(a.created_at).toLocaleDateString()}
+                        {new Date(a.authorized_at || a.created_at || Date.now()).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}
@@ -1384,6 +1453,33 @@ export function AgentDeveloperWorkstation({
             </button>
           </div>
 
+          {/* Commission Summary Cards */}
+          {commissionSummary && (
+            <div className={styles.kpiGrid} style={{ marginBottom: 24 }}>
+              <div className={styles.kpiCard}>
+                <span className={styles.kpiLabel}>Total Commission</span>
+                <span className={styles.kpiValue}>
+                  ${Number(commissionSummary.total_commission || 0).toLocaleString()}
+                </span>
+                <span className={styles.kpiSubtext}>Accrued gross fees</span>
+              </div>
+              <div className={styles.kpiCard}>
+                <span className={styles.kpiLabel}>Amount Paid</span>
+                <span className={styles.kpiValue}>
+                  ${Number(commissionSummary.paid_total || 0).toLocaleString()}
+                </span>
+                <span className={styles.kpiSubtext}>Disbursed payouts</span>
+              </div>
+              <div className={styles.kpiCard}>
+                <span className={styles.kpiLabel}>Outstanding Balance</span>
+                <span className={styles.kpiValue}>
+                  ${Number(commissionSummary.outstanding || 0).toLocaleString()}
+                </span>
+                <span className={styles.kpiSubtext}>Pending settlement</span>
+              </div>
+            </div>
+          )}
+
           {commLoading ? (
             <div className={styles.emptyBlock}>Loading commission ledger...</div>
           ) : commissions.length === 0 ? (
@@ -1407,16 +1503,30 @@ export function AgentDeveloperWorkstation({
                   </tr>
                 </thead>
                 <tbody>
-                  {commissions.map((c) => (
+                  {commissions.map((c: any) => (
                     <tr key={c.id} className={styles.tableRow}>
                       <td className={styles.tableTd}>
-                        <strong>{c.transaction_id ? c.transaction_id.slice(0, 8) : c.id.slice(0, 8)}</strong>
+                        <strong>
+                          {c.transactionId
+                            ? c.transactionId.slice(0, 8)
+                            : c.transaction_id
+                            ? c.transaction_id.slice(0, 8)
+                            : c.id.slice(0, 8)}
+                        </strong>
                       </td>
                       <td className={styles.tableTd}>
-                        ${Number(c.sale_amount).toLocaleString()}
+                        ${Number(c.saleAmount ?? c.sale_amount ?? 0).toLocaleString()}
                       </td>
                       <td className={styles.tableTd}>
-                        <strong>${Number(c.total_commission).toLocaleString()}</strong>
+                        <strong>
+                          ${Number(
+                            c.totalCommission ??
+                              c.total_commission ??
+                              c.sellerAmount ??
+                              c.seller_amount ??
+                              0
+                          ).toLocaleString()}
+                        </strong>
                       </td>
                       <td className={styles.tableTd}>
                         <span
@@ -1432,7 +1542,7 @@ export function AgentDeveloperWorkstation({
                         </span>
                       </td>
                       <td className={styles.tableTd}>
-                        {new Date(c.created_at).toLocaleDateString()}
+                        {new Date(c.createdAt || c.created_at || Date.now()).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}
@@ -1473,30 +1583,79 @@ export function AgentDeveloperWorkstation({
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Total Referrals Handled</span>
                       <span className={styles.kpiValue}>
-                        {(analytics as AgentReport)?.total_referrals ?? 0}
+                        {(analytics as AgentReport)?.referrals?.total ??
+                          (analytics as AgentReport)?.total_referrals ??
+                          0}
                       </span>
                       <span className={styles.kpiSubtext}>Direct client inquiries</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Active Listings</span>
                       <span className={styles.kpiValue}>
-                        {(analytics as AgentReport)?.active_listings ?? 0}
+                        {(analytics as AgentReport)?.properties?.total ??
+                          (analytics as AgentReport)?.active_listings ??
+                          0}
                       </span>
                       <span className={styles.kpiSubtext}>Properties currently marketed</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Closed Won Deals</span>
                       <span className={styles.kpiValue}>
-                        {(analytics as AgentReport)?.closed_deals ?? 0}
+                        {(analytics as AgentReport)?.sales?.totalSalesCount ??
+                          (analytics as AgentReport)?.closed_deals ??
+                          0}
                       </span>
                       <span className={styles.kpiSubtext}>Audited closings</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Commission Accrued</span>
                       <span className={styles.kpiValue}>
-                        ${Number((analytics as AgentReport)?.total_commission ?? 0).toLocaleString()}
+                        $
+                        {Number(
+                          (analytics as AgentReport)?.commissions?.sellerEarnings ??
+                            (analytics as AgentReport)?.commissions?.totalCommission ??
+                            (analytics as AgentReport)?.total_commission ??
+                            0
+                        ).toLocaleString()}
                       </span>
                       <span className={styles.kpiSubtext}>Net earned broker fees</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Total Sales Volume</span>
+                      <span className={styles.kpiValue}>
+                        $
+                        {Number(
+                          (analytics as AgentReport)?.sales?.totalSalesValue || 0
+                        ).toLocaleString()}
+                      </span>
+                      <span className={styles.kpiSubtext}>Verified transaction value</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Authorized Properties</span>
+                      <span className={styles.kpiValue}>
+                        {(analytics as AgentReport)?.authorizedProperties?.total ?? 0}
+                      </span>
+                      <span className={styles.kpiSubtext}>Active representation mandates</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Disbursed Payouts</span>
+                      <span className={styles.kpiValue}>
+                        $
+                        {Number(
+                          (analytics as AgentReport)?.commissions?.amountPaid || 0
+                        ).toLocaleString()}
+                      </span>
+                      <span className={styles.kpiSubtext}>Completed payments</span>
+                    </div>
+                    <div className={styles.kpiCard}>
+                      <span className={styles.kpiLabel}>Pending Commission</span>
+                      <span className={styles.kpiValue}>
+                        $
+                        {Number(
+                          (analytics as AgentReport)?.commissions?.outstandingAmount || 0
+                        ).toLocaleString()}
+                      </span>
+                      <span className={styles.kpiSubtext}>Awaiting payout release</span>
                     </div>
                   </>
                 ) : (
@@ -1504,34 +1663,94 @@ export function AgentDeveloperWorkstation({
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Total Properties Listed</span>
                       <span className={styles.kpiValue}>
-                        {(analytics as DeveloperReport)?.total_properties ?? 0}
+                        {(analytics as DeveloperReport)?.totalProperties ??
+                          (analytics as DeveloperReport)?.total_properties ??
+                          0}
                       </span>
                       <span className={styles.kpiSubtext}>Active portfolio assets</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Active Projects</span>
                       <span className={styles.kpiValue}>
-                        {(analytics as DeveloperReport)?.active_projects ?? 0}
+                        {(analytics as DeveloperReport)?.totalProjects ??
+                          (analytics as DeveloperReport)?.active_projects ??
+                          0}
                       </span>
                       <span className={styles.kpiSubtext}>Developments underway</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Authorized Brokers</span>
                       <span className={styles.kpiValue}>
-                        {(analytics as DeveloperReport)?.authorized_agents ?? 0}
+                        {(analytics as DeveloperReport)?.authorizedAgents ??
+                          (analytics as DeveloperReport)?.authorized_agents ??
+                          0}
                       </span>
                       <span className={styles.kpiSubtext}>Marketing representation mandates</span>
                     </div>
                     <div className={styles.kpiCard}>
-                      <span className={styles.kpiLabel}>Total Inquiries</span>
+                      <span className={styles.kpiLabel}>Client Inquiries</span>
                       <span className={styles.kpiValue}>
-                        {(analytics as DeveloperReport)?.total_inquiries ?? 0}
+                        {(analytics as DeveloperReport)?.referrals?.total ??
+                          (analytics as DeveloperReport)?.total_inquiries ??
+                          0}
                       </span>
                       <span className={styles.kpiSubtext}>Platform client demand</span>
                     </div>
                   </>
                 )}
               </div>
+
+              {/* Status Breakdown from live backend */}
+              {((analytics as AgentReport)?.referrals?.byStatus ||
+                (analytics as DeveloperReport)?.referrals?.byStatus) && (
+                <div
+                  style={{
+                    marginTop: 24,
+                    padding: 18,
+                    backgroundColor: "#fafbfc",
+                    border: "1px solid #e5e7eb",
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: "0 0 12px",
+                      fontSize: "0.88rem",
+                      fontWeight: 800,
+                      letterSpacing: "0.02em",
+                      textTransform: "uppercase",
+                      color: "#374151",
+                    }}
+                  >
+                    Referrals by Status
+                  </h4>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {Object.entries(
+                      ((analytics as AgentReport)?.referrals?.byStatus ||
+                        (analytics as DeveloperReport)?.referrals?.byStatus) ??
+                        {}
+                    ).map(([statusKey, count]) => (
+                      <div
+                        key={statusKey}
+                        style={{
+                          padding: "6px 14px",
+                          backgroundColor: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 3,
+                          fontSize: "0.82rem",
+                          display: "flex",
+                          gap: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        <span style={{ textTransform: "capitalize", color: "#64748b" }}>
+                          {statusKey.replace(/_/g, " ")}:
+                        </span>
+                        <strong style={{ color: "#0f172a" }}>{count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

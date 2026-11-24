@@ -884,6 +884,28 @@ export interface AuditLog {
 }
 
 export interface AgentReport {
+  properties?: {
+    total: number;
+    byStatus?: Record<string, number>;
+  };
+  referrals?: {
+    total: number;
+    byStatus?: Record<string, number>;
+  };
+  sales?: {
+    totalSalesCount: number;
+    totalSalesValue: string;
+  };
+  commissions?: {
+    totalCommission: string;
+    sellerEarnings: string;
+    adjustments: string;
+    amountPaid: string;
+    outstandingAmount: string;
+  };
+  authorizedProperties?: {
+    total: number;
+  };
   active_listings?: number;
   total_referrals?: number;
   closed_deals?: number;
@@ -892,6 +914,13 @@ export interface AgentReport {
 }
 
 export interface DeveloperReport {
+  totalProjects?: number;
+  totalProperties?: number;
+  authorizedAgents?: number;
+  referrals?: {
+    total: number;
+    byStatus?: Record<string, number>;
+  };
   active_projects?: number;
   total_properties?: number;
   authorized_agents?: number;
@@ -1028,7 +1057,11 @@ export const propertyApi = {
     const qs = query.toString();
     return apiRequest<{
       properties?: Property[];
+      items?: Property[];
       data?: Property[];
+      total?: number;
+      page?: number;
+      limit?: number;
       pagination?: any;
       message?: string;
     }>(`/api/v1/properties/me${qs ? `?${qs}` : ""}`);
@@ -1105,13 +1138,13 @@ export const propertyApi = {
 
 export const propertyAuthApi = {
   listApprovedAgents: () =>
-    apiRequest<{ agents?: any[]; data?: any[] }>("/api/v1/developer/agents"),
+    apiRequest<{ agents?: any[]; items?: any[]; data?: any[] }>("/api/v1/developer/agents"),
 
   getApprovedAgent: (agentId: string) =>
     apiRequest<{ agent?: any; data?: any }>(`/api/v1/developer/agents/${agentId}`),
 
   listAuthorizedAgents: (propertyId: string) =>
-    apiRequest<{ agents?: any[]; data?: any[] }>(
+    apiRequest<{ agents?: any[]; items?: any[]; data?: any[] }>(
       `/api/v1/developer/properties/${propertyId}/agents`
     ),
 
@@ -1133,7 +1166,7 @@ export const propertyAuthApi = {
     ),
 
   listAgentAuthorizedProperties: () =>
-    apiRequest<{ properties?: Property[]; data?: Property[] }>(
+    apiRequest<{ properties?: Property[]; items?: any[]; data?: Property[] }>(
       "/api/v1/agent/authorized-properties"
     ),
 };
@@ -1149,12 +1182,12 @@ export const referralApi = {
     ),
 
   getBuyerReferrals: () =>
-    apiRequest<{ referrals?: Referral[]; data?: Referral[] }>(
+    apiRequest<{ referrals?: Referral[]; items?: Referral[]; data?: Referral[] }>(
       "/api/v1/referrals/buyer/me"
     ),
 
   getMyReferrals: () =>
-    apiRequest<{ referrals?: Referral[]; data?: Referral[] }>(
+    apiRequest<{ referrals?: Referral[]; items?: Referral[]; data?: Referral[] }>(
       "/api/v1/referrals/me"
     ),
 
@@ -1302,12 +1335,12 @@ export const visitApi = {
     ),
 
   getBuyerVisits: () =>
-    apiRequest<{ visits?: PropertyVisit[]; data?: PropertyVisit[] }>(
+    apiRequest<{ visits?: PropertyVisit[]; items?: PropertyVisit[]; data?: any }>(
       "/api/v1/referral/buyer/me/visits"
     ),
 
   getSellerVisits: (referralId: string) =>
-    apiRequest<{ visits?: PropertyVisit[]; data?: PropertyVisit[] }>(
+    apiRequest<{ visits?: PropertyVisit[]; items?: PropertyVisit[]; data?: any }>(
       `/api/v1/referral/${referralId}/visits`
     ),
 
@@ -1400,7 +1433,11 @@ export const transactionApi = {
     const qs = query.toString();
     return apiRequest<{
       transactions?: Transaction[];
+      items?: Transaction[];
       data?: Transaction[];
+      total?: number;
+      page?: number;
+      limit?: number;
       pagination?: any;
     }>(`/api/v1/transactions${qs ? `?${qs}` : ""}`);
   },
@@ -1517,9 +1554,12 @@ export const commissionApi = {
     const query = new URLSearchParams();
     if (params?.status) query.set("status", params.status);
     const qs = query.toString();
-    return apiRequest<{ commissions?: Commission[]; data?: Commission[] }>(
-      `/api/v1/commissions${qs ? `?${qs}` : ""}`
-    );
+    return apiRequest<{
+      commissions?: Commission[];
+      items?: Commission[];
+      data?: Commission[];
+      summary?: any;
+    }>(`/api/v1/commissions${qs ? `?${qs}` : ""}`);
   },
 
   getStatement: (commissionId: string) =>
