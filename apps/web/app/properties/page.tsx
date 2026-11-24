@@ -232,7 +232,7 @@ function PropertiesCatalogContent() {
           <div style={{ display: "flex", gap: 6 }}>
             <input
               type="number"
-              placeholder="Min $"
+              placeholder="Min ETB"
               className={styles.filterSelect}
               style={{ width: "50%" }}
               value={minPrice}
@@ -240,7 +240,7 @@ function PropertiesCatalogContent() {
             />
             <input
               type="number"
-              placeholder="Max $"
+              placeholder="Max ETB"
               className={styles.filterSelect}
               style={{ width: "50%" }}
               value={maxPrice}
@@ -415,9 +415,9 @@ function PropertiesCatalogContent() {
                     <div className={styles.cardPriceRow}>
                       <div>
                         <span className={styles.cardPrice}>
-                          ${Number(prop.price).toLocaleString()}
+                          {Number(prop.price).toLocaleString()}
                         </span>
-                        <span className={styles.cardPriceSub}>USD</span>
+                        <span className={styles.cardPriceSub}>ETB</span>
                       </div>
                       <span style={{ fontSize: "0.75rem", color: "#6b7280", textTransform: "capitalize" }}>
                         {prop.payment_plan ? `${prop.payment_plan}` : "Direct"}

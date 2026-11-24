@@ -716,6 +716,7 @@ export interface Property {
   payment_plan?: "cash" | "installment" | "mortgage";
   status: "draft" | "pending_approval" | "active" | "inactive" | "sold" | "rejected";
   images?: PropertyImage[];
+  primary_image_url?: string | null;
   created_at: string;
   updated_at: string;
 }

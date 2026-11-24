@@ -214,7 +214,7 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
                         </td>
                         <td className={styles.tableTd}>
                           <strong>
-                            {prop?.price ? `$${Number(prop.price).toLocaleString()}` : "—"}
+                            {prop?.price ? `${Number(prop.price).toLocaleString()} ETB` : "—"}
                           </strong>
                         </td>
                         <td className={styles.tableTd}>
@@ -531,7 +531,7 @@ export function BuyerWorkstation({ activeTab }: BuyerWorkstationProps) {
                         {p.location_name || p.address || "Addis Ababa"}
                       </td>
                       <td className={styles.tableTd}>
-                        <strong>${Number(p.price).toLocaleString()}</strong>
+                        <strong>{Number(p.price).toLocaleString()} ETB</strong>
                       </td>
                       <td className={styles.tableTd}>
                         {p.size_sqm ? `${p.size_sqm} m²` : "—"} &bull;{" "}

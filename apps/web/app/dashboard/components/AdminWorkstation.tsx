@@ -454,7 +454,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                         </div>
                       </td>
                       <td className={styles.tableTd}>
-                        <strong>${Number(p.price).toLocaleString()}</strong>
+                        <strong>{Number(p.price).toLocaleString()} ETB</strong>
                       </td>
                       <td className={styles.tableTd}>
                         {p.location_name || p.address || "Addis Ababa"}
@@ -643,7 +643,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                         <strong>{t.property_title || t.property_id}</strong>
                       </td>
                       <td className={styles.tableTd}>
-                        <strong>${Number(t.sale_amount).toLocaleString()}</strong>
+                        <strong>{Number(t.sale_amount).toLocaleString()} ETB</strong>
                       </td>
                       <td className={styles.tableTd}>
                         {new Date(t.closing_date).toLocaleDateString()}
@@ -770,9 +770,9 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                   {commissions.map((c) => (
                     <tr key={c.id} className={styles.tableRow}>
                       <td className={styles.tableTd}>{c.id.slice(0, 8)}</td>
-                      <td className={styles.tableTd}>${Number(c.sale_amount).toLocaleString()}</td>
+                      <td className={styles.tableTd}>{Number(c.sale_amount).toLocaleString()} ETB</td>
                       <td className={styles.tableTd}>
-                        <strong>${Number(c.total_commission).toLocaleString()}</strong>
+                        <strong>{Number(c.total_commission).toLocaleString()} ETB</strong>
                       </td>
                       <td className={styles.tableTd}>
                         <span
@@ -1238,7 +1238,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Gross Sales Volume</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as AdminReport)?.sales?.totalSalesValue ?? (report as AdminReport)?.total_gmv ?? 0).toLocaleString()}
+                        {Number((report as AdminReport)?.sales?.totalSalesValue ?? (report as AdminReport)?.total_gmv ?? 0).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>
                         {(report as AdminReport)?.sales?.totalSalesCount ?? 0} verified transactions
@@ -1254,10 +1254,10 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Total Platform Commission</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as AdminReport)?.commissions?.totalCommission ?? 0).toLocaleString()}
+                        {Number((report as AdminReport)?.commissions?.totalCommission ?? 0).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>
-                        ${Number((report as AdminReport)?.commissions?.outstandingAmount ?? 0).toLocaleString()} outstanding
+                        {Number((report as AdminReport)?.commissions?.outstandingAmount ?? 0).toLocaleString()} ETB outstanding
                       </span>
                     </div>
                   </>
@@ -1266,7 +1266,7 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Total Sales Volume</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as FinanceAdminReport)?.sales?.totalSalesValue ?? 0).toLocaleString()}
+                        {Number((report as FinanceAdminReport)?.sales?.totalSalesValue ?? 0).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>
                         {(report as FinanceAdminReport)?.sales?.totalSalesCount ?? 0} closed deals
@@ -1275,21 +1275,21 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Total Commission</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as FinanceAdminReport)?.commissions?.totalCommission ?? (report as FinanceAdminReport)?.total_commissions_earned ?? 0).toLocaleString()}
+                        {Number((report as FinanceAdminReport)?.commissions?.totalCommission ?? (report as FinanceAdminReport)?.total_commissions_earned ?? 0).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>Cumulative volume fees</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Disbursed to Brokers</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as FinanceAdminReport)?.commissions?.amountPaid ?? (report as FinanceAdminReport)?.paid_commissions ?? 0).toLocaleString()}
+                        {Number((report as FinanceAdminReport)?.commissions?.amountPaid ?? (report as FinanceAdminReport)?.paid_commissions ?? 0).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>Paid commissions</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Outstanding Balance</span>
                       <span className={styles.kpiValue}>
-                        ${Number((report as FinanceAdminReport)?.commissions?.outstandingAmount ?? (report as FinanceAdminReport)?.pending_payouts ?? 0).toLocaleString()}
+                        {Number((report as FinanceAdminReport)?.commissions?.outstandingAmount ?? (report as FinanceAdminReport)?.pending_payouts ?? 0).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>Commissions awaiting release</span>
                     </div>

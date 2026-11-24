@@ -595,7 +595,7 @@ export function AgentDeveloperWorkstation({
                         {p.location_name || p.address || "Addis Ababa"}
                       </td>
                       <td className={styles.tableTd}>
-                        <strong>${Number(p.price).toLocaleString()}</strong>
+                        <strong>{Number(p.price).toLocaleString()} ETB</strong>
                       </td>
                       <td className={styles.tableTd}>
                         {p.size_sqm ? `${p.size_sqm} m²` : "—"} &bull;{" "}
@@ -720,7 +720,7 @@ export function AgentDeveloperWorkstation({
 
                   <div className={styles.formGrid}>
                     <div className={styles.formField}>
-                      <label className={styles.formLabel}>Price (USD)</label>
+                      <label className={styles.formLabel}>Price (ETB)</label>
                       <input
                         type="number"
                         required
@@ -926,7 +926,7 @@ export function AgentDeveloperWorkstation({
                       )}
                       {role === "agent" && (
                         <td className={styles.tableTd}>
-                          <strong>{a.price ? `$${Number(a.price).toLocaleString()}` : "—"}</strong>
+                          <strong>{a.price ? `${Number(a.price).toLocaleString()} ETB` : "—"}</strong>
                         </td>
                       )}
                       <td className={styles.tableTd}>
@@ -1361,7 +1361,7 @@ export function AgentDeveloperWorkstation({
                         <strong>{t.property_title || t.property_id}</strong>
                       </td>
                       <td className={styles.tableTd}>
-                        <strong>${Number(t.sale_amount).toLocaleString()}</strong>
+                        <strong>{Number(t.sale_amount).toLocaleString()} ETB</strong>
                       </td>
                       <td className={styles.tableTd}>{t.buyer_name || "Verified Buyer"}</td>
                       <td className={styles.tableTd}>
@@ -1417,7 +1417,7 @@ export function AgentDeveloperWorkstation({
 
                   <div className={styles.formGrid}>
                     <div className={styles.formField}>
-                      <label className={styles.formLabel}>Final Sale Amount (USD)</label>
+                      <label className={styles.formLabel}>Final Sale Amount (ETB)</label>
                       <input
                         type="number"
                         required
@@ -1490,21 +1490,21 @@ export function AgentDeveloperWorkstation({
               <div className={styles.kpiCard}>
                 <span className={styles.kpiLabel}>Total Commission</span>
                 <span className={styles.kpiValue}>
-                  ${Number(commissionSummary.total_commission || 0).toLocaleString()}
+                  {Number(commissionSummary.total_commission || 0).toLocaleString()} ETB
                 </span>
                 <span className={styles.kpiSubtext}>Total commission earned</span>
               </div>
               <div className={styles.kpiCard}>
                 <span className={styles.kpiLabel}>Amount Paid</span>
                 <span className={styles.kpiValue}>
-                  ${Number(commissionSummary.paid_total || 0).toLocaleString()}
+                  {Number(commissionSummary.paid_total || 0).toLocaleString()} ETB
                 </span>
                 <span className={styles.kpiSubtext}>Paid to you</span>
               </div>
               <div className={styles.kpiCard}>
                 <span className={styles.kpiLabel}>Outstanding Balance</span>
                 <span className={styles.kpiValue}>
-                  ${Number(commissionSummary.outstanding || 0).toLocaleString()}
+                  {Number(commissionSummary.outstanding || 0).toLocaleString()} ETB
                 </span>
                 <span className={styles.kpiSubtext}>Pending payment</span>
               </div>
@@ -1546,17 +1546,17 @@ export function AgentDeveloperWorkstation({
                         </strong>
                       </td>
                       <td className={styles.tableTd}>
-                        ${Number(c.saleAmount ?? c.sale_amount ?? 0).toLocaleString()}
+                        {Number(c.saleAmount ?? c.sale_amount ?? 0).toLocaleString()} ETB
                       </td>
                       <td className={styles.tableTd}>
                         <strong>
-                          ${Number(
+                          {Number(
                             c.totalCommission ??
                               c.total_commission ??
                               c.sellerAmount ??
                               c.seller_amount ??
                               0
-                          ).toLocaleString()}
+                          ).toLocaleString()} ETB
                         </strong>
                       </td>
                       <td className={styles.tableTd}>
@@ -1641,23 +1641,21 @@ export function AgentDeveloperWorkstation({
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Commission Earned</span>
                       <span className={styles.kpiValue}>
-                        $
                         {Number(
                           (analytics as AgentReport)?.commissions?.sellerEarnings ??
                             (analytics as AgentReport)?.commissions?.totalCommission ??
                             (analytics as AgentReport)?.total_commission ??
                             0
-                        ).toLocaleString()}
+                        ).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>Total earned commission</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Total Sales Volume</span>
                       <span className={styles.kpiValue}>
-                        $
                         {Number(
                           (analytics as AgentReport)?.sales?.totalSalesValue || 0
-                        ).toLocaleString()}
+                        ).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>Total value of closed sales</span>
                     </div>
@@ -1671,20 +1669,18 @@ export function AgentDeveloperWorkstation({
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Commission Paid</span>
                       <span className={styles.kpiValue}>
-                        $
                         {Number(
                           (analytics as AgentReport)?.commissions?.amountPaid || 0
-                        ).toLocaleString()}
+                        ).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>Paid to your account</span>
                     </div>
                     <div className={styles.kpiCard}>
                       <span className={styles.kpiLabel}>Pending Commission</span>
                       <span className={styles.kpiValue}>
-                        $
                         {Number(
                           (analytics as AgentReport)?.commissions?.outstandingAmount || 0
-                        ).toLocaleString()}
+                        ).toLocaleString()} ETB
                       </span>
                       <span className={styles.kpiSubtext}>Awaiting payment</span>
                     </div>

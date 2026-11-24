@@ -24,6 +24,7 @@ export interface Property extends QueryResultRow {
   location_id: string;
   category_name?: string;
   location_name?: string;
+  primary_image_url?: string | null;
   size_sqm: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
@@ -174,10 +175,18 @@ export async function listMyProperties(
     `SELECT
     p.*,
     c.name AS category_name,
-    l.name AS location_name
+    l.name AS location_name,
+    pi.image_url AS primary_image_url
 FROM properties p
 JOIN property_categories c ON c.id = p.category_id
 JOIN property_locations l ON l.id = p.location_id
+LEFT JOIN LATERAL (
+  SELECT storage_key AS image_url
+  FROM property_images
+  WHERE property_id = p.id
+  ORDER BY is_primary DESC, display_order ASC, created_at ASC
+  LIMIT 1
+) pi ON true
 WHERE p.owner_id = $1
   AND ($2::property_status IS NULL OR p.status = $2)
 ORDER BY p.created_at DESC
@@ -802,6 +811,7 @@ export async function listPublicProperties(query: PublicPropertyListQuery) {
          p.*,
          c.name AS category_name,
          l.name AS location_name,
+         pi.image_url AS primary_image_url,
          ROW_NUMBER() OVER (
            PARTITION BY
              LOWER(TRIM(p.title)),
@@ -820,6 +830,13 @@ export async function listPublicProperties(query: PublicPropertyListQuery) {
        FROM properties p
        JOIN property_categories c ON c.id = p.category_id
        JOIN property_locations l ON l.id = p.location_id
+       LEFT JOIN LATERAL (
+         SELECT storage_key AS image_url
+         FROM property_images
+         WHERE property_id = p.id
+         ORDER BY is_primary DESC, display_order ASC, created_at ASC
+         LIMIT 1
+       ) pi ON true
        WHERE ${where}
      )
      SELECT *
@@ -863,10 +880,18 @@ export async function getPublicProperty(propertyId: string) {
     `SELECT
        p.*,
        c.name AS category_name,
-       l.name AS location_name
+       l.name AS location_name,
+       pi.image_url AS primary_image_url
      FROM properties p
      JOIN property_categories c ON c.id = p.category_id
      JOIN property_locations l ON l.id = p.location_id
+     LEFT JOIN LATERAL (
+       SELECT storage_key AS image_url
+       FROM property_images
+       WHERE property_id = p.id
+       ORDER BY is_primary DESC, display_order ASC, created_at ASC
+       LIMIT 1
+     ) pi ON true
      WHERE p.id = $1 AND p.status = 'active'`,
     [propertyId],
   );
@@ -876,12 +901,23 @@ export async function getPublicProperty(propertyId: string) {
 
 export async function comparePublicProperties(ids: string[]) {
   const result = await pool.query<Property>(
-    `SELECT p.*, c.name AS category_name, l.name AS location_name
-FROM properties p
-JOIN property_categories c ON c.id = p.category_id
-JOIN property_locations l ON l.id = p.location_id
-WHERE p.id = ANY($1::uuid[])
-  AND p.status = 'active'`,
+    `SELECT
+       p.*,
+       c.name AS category_name,
+       l.name AS location_name,
+       pi.image_url AS primary_image_url
+     FROM properties p
+     JOIN property_categories c ON c.id = p.category_id
+     JOIN property_locations l ON l.id = p.location_id
+     LEFT JOIN LATERAL (
+       SELECT storage_key AS image_url
+       FROM property_images
+       WHERE property_id = p.id
+       ORDER BY is_primary DESC, display_order ASC, created_at ASC
+       LIMIT 1
+     ) pi ON true
+     WHERE p.id = ANY($1::uuid[])
+       AND p.status = 'active'`,
     [ids],
   );
 
@@ -898,6 +934,7 @@ export async function listRecommendedProperties(userId: string) {
        p.*,
        c.name AS category_name,
        l.name AS location_name,
+       pi.image_url AS primary_image_url,
        (
          CASE WHEN pref.budget_min IS NOT NULL
                    AND p.price >= pref.budget_min THEN 1 ELSE 0 END +
@@ -934,6 +971,13 @@ export async function listRecommendedProperties(userId: string) {
      JOIN preferences pref ON pref.user_id = $1
      JOIN property_categories c ON c.id = p.category_id
      JOIN property_locations l ON l.id = p.location_id
+     LEFT JOIN LATERAL (
+       SELECT storage_key AS image_url
+       FROM property_images
+       WHERE property_id = p.id
+       ORDER BY is_primary DESC, display_order ASC, created_at ASC
+       LIMIT 1
+     ) pi ON true
      WHERE p.status = 'active'
        AND (
          pref.budget_min IS NULL OR p.price >= pref.budget_min

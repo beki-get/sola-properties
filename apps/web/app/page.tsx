@@ -195,7 +195,7 @@ export default function SolaPropertiesPage() {
                   className={styles.searchItemValue}
                   value={endText}
                   onChange={(e) => setEndText(e.target.value)}
-                  placeholder="e.g. $250k - $750k"
+                  placeholder="e.g. 5M - 25M ETB"
                 />
               </div>
 
@@ -388,7 +388,7 @@ export default function SolaPropertiesPage() {
                           <ShieldCheck size={14} />
                           <span>{prop.status === "active" ? "Verified" : prop.status}</span>
                         </div>
-                        <div className={styles.cardPricePill}>${formattedPrice}</div>
+                        <div className={styles.cardPricePill}>{formattedPrice} ETB</div>
                       </div>
                     </div>
 

@@ -173,7 +173,7 @@ function CompareContent() {
                         )}
                         <h4 className={styles.propColTitle}>{prop.title}</h4>
                         <div className={styles.propColPrice}>
-                          ${Number(prop.price).toLocaleString()}
+                          {Number(prop.price).toLocaleString()} ETB
                         </div>
                         <Link
                           href={`/properties/${prop.id}`}
@@ -220,7 +220,7 @@ function CompareContent() {
                         : null;
                     return (
                       <td key={p.id} className={styles.specCell}>
-                        {pricePerSqm ? `$${pricePerSqm.toLocaleString()} / m²` : "—"}
+                        {pricePerSqm ? `${pricePerSqm.toLocaleString()} ETB / m²` : "—"}
                       </td>
                     );
                   })}

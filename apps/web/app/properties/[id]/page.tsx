@@ -465,7 +465,8 @@ export default function PropertyDetailPage() {
           <aside className={styles.actionSidebar}>
             <div className={styles.bookingCard}>
               <div className={styles.priceDisplay}>
-                ${Number(property.price).toLocaleString()}
+                {Number(property.price).toLocaleString()}{" "}
+                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#64748b" }}>ETB</span>
               </div>
               <div className={styles.priceTerms}>
                 Listed price &bull; Escrow settlement supported &bull; Verified Title

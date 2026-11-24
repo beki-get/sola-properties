@@ -1081,7 +1081,7 @@ function DashboardContent() {
                       {kpiData?.sales?.totalSalesCount ?? 0}
                     </span>
                     <span className={styles.kpiSubtext}>
-                      ${Number(kpiData?.sales?.totalSalesValue ?? kpiData?.total_gmv ?? 0).toLocaleString()} volume
+                      {Number(kpiData?.sales?.totalSalesValue ?? kpiData?.total_gmv ?? 0).toLocaleString()} ETB volume
                     </span>
                   </div>
 
@@ -1092,10 +1092,10 @@ function DashboardContent() {
                   >
                     <span className={styles.kpiLabel}>Total Commission</span>
                     <span className={styles.kpiValue}>
-                      ${Number(kpiData?.commissions?.totalCommission ?? 0).toLocaleString()}
+                      {Number(kpiData?.commissions?.totalCommission ?? 0).toLocaleString()} ETB
                     </span>
                     <span className={styles.kpiSubtext}>
-                      ${Number(kpiData?.commissions?.outstandingAmount ?? 0).toLocaleString()} outstanding
+                      {Number(kpiData?.commissions?.outstandingAmount ?? 0).toLocaleString()} ETB outstanding
                     </span>
                   </div>
                 </>
@@ -1113,7 +1113,7 @@ function DashboardContent() {
                       {kpiData?.sales?.totalSalesCount ?? 0}
                     </span>
                     <span className={styles.kpiSubtext}>
-                      ${Number(kpiData?.sales?.totalSalesValue ?? 0).toLocaleString()} sales volume
+                      {Number(kpiData?.sales?.totalSalesValue ?? 0).toLocaleString()} ETB sales volume
                     </span>
                   </div>
 
@@ -1124,7 +1124,7 @@ function DashboardContent() {
                   >
                     <span className={styles.kpiLabel}>Total Commissions</span>
                     <span className={styles.kpiValue}>
-                      ${Number(kpiData?.commissions?.totalCommission ?? kpiData?.total_commissions_earned ?? 0).toLocaleString()}
+                      {Number(kpiData?.commissions?.totalCommission ?? kpiData?.total_commissions_earned ?? 0).toLocaleString()} ETB
                     </span>
                     <span className={styles.kpiSubtext}>Cumulative volume fees</span>
                   </div>
@@ -1132,7 +1132,7 @@ function DashboardContent() {
                   <div className={styles.kpiCard}>
                     <span className={styles.kpiLabel}>Paid to Brokers</span>
                     <span className={styles.kpiValue}>
-                      ${Number(kpiData?.commissions?.amountPaid ?? kpiData?.paid_commissions ?? 0).toLocaleString()}
+                      {Number(kpiData?.commissions?.amountPaid ?? kpiData?.paid_commissions ?? 0).toLocaleString()} ETB
                     </span>
                     <span className={styles.kpiSubtext}>Disbursed settlement earnings</span>
                   </div>
@@ -1140,7 +1140,7 @@ function DashboardContent() {
                   <div className={styles.kpiCard}>
                     <span className={styles.kpiLabel}>Outstanding Balance</span>
                     <span className={styles.kpiValue} style={{ color: "#d97706" }}>
-                      ${Number(kpiData?.commissions?.outstandingAmount ?? kpiData?.pending_payouts ?? 0).toLocaleString()}
+                      {Number(kpiData?.commissions?.outstandingAmount ?? kpiData?.pending_payouts ?? 0).toLocaleString()} ETB
                     </span>
                     <span className={styles.kpiSubtext}>Awaiting release</span>
                   </div>
@@ -1197,7 +1197,7 @@ function DashboardContent() {
                       {kpiData?.sales?.totalSalesCount ?? kpiData?.closed_deals ?? 0}
                     </span>
                     <span className={styles.kpiSubtext}>
-                      ${Number(kpiData?.sales?.totalSalesValue ?? 0).toLocaleString()} volume
+                      {Number(kpiData?.sales?.totalSalesValue ?? 0).toLocaleString()} ETB volume
                     </span>
                   </div>
 
@@ -1208,7 +1208,7 @@ function DashboardContent() {
                   >
                     <span className={styles.kpiLabel}>Commissions Earned</span>
                     <span className={styles.kpiValue}>
-                      ${Number(kpiData?.commissions?.totalCommission ?? kpiData?.total_commission ?? 0).toLocaleString()}
+                      {Number(kpiData?.commissions?.totalCommission ?? kpiData?.total_commission ?? 0).toLocaleString()} ETB
                     </span>
                     <span className={styles.kpiSubtext}>Earned earnings</span>
                   </div>
