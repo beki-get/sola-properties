@@ -39,6 +39,7 @@ import {
   reportApi,
   propertyApi,
 } from "../../../lib/api";
+import { useToast } from "../../../context/ToastContext";
 import styles from "./workstations.module.css";
 
 interface AdminWorkstationProps {
@@ -55,6 +56,7 @@ interface AdminWorkstationProps {
 }
 
 export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
+  const { showToast } = useToast();
   // 1. Pending Properties
   const [pendingProps, setPendingProps] = useState<Property[]>([]);
   const [pendingPropsLoading, setPendingPropsLoading] = useState(false);
@@ -125,14 +127,14 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
     } else if (activeTab === "admin-referrals") {
       setRefLoading(true);
       Promise.all([
-        referralApi.getAdminReferrals(),
-        referralApi.getAdminIssues(),
+        referralApi.getAdminReferrals().catch(() => ({ ok: false, data: null })),
+        referralApi.getAdminIssues().catch(() => ({ ok: false, data: null })),
       ])
         .then(([refRes, issueRes]) => {
-          if (refRes.ok && refRes.data) {
+          if (refRes?.ok && refRes?.data) {
             setAdminReferrals(refRes.data.referrals || refRes.data.data || []);
           }
-          if (issueRes.ok && issueRes.data) {
+          if (issueRes?.ok && issueRes?.data) {
             setAdminIssues(issueRes.data.issues || issueRes.data.data || []);
           }
         })
@@ -274,17 +276,22 @@ export function AdminWorkstation({ role, activeTab }: AdminWorkstationProps) {
         setUsers((prev) =>
           prev.map((u) => (u.id === userId ? { ...u, status } : u))
         );
+        showToast(`User account updated to ${status}.`, "success");
         setFeedback({ ok: true, msg: `User account updated to ${status}.` });
       } else {
+        const errorMsg = res.message || "Failed to update user status.";
+        showToast(errorMsg, "error");
         setFeedback({
           ok: false,
-          msg: res.message || "Failed to update user status.",
+          msg: errorMsg,
         });
       }
     } catch (err: any) {
+      const errorMsg = err?.message || "Failed to update user status.";
+      showToast(errorMsg, "error");
       setFeedback({
         ok: false,
-        msg: err?.message || "Failed to update user status.",
+        msg: errorMsg,
       });
     }
   };

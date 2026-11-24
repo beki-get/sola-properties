@@ -578,21 +578,12 @@ export async function updateUserStatusByAdmin(
   status: "approved" | "pending" | "suspended" | "deactivated",
   client: Pool | PoolClient,
 ): Promise<AdminUserRow & { phone: string | null }> {
-  const result = await client.query<AdminUserRow & { phone: string | null }>(
-    `UPDATE users u
+  const result = await client.query<AdminUserRow>(
+    `UPDATE users
      SET status = $2::account_status,
          updated_at = NOW()
-     FROM (
-       SELECT u.id,
-              COALESCE(bp.phone_number, ap.phone_number, dp.contact_phone) AS phone
-       FROM users u
-       LEFT JOIN buyer_profiles bp ON bp.user_id = u.id
-       LEFT JOIN agent_profiles ap ON ap.user_id = u.id
-       LEFT JOIN developer_profiles dp ON dp.user_id = u.id
-       WHERE u.id = $1
-     ) src
-     WHERE u.id = src.id
-     RETURNING u.*, src.phone`,
+     WHERE id = $1
+     RETURNING *`,
     [userId, status],
   );
 
@@ -602,5 +593,18 @@ export async function updateUserStatusByAdmin(
     throw new Error("Failed to update user status");
   }
 
-  return updatedUser;
+  const phoneResult = await client.query<{ phone: string | null }>(
+    `SELECT COALESCE(bp.phone_number, ap.phone_number, dp.contact_phone) AS phone
+     FROM users u
+     LEFT JOIN buyer_profiles bp ON bp.user_id = u.id
+     LEFT JOIN agent_profiles ap ON ap.user_id = u.id
+     LEFT JOIN developer_profiles dp ON dp.user_id = u.id
+     WHERE u.id = $1`,
+    [userId],
+  );
+
+  return {
+    ...updatedUser,
+    phone: phoneResult.rows[0]?.phone ?? null,
+  };
 }

@@ -1245,8 +1245,8 @@ const referralIssueAdminSelect = `
 
   FROM referral_issues ri
   JOIN referrals r ON r.id = ri.referral_id
-  JOIN properties p ON p.id = r.property_id
-  JOIN users reporter ON reporter.id = ri.reported_by
+  LEFT JOIN properties p ON p.id = r.property_id
+  LEFT JOIN users reporter ON reporter.id = ri.reported_by
 
   LEFT JOIN buyer_profiles buyer_profile
     ON buyer_profile.user_id = reporter.id
@@ -1257,10 +1257,10 @@ const referralIssueAdminSelect = `
   LEFT JOIN developer_profiles developer_profile
     ON developer_profile.user_id = reporter.id
 
-  JOIN users buyer ON buyer.id = r.buyer_id
-  JOIN users assigned ON assigned.id = r.assigned_to
-  JOIN property_locations property_location
-  ON property_location.id = p.location_id
+  LEFT JOIN users buyer ON buyer.id = r.buyer_id
+  LEFT JOIN users assigned ON assigned.id = r.assigned_to
+  LEFT JOIN property_locations property_location
+    ON property_location.id = p.location_id
 `;
 
 // Retrieve referral issues reported by a specific user with pagination
@@ -1321,34 +1321,49 @@ export async function getAdminReferralIssues(input: {
 }) {
   const offset = (input.page - 1) * input.limit;
 
-  const [issuesResult, countResult] = await Promise.all([
-    pool.query(
-      `${referralIssueAdminSelect}
-       WHERE ($1::text IS NULL OR ri.status = $1)
-       ORDER BY ri.created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [input.status ?? null, input.limit, offset],
-    ),
+  try {
+    const [issuesResult, countResult] = await Promise.all([
+      pool.query(
+        `${referralIssueAdminSelect}
+         WHERE ($1::text IS NULL OR ri.status = $1)
+         ORDER BY ri.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [input.status ?? null, input.limit, offset],
+      ),
 
-    pool.query(
-      `SELECT COUNT(*)::int AS total
-       FROM referral_issues
-       WHERE ($1::text IS NULL OR status = $1)`,
-      [input.status ?? null],
-    ),
-  ]);
+      pool.query(
+        `SELECT COUNT(*)::int AS total
+         FROM referral_issues
+         WHERE ($1::text IS NULL OR status = $1)`,
+        [input.status ?? null],
+      ),
+    ]);
 
-  const total = countResult.rows[0].total;
+    const total = countResult.rows[0]?.total ?? 0;
 
-  return {
-    issues: issuesResult.rows,
-    pagination: {
-      page: input.page,
-      limit: input.limit,
-      total,
-      totalPages: Math.ceil(total / input.limit),
-    },
-  };
+    return {
+      issues: issuesResult.rows,
+      pagination: {
+        page: input.page,
+        limit: input.limit,
+        total,
+        totalPages: Math.ceil(total / input.limit) || 1,
+      },
+    };
+  } catch (err: any) {
+    if (err?.code === "42P01") {
+      return {
+        issues: [],
+        pagination: {
+          page: input.page,
+          limit: input.limit,
+          total: 0,
+          totalPages: 1,
+        },
+      };
+    }
+    throw err;
+  }
 }
 
 // Admin view of a specific referral issue by its ID

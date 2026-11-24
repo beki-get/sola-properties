@@ -157,11 +157,11 @@ const adminUserStatusTransitions: Record<
   "pending" | "approved" | "rejected" | "suspended" | "deactivated",
   { suspend?: boolean; deactivate?: boolean; reactivate?: boolean }
 > = {
-  pending: { suspend: true, deactivate: true },
+  pending: { suspend: true, deactivate: true, reactivate: true },
   approved: { suspend: true, deactivate: true },
-  rejected: { deactivate: true },
+  rejected: { deactivate: true, reactivate: true },
   suspended: { reactivate: true, deactivate: true },
-  deactivated: {},
+  deactivated: { reactivate: true },
 };
 
 export class AdminUserServiceError extends Error {
@@ -373,19 +373,7 @@ export async function updateUserStatus(
     } else if (requested === "deactivate") {
       nextStatus = "deactivated";
     } else {
-      if (
-        targetUser.role === "buyer" ||
-        targetUser.role === "admin" ||
-        targetUser.role === "finance_admin"
-      ) {
-        nextStatus = "approved";
-      } else {
-        const latestVerificationStatus =
-          await findLatestVerificationRequestStatus(targetUser.id, client);
-
-        nextStatus =
-          latestVerificationStatus === "approved" ? "approved" : "pending";
-      }
+      nextStatus = "approved";
     }
 
     const oldStatus = targetUser.status;
