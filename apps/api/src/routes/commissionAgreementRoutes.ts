@@ -27,7 +27,7 @@ router.get(
 // Commission agreement creation
 router.post(
   "/commission-agreements",
-  authorizeRoles("finance_admin"),
+  authorizeRoles("admin", "finance_admin"),
   createCommissionAgreementController,
 );
 
@@ -43,7 +43,7 @@ router.get(
 //export commission
 router.get(
   "/commissions/export",
-  authorizeRoles("finance_admin"),
+  authorizeRoles("admin", "finance_admin"),
   exportCommissionsController,
 );
 
@@ -57,22 +57,21 @@ router.get(
 // approving commissions
 router.post(
   "/commissions/:id/approve",
-  authorizeRoles("finance_admin"),
+  authorizeRoles("admin", "finance_admin"),
   approveCommissionController,
 );
 
 // Commission adjustments
 router.post(
   "/commissions/:id/adjustments",
-
-  authorizeRoles("finance_admin"),
+  authorizeRoles("admin", "finance_admin"),
   createCommissionAdjustmentController,
 );
 
 //recording payments.
 router.post(
   "/commissions/:id/payments",
-  authorizeRoles("finance_admin"),
+  authorizeRoles("admin", "finance_admin"),
   recordCommissionPaymentController,
 );
 
