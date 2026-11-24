@@ -603,30 +603,28 @@ function DashboardContent() {
               <span className={styles.userName}>{user?.fullName || "My Account"}</span>
               <div className={styles.userRoleStatus} style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
                 <span className={styles.roleTag}>{role.replace("_", " ")}</span>
-                <span
-                  style={{
-                    fontSize: "0.72rem",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                    padding: "2px 8px",
-                    borderRadius: 3,
-                    backgroundColor:
-                      status === "approved"
-                        ? "#d1fae5"
-                        : status === "rejected"
-                        ? "#fee2e2"
-                        : "#fef3c7",
-                    color:
-                      status === "approved"
-                        ? "#065f46"
-                        : status === "rejected"
-                        ? "#991b1b"
-                        : "#92400e",
-                  }}
-                >
-                  {status}
-                </span>
+                {status && status !== "approved" && (
+                  <span
+                    style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      padding: "2px 8px",
+                      borderRadius: 3,
+                      backgroundColor:
+                        status === "rejected"
+                          ? "#fee2e2"
+                          : "#fef3c7",
+                      color:
+                        status === "rejected"
+                          ? "#991b1b"
+                          : "#92400e",
+                    }}
+                  >
+                    {status}
+                  </span>
+                )}
               </div>
             </div>
           </Link>
