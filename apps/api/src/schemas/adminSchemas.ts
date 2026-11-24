@@ -84,12 +84,7 @@ export const adminUserCreateSchema = z
       .email("Enter a valid email address")
       .max(255)
       .transform((email) => email.toLowerCase()),
-    phone: z
-      .string()
-      .trim()
-      .min(7, "Phone number must contain at least 7 characters")
-      .max(20, "Phone number must not exceed 20 characters")
-      .regex(/^\+?[0-9().\-\s]+$/, "Enter a valid phone number"),
+
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")

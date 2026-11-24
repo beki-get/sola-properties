@@ -16,12 +16,11 @@ import {
   listTransactions as fetchTransactions,
   updateTransaction as editTransaction,
   exportTransactions,
-  TransactionFilters ,
+  TransactionFilters,
 } from "../queries/transactionQueries";
 import { logger } from "../utils/logger";
 import { notifyUser } from "./notificationService";
 import { pool } from "../config/database";
-
 
 import { generateCsv } from "../utils/csv";
 
@@ -81,6 +80,9 @@ export async function getTransactions(input: {
   status?: "submitted" | "verified" | "rejected";
   page: number;
   limit: number;
+  dateFrom?: string;
+  dateTo?: string;
+  q?: string;
 }) {
   return fetchTransactions(input);
 }

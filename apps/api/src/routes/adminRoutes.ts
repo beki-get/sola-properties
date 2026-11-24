@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../middlewares/authenticate";
 import { authorizeRoles } from "../middlewares/authorizeRoles";
+import { requireApprovedAccount } from "../middlewares/requireApprovedAccount";
 import {
   createAdminUserController,
   getAuditLogsController,
@@ -16,7 +17,7 @@ import {
 
 const router = Router();
 
-router.use(authenticate, authorizeRoles("admin"));
+router.use(authenticate, requireApprovedAccount, authorizeRoles("admin"));
 
 router.get("/audit-logs", getAuditLogsController);
 router.get("/users", getUsersController);

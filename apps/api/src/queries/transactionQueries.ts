@@ -43,26 +43,32 @@ export class TransactionError extends Error {
   }
 }
 
-type TransactionExportRole =
-  | "agent"
-  | "developer"
-  | "admin"
-  | "finance_admin";
+type TransactionUserRole =
+  "buyer" | "agent" | "developer" | "admin" | "finance_admin";
 
-export type TransactionFilters = {
+type TransactionExportRole = Exclude<TransactionUserRole, "buyer">;
+
+type TransactionFilterInput = {
   userId: string;
-  userRole: TransactionExportRole;
+  userRole: TransactionUserRole;
   status?: TransactionStatus;
   dateFrom?: string;
   dateTo?: string;
   q?: string;
 };
 
-function buildTransactionFilters(input: TransactionFilters) {
+export type TransactionFilters = Omit<TransactionFilterInput, "userRole"> & {
+  userRole: TransactionExportRole;
+};
+
+function buildTransactionFilters(input: TransactionFilterInput) {
   const conditions: string[] = [];
   const params: unknown[] = [];
 
-  if (input.userRole === "agent" || input.userRole === "developer") {
+  if (input.userRole === "buyer") {
+    conditions.push(`t.buyer_id = $${params.length + 1}`);
+    params.push(input.userId);
+  } else if (input.userRole === "agent" || input.userRole === "developer") {
     conditions.push(`t.seller_id = $${params.length + 1}`);
     params.push(input.userId);
   }
@@ -98,13 +104,10 @@ function buildTransactionFilters(input: TransactionFilters) {
 
   return {
     whereClause:
-      conditions.length > 0
-        ? `WHERE ${conditions.join(" AND ")}`
-        : "",
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "",
     params,
   };
 }
-
 export async function createTransaction(input: {
   sellerId: string;
   referralId: string;
@@ -229,15 +232,17 @@ export async function createTransaction(input: {
     client.release();
   }
 }
-
 export async function listTransactions(input: {
   userId: string;
-  userRole: "buyer" | "agent" | "developer" | "admin" | "finance_admin";
+  userRole: TransactionUserRole;
   status?: TransactionStatus;
   page: number;
   limit: number;
+  dateFrom?: string;
+  dateTo?: string;
+  q?: string;
 }) {
-  const allowedRoles = [
+  const allowedRoles: TransactionUserRole[] = [
     "buyer",
     "agent",
     "developer",
@@ -252,49 +257,46 @@ export async function listTransactions(input: {
       "You are not allowed to list transactions.",
     );
   }
-  const conditions: string[] = [];
-  const params: unknown[] = [];
 
-  if (input.userRole === "buyer") {
-    conditions.push(`t.buyer_id = $${params.length + 1}`);
-    params.push(input.userId);
-  } else if (input.userRole === "agent" || input.userRole === "developer") {
-    conditions.push(`t.seller_id = $${params.length + 1}`);
-    params.push(input.userId);
-  }
-
-  if (input.status) {
-    conditions.push(`t.status = $${params.length + 1}`);
-    params.push(input.status);
-  }
-
-  const whereClause =
-    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-
+  const { whereClause, params } = buildTransactionFilters(input);
   const offset = (input.page - 1) * input.limit;
 
-  const result = await pool.query<TransactionRecord>(
-    `SELECT t.*,
-            buyer.full_name AS buyer_name,
-            seller.full_name AS seller_name,
-            p.title AS property_title
-     FROM transactions t
-     JOIN users buyer ON buyer.id = t.buyer_id
-     JOIN users seller ON seller.id = t.seller_id
-     JOIN properties p ON p.id = t.property_id
-     ${whereClause}
-     ORDER BY t.created_at DESC
-     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
-    [...params, input.limit, offset],
-  );
+  const joins = `
+    FROM transactions t
+    JOIN referrals r ON r.id = t.referral_id
+    JOIN users buyer ON buyer.id = t.buyer_id
+    JOIN users seller ON seller.id = t.seller_id
+    JOIN properties p ON p.id = t.property_id
+  `;
 
-  const totalResult = await pool.query<{ count: string }>(
-    `SELECT COUNT(*) AS count
-     FROM transactions t
-     ${whereClause === "" ? "" : `WHERE ${conditions.join(" AND ")}`}
-     `,
-    params,
-  );
+  const [result, totalResult] = await Promise.all([
+    pool.query<
+      TransactionRecord & {
+        buyer_name: string;
+        seller_name: string;
+        property_title: string;
+      }
+    >(
+      `SELECT
+         t.*,
+         buyer.full_name AS buyer_name,
+         seller.full_name AS seller_name,
+         p.title AS property_title
+       ${joins}
+       ${whereClause}
+       ORDER BY t.created_at DESC
+       LIMIT $${params.length + 1}
+       OFFSET $${params.length + 2}`,
+      [...params, input.limit, offset],
+    ),
+
+    pool.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       ${joins}
+       ${whereClause}`,
+      params,
+    ),
+  ]);
 
   return {
     items: result.rows,
@@ -335,7 +337,6 @@ export async function exportTransactions(input: TransactionFilters) {
 
   return result.rows;
 }
-
 
 export async function getTransactionById(input: {
   transactionId: string;

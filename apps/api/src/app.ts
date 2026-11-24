@@ -21,7 +21,7 @@ import adminAccountVerificationRoutes from "./routes/adminAccountVerificationRou
 import adminPropertyRoutes from "./routes/adminPropertyRoutes";
 import reportRoutes from "./routes/reportRoutes";
 
-import { openApiDocument, swaggerUiHtml } from "./docs/openapi";
+import { openApiDocument, swaggerUiHtml } from "./docs/openapi1";
 import disputeRoutes from "./routes/disputeRoutes";
 import commissionAgreementRoutes from "./routes/commissionAgreementRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
