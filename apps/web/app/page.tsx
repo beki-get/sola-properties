@@ -39,14 +39,28 @@ export default function SolaPropertiesPage() {
   // Property Filter & Live Catalog State
   const [propCategory, setPropCategory] = useState<"all" | "penthouse" | "villa" | "apartment">("all");
   const [liveProperties, setLiveProperties] = useState<Property[]>([]);
+  const [loadingProperties, setLoadingProperties] = useState(true);
 
   useEffect(() => {
-    propertyApi.listPublic({ limit: 6, status: "active" }).then((res) => {
-      const list = res.data?.properties || (res.data as any)?.data || [];
-      if (Array.isArray(list) && list.length > 0) {
-        setLiveProperties(list);
-      }
-    });
+    setLoadingProperties(true);
+    propertyApi
+      .listPublic({ limit: 6, sort: "newest" })
+      .then((res) => {
+        const list =
+          res.data?.properties ||
+          res.data?.items ||
+          res.data?.data ||
+          (Array.isArray(res.data) ? res.data : []);
+        if (Array.isArray(list)) {
+          setLiveProperties(list);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch live properties:", err);
+      })
+      .finally(() => {
+        setLoadingProperties(false);
+      });
   }, []);
 
   const handleHeroSearch = (e?: React.FormEvent) => {
@@ -286,199 +300,126 @@ export default function SolaPropertiesPage() {
         </div>
 
         <div className={styles.cardsGrid}>
-          {/* Card 1: Horizon Penthouse */}
-          {(propCategory === "all" || propCategory === "penthouse") && (
-            <article className={styles.sharpCard}>
-              <div className={styles.cardImgWrap}>
-                <Image
-                  src="/property-penthouse.jpg"
-                  alt="Grand Horizon Penthouse"
-                  width={640}
-                  height={400}
-                  className={styles.cardImg}
-                />
-                <div className={styles.cardTagRow}>
-                  <div className={styles.verifiedPill}>
-                    <ShieldCheck size={14} />
-                    <span>Verified Title</span>
-                  </div>
-                  <div className={styles.cardPricePill}>$420,000</div>
-                </div>
-              </div>
+          {loadingProperties ? (
+            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 0", color: "#6b7280" }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  border: "3px solid #000000",
+                  borderTopColor: "transparent",
+                  animation: "spin 0.8s linear infinite",
+                  margin: "0 auto 12px",
+                }}
+              />
+              <p style={{ fontWeight: 600, fontSize: "0.9rem" }}>Loading popular residences from backend...</p>
+            </div>
+          ) : liveProperties.length === 0 ? (
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                textAlign: "center",
+                padding: "48px 24px",
+                background: "#f9fafb",
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <Building2 size={36} color="#9ca3af" style={{ margin: "0 auto 12px" }} />
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 6px" }}>
+                No Residences Listed Yet
+              </h3>
+              <p style={{ color: "#6b7280", fontSize: "0.88rem", maxWidth: 420, margin: "0 auto 16px" }}>
+                Active residential listings will appear here once published by verified brokers and developers.
+              </p>
+              <Link href="/properties" className={styles.btnCardPrimary} style={{ textDecoration: "none", display: "inline-block" }}>
+                Browse All Properties
+              </Link>
+            </div>
+          ) : (
+            liveProperties
+              .filter((prop) => {
+                if (propCategory === "all") return true;
+                const cat = (prop.category_name || "").toLowerCase();
+                return cat.includes(propCategory);
+              })
+              .map((prop, idx) => {
+                const sampleImages = ["/property-penthouse.jpg", "/property-villa.jpg", "/hero-building.jpg"];
+                const imgSrc =
+                  prop.images && prop.images.length > 0 && prop.images[0]?.image_url
+                    ? prop.images[0].image_url
+                    : sampleImages[idx % sampleImages.length];
 
-              <div className={styles.cardContent}>
-                <h3 className={styles.cardTitle}>Grand Horizon Penthouse</h3>
-                <div className={styles.cardLoc}>
-                  <MapPin size={15} />
-                  <span>Bole Atlantic, Addis Ababa</span>
-                </div>
+                const formattedPrice =
+                  typeof prop.price === "number"
+                    ? prop.price.toLocaleString()
+                    : Number(prop.price || 0).toLocaleString();
 
-                <div className={styles.cardSpecsRow}>
-                  <div className={styles.specItem}>
-                    <Bed size={15} />
-                    <span><strong className={styles.specVal}>3</strong> Beds</span>
-                  </div>
-                  <div className={styles.specItem}>
-                    <Bath size={15} />
-                    <span><strong className={styles.specVal}>3.5</strong> Baths</span>
-                  </div>
-                  <div className={styles.specItem}>
-                    <Maximize2 size={15} />
-                    <span><strong className={styles.specVal}>280</strong> m²</span>
-                  </div>
-                </div>
+                return (
+                  <article key={prop.id} className={styles.sharpCard}>
+                    <div className={styles.cardImgWrap}>
+                      <img
+                        src={imgSrc}
+                        alt={prop.title}
+                        className={styles.cardImg}
+                        style={{ width: "100%", height: 260, objectFit: "cover" }}
+                      />
+                      <div className={styles.cardTagRow}>
+                        <div className={styles.verifiedPill}>
+                          <ShieldCheck size={14} />
+                          <span>{prop.status === "active" ? "Verified" : prop.status}</span>
+                        </div>
+                        <div className={styles.cardPricePill}>${formattedPrice}</div>
+                      </div>
+                    </div>
 
-                <div className={styles.cardActionRow}>
-                  <button
-                    type="button"
-                    className={styles.btnCardPrimary}
-                    onClick={() => {
-                      setAuthMode("login");
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    Schedule Visit
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.btnCardOutline}
-                    onClick={() => alert("Details: Grand Horizon Penthouse with panoramic terrace.")}
-                  >
-                    Specs
-                  </button>
-                </div>
-              </div>
-            </article>
-          )}
+                    <div className={styles.cardContent}>
+                      <h3 className={styles.cardTitle}>{prop.title}</h3>
+                      <div className={styles.cardLoc}>
+                        <MapPin size={15} />
+                        <span>{prop.location_name || "Addis Ababa"}</span>
+                      </div>
 
-          {/* Card 2: Olive Sanctuary Villa */}
-          {(propCategory === "all" || propCategory === "villa") && (
-            <article className={styles.sharpCard}>
-              <div className={styles.cardImgWrap}>
-                <Image
-                  src="/property-villa.jpg"
-                  alt="The Olive Sanctuary Villa"
-                  width={640}
-                  height={400}
-                  className={styles.cardImg}
-                />
-                <div className={styles.cardTagRow}>
-                  <div className={styles.verifiedPill}>
-                    <ShieldCheck size={14} />
-                    <span>Direct Developer</span>
-                  </div>
-                  <div className={styles.cardPricePill}>$680,000</div>
-                </div>
-              </div>
+                      <div className={styles.cardSpecsRow}>
+                        <div className={styles.specItem}>
+                          <Bed size={15} />
+                          <span>
+                            <strong className={styles.specVal}>{prop.bedrooms ?? "-"}</strong> Beds
+                          </span>
+                        </div>
+                        <div className={styles.specItem}>
+                          <Bath size={15} />
+                          <span>
+                            <strong className={styles.specVal}>{prop.bathrooms ?? "-"}</strong> Baths
+                          </span>
+                        </div>
+                        <div className={styles.specItem}>
+                          <Maximize2 size={15} />
+                          <span>
+                            <strong className={styles.specVal}>{prop.size_sqm ?? "-"}</strong> m²
+                          </span>
+                        </div>
+                      </div>
 
-              <div className={styles.cardContent}>
-                <h3 className={styles.cardTitle}>The Olive Sanctuary Villa</h3>
-                <div className={styles.cardLoc}>
-                  <MapPin size={15} />
-                  <span>Old Airport Diplomatic Zone</span>
-                </div>
-
-                <div className={styles.cardSpecsRow}>
-                  <div className={styles.specItem}>
-                    <Bed size={15} />
-                    <span><strong className={styles.specVal}>5</strong> Beds</span>
-                  </div>
-                  <div className={styles.specItem}>
-                    <Bath size={15} />
-                    <span><strong className={styles.specVal}>6</strong> Baths</span>
-                  </div>
-                  <div className={styles.specItem}>
-                    <Maximize2 size={15} />
-                    <span><strong className={styles.specVal}>520</strong> m²</span>
-                  </div>
-                </div>
-
-                <div className={styles.cardActionRow}>
-                  <button
-                    type="button"
-                    className={styles.btnCardPrimary}
-                    onClick={() => {
-                      setAuthMode("login");
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    Schedule Visit
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.btnCardOutline}
-                    onClick={() => alert("Details: Olive Sanctuary Villa with private pool and gardens.")}
-                  >
-                    Specs
-                  </button>
-                </div>
-              </div>
-            </article>
-          )}
-
-          {/* Card 3: Urban Skyline Residence */}
-          {(propCategory === "all" || propCategory === "apartment") && (
-            <article className={styles.sharpCard}>
-              <div className={styles.cardImgWrap}>
-                <Image
-                  src="/hero-building.jpg"
-                  alt="Metropolitan Skyline Residences"
-                  width={640}
-                  height={400}
-                  className={styles.cardImg}
-                />
-                <div className={styles.cardTagRow}>
-                  <div className={styles.verifiedPill}>
-                    <ShieldCheck size={14} />
-                    <span>Pre-Construction</span>
-                  </div>
-                  <div className={styles.cardPricePill}>$245,000</div>
-                </div>
-              </div>
-
-              <div className={styles.cardContent}>
-                <h3 className={styles.cardTitle}>Metropolitan Skyline Loft</h3>
-                <div className={styles.cardLoc}>
-                  <MapPin size={15} />
-                  <span>Kazanchis Financial District</span>
-                </div>
-
-                <div className={styles.cardSpecsRow}>
-                  <div className={styles.specItem}>
-                    <Bed size={15} />
-                    <span><strong className={styles.specVal}>2</strong> Beds</span>
-                  </div>
-                  <div className={styles.specItem}>
-                    <Bath size={15} />
-                    <span><strong className={styles.specVal}>2</strong> Baths</span>
-                  </div>
-                  <div className={styles.specItem}>
-                    <Maximize2 size={15} />
-                    <span><strong className={styles.specVal}>145</strong> m²</span>
-                  </div>
-                </div>
-
-                <div className={styles.cardActionRow}>
-                  <button
-                    type="button"
-                    className={styles.btnCardPrimary}
-                    onClick={() => {
-                      setAuthMode("login");
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    Schedule Visit
-                  </button>
-                  <Link
-                    href="/properties"
-                    className={styles.btnCardOutline}
-                    style={{ textDecoration: "none", textAlign: "center" }}
-                  >
-                    Specs
-                  </Link>
-                </div>
-              </div>
-            </article>
+                      <div className={styles.cardActionRow}>
+                        <Link
+                          href={`/properties/${prop.id}`}
+                          className={styles.btnCardPrimary}
+                          style={{ textDecoration: "none", textAlign: "center" }}
+                        >
+                          View Property
+                        </Link>
+                        <Link
+                          href={`/properties/${prop.id}`}
+                          className={styles.btnCardOutline}
+                          style={{ textDecoration: "none", textAlign: "center" }}
+                        >
+                          Details
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
           )}
         </div>
 

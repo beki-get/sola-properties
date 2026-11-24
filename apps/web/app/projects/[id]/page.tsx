@@ -25,53 +25,6 @@ import { adminApi, developerApi, referralApi, Project } from "../../../lib/api";
 import { Navbar } from "../../components/Navbar";
 import styles from "./project-detail.module.css";
 
-const CURATED_PROJECT_DETAILS: Record<string, Project> = {
-  "proj-skyline-01": {
-    id: "proj-skyline-01",
-    developer_id: "dev-solanova-01",
-    name: "Addis Skyline Residences",
-    location: "Bole Olympia, Addis Ababa",
-    description:
-      "Addis Skyline Residences rises 28 stories above Bole Olympia, offering luxury residential living in one of the capital's premier districts. Each residence features floor-to-ceiling panoramic glass windows, private terrace gardens, sound-insulated construction, and premium contemporary finishes.\n\nBuilding amenities include 24/7 security, underground parking with EV chargers, backup generator power, private water filtration, and a rooftop leisure deck with panoramic city views.",
-    status: "active",
-    created_at: "2026-08-15T09:00:00Z",
-    updated_at: "2026-10-20T14:30:00Z",
-  },
-  "proj-olympia-02": {
-    id: "proj-olympia-02",
-    developer_id: "dev-solanova-02",
-    name: "The Olive Sanctuary Estate",
-    location: "Old Airport Diplomatic Zone, Addis Ababa",
-    description:
-      "The Olive Sanctuary Estate is an exclusive gated community of 16 luxury detached villas set in a quiet, green residential zone. Each home features private courtyard gardens, plunge pools, high ceilings, modern open-plan kitchens, and comprehensive perimeter security.",
-    status: "active",
-    created_at: "2026-09-01T11:00:00Z",
-    updated_at: "2026-10-25T16:00:00Z",
-  },
-  "proj-financial-03": {
-    id: "proj-financial-03",
-    developer_id: "dev-solanova-03",
-    name: "Kazanchis Central Heights",
-    location: "Financial District, Kazanchis, Addis Ababa",
-    description:
-      "A modern 24-story residential tower located in the heart of Kazanchis, near international organizations and financial headquarters. Designed for urban professionals and investors, featuring executive suites, top-floor penthouses, concierge reception, and full backup power.",
-    status: "active",
-    created_at: "2026-09-18T08:30:00Z",
-    updated_at: "2026-11-05T10:15:00Z",
-  },
-  "proj-entoto-04": {
-    id: "proj-entoto-04",
-    developer_id: "dev-solanova-04",
-    name: "Entoto Hillside Terraces",
-    location: "Entoto Foothills, Northern Addis Ababa",
-    description:
-      "A peaceful hillside residential community nestled along the forested slopes of Entoto. Built with natural stone and timber details, offering wide terrace views over Addis Ababa in a fresh mountain environment.",
-    status: "inactive",
-    created_at: "2026-10-02T13:45:00Z",
-    updated_at: "2026-11-12T12:00:00Z",
-  },
-};
-
 interface ProjectDetailPageProps {
   params: Promise<{ id: string }>;
 }
@@ -82,10 +35,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
-  const [project, setProject] = useState<Project | null>(
-    CURATED_PROJECT_DETAILS[projectId] || null
-  );
-  const [loading, setLoading] = useState(!CURATED_PROJECT_DETAILS[projectId]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Consultation Inquiry Form State
   const [inquiryName, setInquiryName] = useState(user?.fullName || "");
@@ -99,23 +50,29 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   } | null>(null);
 
   useEffect(() => {
-    // Attempt to load from live API
-    adminApi
-      .getProjectById(projectId)
-      .then((res) => {
-        const p = res.data?.project || (res.data as any)?.data;
-        if (res.ok && p) {
+    setLoading(true);
+    const fetchProject = async () => {
+      try {
+        let p: Project | null = null;
+        if (user?.role === "developer") {
+          const res = await developerApi.getProjectById(projectId);
+          p = res.data?.project || (res.data as any)?.data || null;
+        } else {
+          const res = await adminApi.getProjectById(projectId);
+          p = res.data?.project || (res.data as any)?.data || null;
+        }
+        if (p) {
           setProject(p);
         }
-      })
-      .catch(() => {
-        // Fallback to curated if not found
-        if (!project && CURATED_PROJECT_DETAILS[projectId]) {
-          setProject(CURATED_PROJECT_DETAILS[projectId]);
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [projectId]);
+      } catch (err) {
+        console.error("Failed to load project details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [projectId, user]);
 
   const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();

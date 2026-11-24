@@ -673,7 +673,7 @@ export interface Property {
   bedrooms?: number | null;
   bathrooms?: number | null;
   features?: string[];
-  price: number;
+  price: number | string;
   payment_plan?: "cash" | "installment" | "mortgage";
   status: "draft" | "pending_approval" | "active" | "inactive" | "sold" | "rejected";
   images?: PropertyImage[];
@@ -690,7 +690,7 @@ export interface CreatePropertyPayload {
   bedrooms?: number | null;
   bathrooms?: number | null;
   features?: string[];
-  price: number;
+  price: number | string;
   payment_plan: "cash" | "installment" | "mortgage";
   project_id?: string | null;
 }
@@ -937,28 +937,64 @@ export const propertyApi = {
     page?: number;
     limit?: number;
     category_id?: string;
+    category_ids?: string | string[];
     location_id?: string;
     min_price?: number;
+    price_min?: number;
     max_price?: number;
+    price_max?: number;
     min_bedrooms?: number;
+    min_size_sqm?: number;
     search?: string;
+    q?: string;
+    sort?: "newest" | "price_asc" | "price_desc" | "location" | "relevance";
     status?: string;
   }) => {
     const query = new URLSearchParams();
     if (params?.page) query.set("page", String(params.page));
     if (params?.limit) query.set("limit", String(params.limit));
-    if (params?.category_id) query.set("category_id", params.category_id);
+    
+    // Map category
+    const catIds = params?.category_ids || params?.category_id;
+    if (catIds) {
+      query.set("category_ids", Array.isArray(catIds) ? catIds.join(",") : catIds);
+    }
+    
     if (params?.location_id) query.set("location_id", params.location_id);
-    if (params?.min_price) query.set("min_price", String(params.min_price));
-    if (params?.max_price) query.set("max_price", String(params.max_price));
-    if (params?.min_bedrooms) query.set("min_bedrooms", String(params.min_bedrooms));
-    if (params?.search) query.set("q", params.search);
-    if (params?.status) query.set("status", params.status);
+    
+    // Map price bounds
+    const pMin = params?.price_min ?? params?.min_price;
+    if (pMin !== undefined && pMin !== null && !isNaN(pMin)) {
+      query.set("price_min", String(pMin));
+    }
+    const pMax = params?.price_max ?? params?.max_price;
+    if (pMax !== undefined && pMax !== null && !isNaN(pMax)) {
+      query.set("price_max", String(pMax));
+    }
+    
+    if (params?.min_bedrooms !== undefined && params?.min_bedrooms !== null && params.min_bedrooms > 0) {
+      query.set("min_bedrooms", String(params.min_bedrooms));
+    }
+    if (params?.min_size_sqm !== undefined && params?.min_size_sqm !== null && params.min_size_sqm > 0) {
+      query.set("min_size_sqm", String(params.min_size_sqm));
+    }
+    
+    const searchTerm = params?.search || params?.q;
+    if (searchTerm?.trim()) {
+      query.set("q", searchTerm.trim());
+    }
+    if (params?.sort) {
+      query.set("sort", params.sort);
+    }
+    // Note: Do not send 'status' because backend publicPropertyListQuerySchema uses .strict() and rejects 'status'.
     const qs = query.toString();
     return apiRequest<{
       properties?: Property[];
       items?: Property[];
       data?: Property[];
+      total?: number;
+      page?: number;
+      limit?: number;
       pagination?: {
         page: number;
         limit: number;

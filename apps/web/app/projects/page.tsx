@@ -17,65 +17,17 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { adminApi, Project } from "../../lib/api";
+import { adminApi, developerApi, Project } from "../../lib/api";
 import { Navbar } from "../components/Navbar";
 import styles from "./projects.module.css";
-
-// Curated Residential Developments for initial public showcase
-const CURATED_DEVELOPMENTS: Project[] = [
-  {
-    id: "proj-skyline-01",
-    developer_id: "dev-solanova-01",
-    name: "Addis Skyline Residences",
-    location: "Bole Olympia, Addis Ababa",
-    description:
-      "A contemporary 28-story residential high-rise featuring floor-to-ceiling panoramic glass windows, private terrace gardens, and sweeping city views across Bole.",
-    status: "active",
-    created_at: "2026-08-15T09:00:00Z",
-    updated_at: "2026-10-20T14:30:00Z",
-  },
-  {
-    id: "proj-olympia-02",
-    developer_id: "dev-solanova-02",
-    name: "The Olive Sanctuary Estate",
-    location: "Old Airport Diplomatic Zone, Addis Ababa",
-    description:
-      "A gated residential community of 16 luxury detached villas surrounded by landscaped greenery, private courtyard pools, and 24/7 security.",
-    status: "active",
-    created_at: "2026-09-01T11:00:00Z",
-    updated_at: "2026-10-25T16:00:00Z",
-  },
-  {
-    id: "proj-financial-03",
-    developer_id: "dev-solanova-03",
-    name: "Kazanchis Central Heights",
-    location: "Financial District, Kazanchis, Addis Ababa",
-    description:
-      "A modern residential tower in the financial district offering executive suites, serviced penthouses, dedicated parking, and full backup power.",
-    status: "active",
-    created_at: "2026-09-18T08:30:00Z",
-    updated_at: "2026-11-05T10:15:00Z",
-  },
-  {
-    id: "proj-entoto-04",
-    developer_id: "dev-solanova-04",
-    name: "Entoto Hillside Terraces",
-    location: "Entoto Foothills, Northern Addis Ababa",
-    description:
-      "A serene hillside community in the Entoto hills, featuring spacious terraces, natural stone finishes, and fresh mountain air.",
-    status: "inactive",
-    created_at: "2026-10-02T13:45:00Z",
-    updated_at: "2026-11-12T12:00:00Z",
-  },
-];
 
 function ProjectsCatalogContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
 
-  const [projects, setProjects] = useState<Project[]>(CURATED_DEVELOPMENTS);
-  const [loading, setLoading] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "inactive">(
     (searchParams.get("status") as any) || "all"
@@ -84,22 +36,32 @@ function ProjectsCatalogContent() {
   useEffect(() => {
     // Attempt to load live projects from backend
     setLoading(true);
-    adminApi
-      .getAllProjects({ limit: 50 })
-      .then((res) => {
-        const live = res.data?.projects || (res.data as any)?.data;
-        if (res.ok && Array.isArray(live) && live.length > 0) {
-          // Merge live projects with curated showcase
-          const liveIds = new Set(live.map((p) => p.id));
-          const merged = [...live, ...CURATED_DEVELOPMENTS.filter((c) => !liveIds.has(c.id))];
-          setProjects(merged);
+    const fetchProjects = async () => {
+      try {
+        let live: Project[] = [];
+        if (user?.role === "admin") {
+          const res = await adminApi.getAllProjects({ limit: 50 });
+          live = res.data?.projects || (res.data as any)?.data || [];
+        } else if (user?.role === "developer") {
+          const res = await developerApi.getProjects();
+          live = res.data?.projects || res.data?.result?.projects || (res.data as any)?.data || [];
+        } else {
+          // Public visitor - attempt admin or developer projects if available
+          const res = await adminApi.getAllProjects({ limit: 50 });
+          live = res.data?.projects || (res.data as any)?.data || [];
         }
-      })
-      .catch(() => {
-        // Keep curated fallback
-      })
-      .finally(() => setLoading(false));
-  }, []);
+        if (Array.isArray(live)) {
+          setProjects(live);
+        }
+      } catch (err) {
+        console.error("Could not load backend projects:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [user]);
 
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {

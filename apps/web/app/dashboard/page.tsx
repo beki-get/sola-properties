@@ -76,6 +76,12 @@ function DashboardContent() {
   const { user, logout, refreshProfile } = useAuth();
 
   const [activeTab, setActiveTab] = useState<string>("overview");
+
+  useEffect(() => {
+    if (user?.role === "agent" && user?.status !== "approved") {
+      setActiveTab("verification");
+    }
+  }, [user?.role, user?.status]);
   const [formFeedback, setFormFeedback] = useState<{
     type: "success" | "error";
     message: string;
@@ -541,11 +547,32 @@ function DashboardContent() {
             </div>
             <div className={styles.userTextWrap}>
               <span className={styles.userName}>{user?.fullName || "My Account"}</span>
-              <div className={styles.userRoleStatus}>
+              <div className={styles.userRoleStatus} style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 2 }}>
                 <span className={styles.roleTag}>{role.replace("_", " ")}</span>
-                {status !== "approved" && (
-                  <span className={styles.statusPillAlert}>{status}</span>
-                )}
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    padding: "2px 8px",
+                    borderRadius: 3,
+                    backgroundColor:
+                      status === "approved"
+                        ? "#d1fae5"
+                        : status === "rejected"
+                        ? "#fee2e2"
+                        : "#fef3c7",
+                    color:
+                      status === "approved"
+                        ? "#065f46"
+                        : status === "rejected"
+                        ? "#991b1b"
+                        : "#92400e",
+                  }}
+                >
+                  {status}
+                </span>
               </div>
             </div>
           </Link>
@@ -570,7 +597,7 @@ function DashboardContent() {
       {/* Main Content */}
       <main className={styles.dashMain}>
         {/* Account Status Notice (shown only when action is needed or under review) */}
-        {status !== "approved" && (
+        {status !== "approved" && !(role === "agent" && verificationHistory.length === 0) && (
           <section
             className={`${styles.statusBanner} ${
               status === "rejected"
@@ -612,109 +639,110 @@ function DashboardContent() {
 
         {/* FE-006: Role-Based Tab Navigation */}
         <nav className={styles.tabNav}>
-          <button
-            type="button"
-            className={`${styles.tabBtn} ${activeTab === "overview" ? styles.tabBtnActive : ""}`}
-            onClick={() => setActiveTab("overview")}
-          >
-            Overview
-          </button>
-
-          {role === "buyer" && (
+          {role === "agent" && status !== "approved" ? (
+            <button
+              type="button"
+              className={`${styles.tabBtn} ${styles.tabBtnActive}`}
+              onClick={() => setActiveTab("verification")}
+            >
+              Account Verification
+            </button>
+          ) : (
             <>
               <button
                 type="button"
-                className={`${styles.tabBtn} ${activeTab === "favorites" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("favorites")}
+                className={`${styles.tabBtn} ${activeTab === "overview" ? styles.tabBtnActive : ""}`}
+                onClick={() => setActiveTab("overview")}
               >
-                Shortlist
+                Overview
               </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "tours" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("tours")}
-              >
-                Tours & Visits
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "inquiries" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("inquiries")}
-              >
-                Inquiries & Chat
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "recommendations" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("recommendations")}
-              >
-                Recommendations
-              </button>
-            </>
-          )}
 
-          {role === "agent" && (
-            <>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "inventory" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("inventory")}
-              >
-                Listings
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "authorizations" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("authorizations")}
-              >
-                Authorizations
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "leads" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("leads")}
-              >
-                Leads Pipeline
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "visits" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("visits")}
-              >
-                Visits & Tours
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "transactions" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("transactions")}
-              >
-                Closings & Deals
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "commissions" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("commissions")}
-              >
-                Commissions
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "analytics" ? styles.tabBtnActive : ""}`}
-                onClick={() => setActiveTab("analytics")}
-              >
-                Performance
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${
-                  activeTab === "verification" ? styles.tabBtnActive : ""
-                }`}
-                onClick={() => setActiveTab("verification")}
-              >
-                Account Verification
-              </button>
-            </>
-          )}
+              {role === "buyer" && (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "favorites" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("favorites")}
+                  >
+                    Shortlist
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "tours" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("tours")}
+                  >
+                    Tours & Visits
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "inquiries" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("inquiries")}
+                  >
+                    Inquiries & Chat
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "recommendations" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("recommendations")}
+                  >
+                    Recommendations
+                  </button>
+                </>
+              )}
+
+              {role === "agent" && (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "inventory" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("inventory")}
+                  >
+                    Listings
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "authorizations" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("authorizations")}
+                  >
+                    Authorizations
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "leads" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("leads")}
+                  >
+                    Leads Pipeline
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "visits" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("visits")}
+                  >
+                    Visits & Tours
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "transactions" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("transactions")}
+                  >
+                    Closings & Deals
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "commissions" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("commissions")}
+                  >
+                    Commissions
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.tabBtn} ${activeTab === "analytics" ? styles.tabBtnActive : ""}`}
+                    onClick={() => setActiveTab("analytics")}
+                  >
+                    Performance
+                  </button>
+                </>
+              )}
 
           {role === "developer" && (
             <>
@@ -867,6 +895,8 @@ function DashboardContent() {
               </button>
             </>
           )}
+            </>
+          )}
         </nav>
 
         {/* Global Feedback Alert */}
@@ -922,7 +952,7 @@ function DashboardContent() {
                   {role === "buyer"
                     ? "Search verified residences, track inquiries, and manage your scheduled tours."
                     : role === "agent"
-                    ? "Manage your active listings, inbound leads, and client tours."
+                    ? "Accredited broker managing verified luxury listings."
                     : role === "developer"
                     ? "Manage development projects, property units, and authorized agents."
                     : "System governance, compliance reviews, and transaction management."}
@@ -952,7 +982,7 @@ function DashboardContent() {
                 </div>
                 <p style={{ fontSize: "0.86rem", color: "#6a717e", marginTop: 6 }}>
                   {status === "approved"
-                    ? "Your account is verified and in good standing with full access to all platform features."
+                    ? "Clearance active. All capabilities and listing tools unlocked."
                     : status === "rejected"
                     ? "Your submission requires updates. Please check reviewer remarks and resubmit documents."
                     : "Your verification request is currently under review by our administration team."}

@@ -91,13 +91,13 @@ function PropertiesCatalogContent() {
     setFeedback(null);
     try {
       const res = await propertyApi.listPublic({
-        category_id: selectedCategory === "all" ? undefined : selectedCategory,
+        category_ids: selectedCategory === "all" ? undefined : selectedCategory,
         location_id: selectedLocation === "all" ? undefined : selectedLocation,
         search: searchQuery.trim() || undefined,
         min_bedrooms: minBedrooms > 0 ? minBedrooms : undefined,
-        min_price: minPrice ? Number(minPrice) : undefined,
-        max_price: maxPrice ? Number(maxPrice) : undefined,
-        status: "active",
+        price_min: minPrice ? Number(minPrice) : undefined,
+        price_max: maxPrice ? Number(maxPrice) : undefined,
+        sort: "newest",
       });
 
       const list =

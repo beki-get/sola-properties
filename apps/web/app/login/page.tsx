@@ -146,9 +146,6 @@ function LoginForm() {
                   >
                     Click here to resend verification email →
                   </button>
-                  <span style={{ fontSize: "0.78rem", color: "#6b7280", lineHeight: 1.4 }}>
-                    Note: Staging backend uses developer sandbox for outbound emails. To test without email delivery, use the pre-verified demo account below.
-                  </span>
                 </div>
               )}
             </div>
